@@ -25,8 +25,14 @@
 namespace DEHPMatlab.Tests.ViewModel
 {
     using DEHPCommon.Services.NavigationService;
+    using DEHPCommon.UserInterfaces.Behaviors;
+    using DEHPCommon.UserInterfaces.ViewModels.Interfaces;
+
     using DEHPMatlab.ViewModel;
+    using DEHPMatlab.ViewModel.Interfaces;
+
     using Moq;
+
     using NUnit.Framework;
 
     [TestFixture]
@@ -34,18 +40,29 @@ namespace DEHPMatlab.Tests.ViewModel
     {
         private MainWindowViewModel viewModel;
         private Mock<INavigationService> navigationService;
+        private Mock<IHubDataSourceViewModel> hubDataSourceViewModel;
+        private Mock<IStatusBarControlViewModel> statusBarControlViewModel;
 
         [SetUp]
         public void Setup()
         {
             this.navigationService = new Mock<INavigationService>();
-            this.viewModel = new MainWindowViewModel(this.navigationService.Object);
+            this.hubDataSourceViewModel = new Mock<IHubDataSourceViewModel>();
+            this.statusBarControlViewModel = new Mock<IStatusBarControlViewModel>();
+
+            this.viewModel = new MainWindowViewModel(this.navigationService.Object,this.hubDataSourceViewModel.Object,
+                this.statusBarControlViewModel.Object);
         }
 
         [Test]
         public void VerifyProperties()
         {
+            Mock<ISwitchLayoutPanelOrderBehavior> switchPanel = new Mock<ISwitchLayoutPanelOrderBehavior>();
             Assert.IsNull(this.viewModel.SwitchPanelBehavior);
+            this.viewModel.SwitchPanelBehavior = switchPanel.Object;
+            Assert.IsNotNull(this.viewModel.SwitchPanelBehavior);
+            Assert.IsNotNull(this.viewModel.HubDataSourceViewModel);
+            Assert.IsNotNull(this.viewModel.StatusBarControlViewModel);
         }
     }
 }

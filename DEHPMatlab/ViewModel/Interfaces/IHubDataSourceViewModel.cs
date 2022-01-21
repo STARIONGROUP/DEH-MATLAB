@@ -1,5 +1,5 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="MainWindow.xaml.cs" company="RHEA System S.A.">
+// <copyright file="IHubDataSourceViewModel.cs" company="RHEA System S.A.">
 // Copyright (c) 2020-2022 RHEA System S.A.
 // 
 // Author: Sam Gerené, Alex Vorobiev, Alexander van Delft, Nathanael Smiechowski, Antoine Théate.
@@ -22,22 +22,36 @@
 // </copyright>
 // --------------------------------------------------------------------------------------------------------------------
 
-namespace DEHPMatlab.Views
+namespace DEHPMatlab.ViewModel.Interfaces
 {
-    using System.Diagnostics.CodeAnalysis;
+    using DEHPCommon.UserInterfaces.ViewModels.Interfaces;
+    using DEHPCommon.UserInterfaces.ViewModels.PublicationBrowser;
+
+    using ReactiveUI;
 
     /// <summary>
-    /// Interaction logic for MainWindow.xaml
+    /// Definition of methods and properties of <see cref="HubDataSourceViewModel"/>
     /// </summary>
-    [ExcludeFromCodeCoverage]
-    public partial class MainWindow
+    public interface IHubDataSourceViewModel
     {
         /// <summary>
-        /// Initialize a new <see cref="MainWindow"/>
+        /// The <see cref="IObjectBrowserViewModel"/>
         /// </summary>
-        public MainWindow()
-        {
-            this.InitializeComponent();
-        }
+        IObjectBrowserViewModel ObjectBrowser { get; set; }
+
+        /// <summary>
+        /// The <see cref="IPublicationBrowserViewModel"/>
+        /// </summary>
+        IPublicationBrowserViewModel PublicationBrowser { get; set; }
+
+        /// <summary>
+        /// Gets or sets the name
+        /// </summary>
+        string ConnectButtonText { get; set; }
+
+        /// <summary>
+        /// <see cref="ReactiveCommand{T}"/> for connecting to a data source
+        /// </summary>
+        ReactiveCommand<object> ConnectCommand { get; set; }
     }
 }

@@ -1,5 +1,5 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="MainWindow.xaml.cs" company="RHEA System S.A.">
+// <copyright file="MatlabStatusBarControlViewModelTestFixture.cs" company="RHEA System S.A.">
 // Copyright (c) 2020-2022 RHEA System S.A.
 // 
 // Author: Sam Gerené, Alex Vorobiev, Alexander van Delft, Nathanael Smiechowski, Antoine Théate.
@@ -22,22 +22,25 @@
 // </copyright>
 // --------------------------------------------------------------------------------------------------------------------
 
-namespace DEHPMatlab.Views
+namespace DEHPMatlab.Tests.ViewModel
 {
-    using System.Diagnostics.CodeAnalysis;
+    using DEHPCommon.Services.NavigationService;
 
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
-    [ExcludeFromCodeCoverage]
-    public partial class MainWindow
+    using DEHPMatlab.ViewModel;
+
+    using Moq;
+
+    using NUnit.Framework;
+
+    [TestFixture]
+    public class MatlabStatusBarControlViewModelTestFixture
     {
-        /// <summary>
-        /// Initialize a new <see cref="MainWindow"/>
-        /// </summary>
-        public MainWindow()
+        [Test]
+        public void VerifyExecuteUserSettingsCommand()
         {
-            this.InitializeComponent();
+            var viewModel = new MatlabStatusBarControlViewModel(new Mock<INavigationService>().Object);
+            Assert.IsFalse(viewModel.UserSettingCommand.CanExecute(null));
+            Assert.IsTrue(string.IsNullOrWhiteSpace(viewModel.Message));
         }
     }
 }
