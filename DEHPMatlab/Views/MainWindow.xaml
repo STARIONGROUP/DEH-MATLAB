@@ -3,11 +3,85 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:DEHPMatlab"
+        xmlns:common="clr-namespace:DEHPCommon.UserInterfaces.Views;assembly=DEHPCommon"
         xmlns:dx="http://schemas.devexpress.com/winfx/2008/xaml/core"
+        xmlns:dxdo="http://schemas.devexpress.com/winfx/2008/xaml/docking"
+        xmlns:publicationBrowser="clr-namespace:DEHPCommon.UserInterfaces.Views.PublicationBrowser;assembly=DEHPCommon"
+        xmlns:objectBrowser="clr-namespace:DEHPCommon.UserInterfaces.Views.ObjectBrowser;assembly=DEHPCommon"
         Title="DEHP Matlab Adapter" WindowState="Normal" WindowStartupLocation="CenterScreen"
         MinWidth="850" MinHeight="600" mc:Ignorable="d" Width="1500" Height="950">
-    <Grid>
-
-    </Grid>
+    <DockPanel>
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="9*"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <dxdo:DockLayoutManager Grid.Row="0" AutoHideMode="Inline" FloatingMode="Desktop">
+                <dxdo:LayoutGroup AllowSplitters="True" Orientation="Vertical">
+                    <dxdo:LayoutGroup Name="LayoutGroup" ItemHeight="7*" Orientation="Horizontal">
+                        <dxdo:LayoutGroup.Resources>
+                            <Style TargetType="dxdo:LayoutPanel">
+                                <Setter Property="MinWidth" Value="200"/>
+                                <Setter Property="VerticalAlignment" Value="Stretch"/>
+                                <Setter Property="AllowHide" Value="False"/>
+                                <Setter Property="dxdo:AutoHideGroup.AutoHideType" Value="Left"/>
+                                <Setter Property="AllowClose" Value="False"/>
+                                <Setter Property="AllowDrag" Value="False"/>
+                                <Setter Property="AllowFloat" Value="False"/>
+                                <Setter Property="AllowMove" Value="False"/>
+                                <Setter Property="Padding" Value="10"/>
+                            </Style>
+                        </dxdo:LayoutGroup.Resources>
+                        <dxdo:LayoutPanel Name="DstPanel" Caption="Matlab">
+                        </dxdo:LayoutPanel>
+                        <dxdo:LayoutPanel Name="ImpactPanel" Caption="Impact">
+                        </dxdo:LayoutPanel>
+                        <dxdo:LayoutPanel Name="HubPanel" Caption="Hub Data Source">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition/>
+                                </Grid.RowDefinitions>
+                                <StackPanel Grid.Row="0" HorizontalAlignment="Center" Orientation="Horizontal" Margin="0,0,0,10">
+                                    <Button Width="150" Height="40" HorizontalAlignment="Right"
+                                            Command="{Binding HubDataSourceViewModel.ConnectCommand}"
+                                            Content="{Binding HubDataSourceViewModel.ConnectButtonText}"
+                                            ToolTip="Connect or disconnect from a Hub data source"/>
+                                    <common:HubSessionControl DataContext="{Binding HubDataSourceViewModel.SessionControl}"/>
+                                </StackPanel>
+                                <Grid Grid.Row="1">
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+                                    <common:HubBrowserHeader Grid.Row="1" DataContext="{Binding HubDataSourceViewModel.HubBrowserHeader}"/>
+                                    <dx:DXTabControl Grid.Row="2">
+                                        <dx:DXTabItem>
+                                            <dx:DXTabItem.Header>
+                                                <TextBlock Text="Engineering Model" />
+                                            </dx:DXTabItem.Header>
+                                            <objectBrowser:ObjectBrowser>
+                                                <objectBrowser:ObjectBrowser DataContext="{Binding HubDataSourceViewModel.ObjectBrowser}"/>
+                                            </objectBrowser:ObjectBrowser>
+                                        </dx:DXTabItem>
+                                        <dx:DXTabItem>
+                                            <dx:DXTabItem.Header>
+                                                <TextBlock Text="Publications" />
+                                            </dx:DXTabItem.Header>
+                                            <publicationBrowser:PublicationBrowser>
+                                                <publicationBrowser:PublicationBrowser DataContext="{Binding HubDataSourceViewModel.PublicationBrowser}"/>
+                                            </publicationBrowser:PublicationBrowser>
+                                        </dx:DXTabItem>
+                                    </dx:DXTabControl>
+                                </Grid>
+                            </Grid>
+                        </dxdo:LayoutPanel>
+                    </dxdo:LayoutGroup>
+                </dxdo:LayoutGroup>
+            </dxdo:DockLayoutManager>
+            <common:StatusBarControl DataContext="{Binding StatusBarControlViewModel}" Grid.Row="2" />
+        </Grid>
+    </DockPanel>
 </dx:DXWindow>

@@ -33,6 +33,7 @@ namespace DEHPMatlab
     
     using DEHPCommon;
     using DEHPCommon.Services.NavigationService;
+    using DEHPCommon.UserInterfaces.ViewModels.Interfaces;
 
     using DEHPMatlab.ViewModel;
     using DEHPMatlab.ViewModel.Interfaces;
@@ -85,6 +86,8 @@ namespace DEHPMatlab
         private void RegisterViewModels(ContainerBuilder containerBuilder)
         {
             containerBuilder.RegisterType<MainWindowViewModel>().As<IMainWindowViewModel>().SingleInstance();
+            containerBuilder.RegisterType<HubDataSourceViewModel>().As<IHubDataSourceViewModel>().SingleInstance();
+            containerBuilder.RegisterType<MatlabStatusBarControlViewModel>().As<IStatusBarControlViewModel>().SingleInstance();
         }
 
         /// <summary>

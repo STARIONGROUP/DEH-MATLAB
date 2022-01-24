@@ -26,6 +26,7 @@ namespace DEHPMatlab.ViewModel
 {
     using DEHPCommon.Services.NavigationService;
     using DEHPCommon.UserInterfaces.Behaviors;
+    using DEHPCommon.UserInterfaces.ViewModels.Interfaces;
 
     using DEHPMatlab.ViewModel.Interfaces;
 
@@ -45,12 +46,27 @@ namespace DEHPMatlab.ViewModel
         private readonly INavigationService navigationService;
 
         /// <summary>
+        /// Gets the view model that represents the 10-25 data source
+        /// </summary>
+        public IHubDataSourceViewModel HubDataSourceViewModel { get; }
+
+        /// <summary>
+        /// Gets the view model that represents the status bar
+        /// </summary>
+        public IStatusBarControlViewModel StatusBarControlViewModel { get; }
+
+        /// <summary>
         /// Create a new instance of <see cref="MainWindowViewModel"/>
         /// </summary>
         /// <param name="navigationService">A <see cref="INavigationService"/></param>
-        public MainWindowViewModel(INavigationService navigationService)
+        /// <param name="hubDataSourceViewModel">A <see cref="IHubDataSourceViewModel"/></param>
+        /// <param name="statusBarControlViewModel">The <see cref="IStatusBarControlViewModel"/></param>
+        public MainWindowViewModel(INavigationService navigationService,
+            IHubDataSourceViewModel hubDataSourceViewModel, IStatusBarControlViewModel statusBarControlViewModel)
         {
             this.navigationService = navigationService;
+            this.HubDataSourceViewModel = hubDataSourceViewModel;
+            this.StatusBarControlViewModel = statusBarControlViewModel;
         }
     }
 }

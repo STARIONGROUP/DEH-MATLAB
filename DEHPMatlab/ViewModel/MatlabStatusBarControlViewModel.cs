@@ -1,5 +1,5 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="MainWindow.xaml.cs" company="RHEA System S.A.">
+// <copyright file="MatlabStatusBarControlViewModel.cs" company="RHEA System S.A.">
 // Copyright (c) 2020-2022 RHEA System S.A.
 // 
 // Author: Sam Gerené, Alex Vorobiev, Alexander van Delft, Nathanael Smiechowski, Antoine Théate.
@@ -22,22 +22,30 @@
 // </copyright>
 // --------------------------------------------------------------------------------------------------------------------
 
-namespace DEHPMatlab.Views
+namespace DEHPMatlab.ViewModel
 {
-    using System.Diagnostics.CodeAnalysis;
+    using DEHPCommon.Services.NavigationService;
+    using DEHPCommon.UserInterfaces.ViewModels;
 
     /// <summary>
-    /// Interaction logic for MainWindow.xaml
+    /// The <see cref="MatlabStatusBarControlViewModel"/> is the main view  model of the status bar of this dst adapter
     /// </summary>
-    [ExcludeFromCodeCoverage]
-    public partial class MainWindow
+    public class MatlabStatusBarControlViewModel : StatusBarControlViewModel
     {
         /// <summary>
-        /// Initialize a new <see cref="MainWindow"/>
+        /// Initializes a new <see cref="MatlabStatusBarControlViewModel"/>
         /// </summary>
-        public MainWindow()
+        /// <param name="navigationService">A <see cref="INavigationService"/></param>
+        public MatlabStatusBarControlViewModel(INavigationService navigationService) : base(navigationService)
         {
-            this.InitializeComponent();
+        }
+
+        /// <summary>
+        /// Executes the <see cref="P:DEHPCommon.UserInterfaces.ViewModels.StatusBarControlViewModel.UserSettingCommand"/>
+        /// </summary>
+        protected override void ExecuteUserSettingCommand()
+        {
+            this.Append("User settings opened");
         }
     }
 }
