@@ -35,6 +35,8 @@ namespace DEHPMatlab
     using DEHPCommon.Services.NavigationService;
     using DEHPCommon.UserInterfaces.ViewModels.Interfaces;
 
+    using DEHPMatlab.DstController;
+    using DEHPMatlab.Services.MatlabConnector;
     using DEHPMatlab.ViewModel;
     using DEHPMatlab.ViewModel.Interfaces;
     using DEHPMatlab.Views;
@@ -88,6 +90,7 @@ namespace DEHPMatlab
             containerBuilder.RegisterType<MainWindowViewModel>().As<IMainWindowViewModel>().SingleInstance();
             containerBuilder.RegisterType<HubDataSourceViewModel>().As<IHubDataSourceViewModel>().SingleInstance();
             containerBuilder.RegisterType<MatlabStatusBarControlViewModel>().As<IStatusBarControlViewModel>().SingleInstance();
+            containerBuilder.RegisterType<DstDataSourceViewModel>().As<IDstDataSourceViewModel>().SingleInstance();
         }
 
         /// <summary>
@@ -96,6 +99,8 @@ namespace DEHPMatlab
         /// <param name="containerBuilder">The <see cref="ContainerBuilder"/></param>
         private void RegisterTypes(ContainerBuilder containerBuilder)
         {
+            containerBuilder.RegisterType<MatlabConnector>().As<IMatlabConnector>().SingleInstance();
+            containerBuilder.RegisterType<DstController.DstController>().As<IDstController>().SingleInstance();
         }
 
         /// <summary>

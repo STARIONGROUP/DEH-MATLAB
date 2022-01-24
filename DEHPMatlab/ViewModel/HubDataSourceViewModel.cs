@@ -49,20 +49,9 @@ namespace DEHPMatlab.ViewModel
         private readonly IHubController hubController;
 
         /// <summary>
-        /// Determines if the <see cref="HubDataSourceViewModel"/> can appends message
-        /// to the <see cref="IStatusBarControlViewModel"/>
-        /// </summary>
-        private bool canLogToStatusBar;
-
-        /// <summary>
         /// Gets the <see cref="IHubSessionControlViewModel"/>
         /// </summary>
         public IHubSessionControlViewModel SessionControl { get; }
-
-        /// <summary>
-        /// Gets the <see cref="IStatusBarControlViewModel"/>
-        /// </summary>
-        public IStatusBarControlViewModel StatusBar { get; set; }
 
         /// <summary>
         /// Initializes a new <see cref="HubDataSourceViewModel"/>
@@ -85,6 +74,7 @@ namespace DEHPMatlab.ViewModel
             this.PublicationBrowser = publicationBrowser;
             this.ObjectBrowser = objectBrowser;
             this.StatusBar = statusBar;
+            this.DataSourceName = "the Hub";
             this.InitializeCommands();
         }
 
@@ -96,28 +86,13 @@ namespace DEHPMatlab.ViewModel
             base.InitializeCommands();
 
             this.WhenAnyValue(x => x.hubController.IsSessionOpen)
-                .Subscribe(_ => this.UpdateStatusBar());
+                .Subscribe(this.UpdateStatusBar);
 
             this.WhenAny(x => x.hubController.OpenIteration,
                     x => x.hubController.IsSessionOpen,
                     (i, o) =>
                         i.Value != null && o.Value)
                 .Subscribe(this.UpdateConnectButtonText);
-        }
-
-        /// <summary>
-        /// Append the connection status to the status bar
-        /// </summary>
-        private void UpdateStatusBar()
-        {
-            if (!this.canLogToStatusBar)
-            {
-                this.canLogToStatusBar = true;
-                return;
-            }
-
-            var connectionStatus = this.hubController.IsSessionOpen ? "Connection established to" : "Disconnected from";
-            this.StatusBar.Append($"{connectionStatus} the hub");
         }
 
         /// <summary>

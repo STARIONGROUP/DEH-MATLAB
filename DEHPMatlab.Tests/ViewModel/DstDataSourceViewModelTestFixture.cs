@@ -1,5 +1,5 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="MainWindowViewModelTestFixture.cs" company="RHEA System S.A.">
+// <copyright file="DstDataSourceViewModelTestFixture.cs" company="RHEA System S.A.">
 // Copyright (c) 2020-2022 RHEA System S.A.
 // 
 // Author: Sam Gerené, Alex Vorobiev, Alexander van Delft, Nathanael Smiechowski, Antoine Théate.
@@ -24,48 +24,59 @@
 
 namespace DEHPMatlab.Tests.ViewModel
 {
+    using DEHPCommon.HubController.Interfaces;
     using DEHPCommon.Services.NavigationService;
-    using DEHPCommon.UserInterfaces.Behaviors;
     using DEHPCommon.UserInterfaces.ViewModels.Interfaces;
 
+    using DEHPMatlab.DstController;
     using DEHPMatlab.ViewModel;
-    using DEHPMatlab.ViewModel.Interfaces;
 
     using Moq;
 
     using NUnit.Framework;
 
     [TestFixture]
-    public class MainWindowViewModelTestFixture
+    public class DstDataSourceViewModelTestFixture
     {
-        private MainWindowViewModel viewModel;
+        private DstDataSourceViewModel viewModel;
         private Mock<INavigationService> navigationService;
-        private Mock<IHubDataSourceViewModel> hubDataSourceViewModel;
-        private Mock<IStatusBarControlViewModel> statusBarControlViewModel;
-        private Mock<IDstDataSourceViewModel> dstDataSourceViewModel;
-
+        private Mock<IDstController> dstController;
+        private Mock<IHubController> hubController;
+        private Mock<IStatusBarControlViewModel> statusBar;
+        
         [SetUp]
         public void Setup()
         {
             this.navigationService = new Mock<INavigationService>();
-            this.hubDataSourceViewModel = new Mock<IHubDataSourceViewModel>();
-            this.statusBarControlViewModel = new Mock<IStatusBarControlViewModel>();
-            this.dstDataSourceViewModel = new Mock<IDstDataSourceViewModel>();
 
-            this.viewModel = new MainWindowViewModel(this.navigationService.Object,this.hubDataSourceViewModel.Object,
-                this.statusBarControlViewModel.Object, this.dstDataSourceViewModel.Object);
+            this.dstController = new Mock<IDstController>();
+            this.dstController.Setup(x => x.IsSessionOpen).Returns(true);
+
+            this.hubController = new Mock<IHubController>();
+
+            this.statusBar = new Mock<IStatusBarControlViewModel>();
+
+            this.viewModel = new DstDataSourceViewModel(this.navigationService.Object,
+                this.dstController.Object, this.hubController.Object, this.statusBar.Object);
         }
 
         [Test]
         public void VerifyProperties()
         {
-            Mock<ISwitchLayoutPanelOrderBehavior> switchPanel = new Mock<ISwitchLayoutPanelOrderBehavior>();
-            Assert.IsNull(this.viewModel.SwitchPanelBehavior);
-            this.viewModel.SwitchPanelBehavior = switchPanel.Object;
-            Assert.IsNotNull(this.viewModel.SwitchPanelBehavior);
-            Assert.IsNotNull(this.viewModel.HubDataSourceViewModel);
-            Assert.IsNotNull(this.viewModel.StatusBarControlViewModel);
-            Assert.IsNotNull(this.viewModel.DstDataSourceViewModel);
+            Assert.IsNotNull(this.viewModel.StatusBar);
+            Assert.AreEqual("Disconnect", this.viewModel.ConnectButtonText);
+        }
+
+        [Test]
+        public void VerifyConnectCommand()
+        {
+            Assert.IsTrue(this.viewModel.ConnectCommand.CanExecute(null));
+            Assert.AreEqual("Disconnect", this.viewModel.ConnectButtonText);
+            Assert.DoesNotThrow(() => this.viewModel.ConnectCommand.Execute(null));
+            this.dstController.Verify(x => x.Disconnect(), Times.Once);
+            this.dstController.Setup(x => x.IsSessionOpen).Returns(false);
+            Assert.DoesNotThrow(() => this.viewModel.ConnectCommand.Execute(null));
+            this.dstController.Verify(x => x.Connect(), Times.Once);
         }
     }
 }

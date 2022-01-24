@@ -47,6 +47,8 @@ namespace DEHPMatlab.ViewModel
         /// </summary>
         private const string DisconnectText = "Disconnect";
 
+        protected string DataSourceName;
+
         /// <summary>
         /// Backing field for <see cref="ConnectButtonText"/>
         /// </summary>
@@ -56,6 +58,12 @@ namespace DEHPMatlab.ViewModel
         /// Gets the <see cref="INavigationService"/>
         /// </summary>
         protected readonly INavigationService NavigationService;
+
+        /// <summary>
+        /// Determines if the <see cref="HubDataSourceViewModel"/> can appends message
+        /// to the <see cref="IStatusBarControlViewModel"/>
+        /// </summary>
+        private bool canLogToStatusBar;
 
         /// <summary>
         /// Initializes a new <see cref="DataSourceViewModel"/>
@@ -95,6 +103,8 @@ namespace DEHPMatlab.ViewModel
         /// </summary>
         public IHubBrowserHeaderViewModel HubBrowserHeader { get; set; }
 
+        public IStatusBarControlViewModel StatusBar { get; set; }
+
         /// <summary>
         /// Initializes the <see cref="ReactiveCommand{T}"/>
         /// </summary>
@@ -116,6 +126,21 @@ namespace DEHPMatlab.ViewModel
         protected void UpdateConnectButtonText(bool isSessionOpen)
         {
             this.ConnectButtonText = isSessionOpen ? DisconnectText : ConnectText;
+        }
+
+        /// <summary>
+        /// Append the connection status to the status bar
+        /// </summary>
+        protected void UpdateStatusBar(bool isSessionOpen)
+        {
+            if (!this.canLogToStatusBar)
+            {
+                this.canLogToStatusBar = true;
+                return;
+            }
+
+            var connectionStatus = isSessionOpen ? "Connection established to" : "Disconnected from";
+            this.StatusBar.Append($"{connectionStatus} {this.DataSourceName}");
         }
     }
 }

@@ -50,7 +50,6 @@ namespace DEHPMatlab.Tests.ViewModel
 
     using ReactiveUI;
 
-
     [TestFixture]
     public class HubDataSourceViewModelTestFixture
     {
@@ -144,7 +143,7 @@ namespace DEHPMatlab.Tests.ViewModel
             this.statusBar = new Mock<IStatusBarControlViewModel>();
 
             this.viewModel = new HubDataSourceViewModel(this.navigationService.Object, this.hubController.Object,  this.sessionControl.Object, this.hubBrowserHeader.Object,
-                this.publicationBrowser.Object,this.objectBrowser.Object, this.statusBar.Object);
+                this.publicationBrowser.Object, this.objectBrowser.Object, this.statusBar.Object);
         }
 
         [Test]
