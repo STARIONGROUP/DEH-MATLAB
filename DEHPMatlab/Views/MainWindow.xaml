@@ -34,6 +34,14 @@
                             </Style>
                         </dxdo:LayoutGroup.Resources>
                         <dxdo:LayoutPanel Name="DstPanel" Caption="Matlab">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"></RowDefinition>
+                                    <RowDefinition></RowDefinition>
+                                </Grid.RowDefinitions>
+                                <Button Width="150" Height="40" HorizontalAlignment="Center" Content="{Binding DstDataSourceViewModel.ConnectButtonText}" Command="{Binding DstDataSourceViewModel.ConnectCommand}" Margin="0,0,0,10"
+                                        ToolTip="Connect or disconnect from a Matlab Instance"/>
+                            </Grid>
                         </dxdo:LayoutPanel>
                         <dxdo:LayoutPanel Name="ImpactPanel" Caption="Impact">
                         </dxdo:LayoutPanel>

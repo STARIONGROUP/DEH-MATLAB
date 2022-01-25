@@ -1,4 +1,4 @@
-﻿// --------------------------------------------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------------------------------------
 // <copyright file="DataSourceViewModel.cs" company="RHEA System S.A.">
 // Copyright (c) 2020-2022 RHEA System S.A.
 // 
@@ -48,6 +48,11 @@ namespace DEHPMatlab.ViewModel
         private const string DisconnectText = "Disconnect";
 
         /// <summary>
+        /// The name of the data source
+        /// </summary>
+        protected string DataSourceName;
+
+        /// <summary>
         /// Backing field for <see cref="ConnectButtonText"/>
         /// </summary>
         private string connectButtonText = ConnectText;
@@ -56,6 +61,12 @@ namespace DEHPMatlab.ViewModel
         /// Gets the <see cref="INavigationService"/>
         /// </summary>
         protected readonly INavigationService NavigationService;
+
+        /// <summary>
+        /// Determines if the <see cref="HubDataSourceViewModel"/> can appends message
+        /// to the <see cref="IStatusBarControlViewModel"/>
+        /// </summary>
+        private bool canLogToStatusBar;
 
         /// <summary>
         /// Initializes a new <see cref="DataSourceViewModel"/>
@@ -96,6 +107,11 @@ namespace DEHPMatlab.ViewModel
         public IHubBrowserHeaderViewModel HubBrowserHeader { get; set; }
 
         /// <summary>
+        /// Gets or sets the <see cref="IStatusBarControlViewModel"/>
+        /// </summary>
+        public IStatusBarControlViewModel StatusBar { get; set; }
+
+        /// <summary>
         /// Initializes the <see cref="ReactiveCommand{T}"/>
         /// </summary>
         protected virtual void InitializeCommands()
@@ -112,10 +128,26 @@ namespace DEHPMatlab.ViewModel
         /// <summary>
         /// Updates the <see cref="ConnectButtonText"/>
         /// </summary>
-        /// <param name="isSessionOpen">Assert whether the the button text should be <see cref="ConnectText"/> or <see cref="DisconnectText"/></param>
+        /// <param name="isSessionOpen">Assert whether the button text should be <see cref="ConnectText"/> or <see cref="DisconnectText"/></param>
         protected void UpdateConnectButtonText(bool isSessionOpen)
         {
             this.ConnectButtonText = isSessionOpen ? DisconnectText : ConnectText;
+        }
+
+        /// <summary>
+        /// Append the connection status to the status bar
+        /// </summary>
+        /// <param name="isSessionOpen">Assert whether the status bar should update as connected or disconnected</param>
+        protected void UpdateStatusBar(bool isSessionOpen)
+        {
+            if (!this.canLogToStatusBar)
+            {
+                this.canLogToStatusBar = true;
+                return;
+            }
+
+            var connectionStatus = isSessionOpen ? "Connection established to" : "Disconnected from";
+            this.StatusBar.Append($"{connectionStatus} {this.DataSourceName}");
         }
     }
 }

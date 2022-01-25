@@ -1,4 +1,4 @@
-﻿// --------------------------------------------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------------------------------------
 // <copyright file="MainWindowViewModel.cs" company="RHEA System S.A.">
 // Copyright (c) 2020-2022 RHEA System S.A.
 // 
@@ -56,17 +56,25 @@ namespace DEHPMatlab.ViewModel
         public IStatusBarControlViewModel StatusBarControlViewModel { get; }
 
         /// <summary>
+        /// Gets the view model that represents the Dst data source
+        /// </summary>
+        public IDstDataSourceViewModel DstDataSourceViewModel { get; }
+
+        /// <summary>
         /// Create a new instance of <see cref="MainWindowViewModel"/>
         /// </summary>
         /// <param name="navigationService">A <see cref="INavigationService"/></param>
         /// <param name="hubDataSourceViewModel">A <see cref="IHubDataSourceViewModel"/></param>
         /// <param name="statusBarControlViewModel">The <see cref="IStatusBarControlViewModel"/></param>
+        /// <param name="dstDataSourceViewModel">The <see cref="IDstDataSourceViewModel"/></param>
         public MainWindowViewModel(INavigationService navigationService,
-            IHubDataSourceViewModel hubDataSourceViewModel, IStatusBarControlViewModel statusBarControlViewModel)
+            IHubDataSourceViewModel hubDataSourceViewModel, IStatusBarControlViewModel statusBarControlViewModel
+            ,IDstDataSourceViewModel dstDataSourceViewModel)
         {
             this.navigationService = navigationService;
             this.HubDataSourceViewModel = hubDataSourceViewModel;
             this.StatusBarControlViewModel = statusBarControlViewModel;
+            this.DstDataSourceViewModel = dstDataSourceViewModel;
         }
     }
 }
