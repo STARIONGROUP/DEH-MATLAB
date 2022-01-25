@@ -1,4 +1,4 @@
-﻿// --------------------------------------------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------------------------------------
 // <copyright file="DstController.cs" company="RHEA System S.A.">
 // Copyright (c) 2020-2022 RHEA System S.A.
 // 
@@ -64,6 +64,7 @@ namespace DEHPMatlab.DstController
         /// <summary>
         /// Initializes a new <see cref="DstController"/> instance
         /// </summary>
+        /// <param name="matlabConnector">The <see cref="IMatlabConnector"/></param>
         public DstController(IMatlabConnector matlabConnector)
         {
             this.matlabConnector = matlabConnector;

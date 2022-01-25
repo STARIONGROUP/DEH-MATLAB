@@ -1,4 +1,4 @@
-﻿// --------------------------------------------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------------------------------------
 // <copyright file="MatlabConnector.cs" company="RHEA System S.A.">
 // Copyright (c) 2020-2022 RHEA System S.A.
 // 
@@ -130,7 +130,7 @@ namespace DEHPMatlab.Services.MatlabConnector
         /// <summary>
         /// Retrieve a variable from the Matlab workspace
         /// </summary>
-        /// <param name="variableName">The name of the varible</param>
+        /// <param name="variableName">The name of the variable</param>
         /// <returns>The <see cref="MatlabWorkspaceRowViewModel"/> from the Matlab Workspace</returns>
         public MatlabWorkspaceRowViewModel GetVariable(string variableName)
         {

@@ -1,4 +1,4 @@
-﻿// --------------------------------------------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------------------------------------
 // <copyright file="DataSourceViewModel.cs" company="RHEA System S.A.">
 // Copyright (c) 2020-2022 RHEA System S.A.
 // 
@@ -47,6 +47,9 @@ namespace DEHPMatlab.ViewModel
         /// </summary>
         private const string DisconnectText = "Disconnect";
 
+        /// <summary>
+        /// The name of the data source
+        /// </summary>
         protected string DataSourceName;
 
         /// <summary>
@@ -125,7 +128,7 @@ namespace DEHPMatlab.ViewModel
         /// <summary>
         /// Updates the <see cref="ConnectButtonText"/>
         /// </summary>
-        /// <param name="isSessionOpen">Assert whether the the button text should be <see cref="ConnectText"/> or <see cref="DisconnectText"/></param>
+        /// <param name="isSessionOpen">Assert whether the button text should be <see cref="ConnectText"/> or <see cref="DisconnectText"/></param>
         protected void UpdateConnectButtonText(bool isSessionOpen)
         {
             this.ConnectButtonText = isSessionOpen ? DisconnectText : ConnectText;
@@ -134,6 +137,7 @@ namespace DEHPMatlab.ViewModel
         /// <summary>
         /// Append the connection status to the status bar
         /// </summary>
+        /// <param name="isSessionOpen">Assert whether the status bar should update as connected or disconnected</param>
         protected void UpdateStatusBar(bool isSessionOpen)
         {
             if (!this.canLogToStatusBar)
