@@ -131,10 +131,10 @@ namespace DEHPMatlab.Services.MatlabConnector
         /// Retrieve a variable from the Matlab workspace
         /// </summary>
         /// <param name="variableName">The name of the varible</param>
-        /// <returns>The <see cref="RowViewModel"/> from the Matlab Workspace</returns>
-        public RowViewModel GetVariable(string variableName)
+        /// <returns>The <see cref="MatlabWorkspaceRowViewModel"/> from the Matlab Workspace</returns>
+        public MatlabWorkspaceRowViewModel GetVariable(string variableName)
         {
-            var matlabVariable = new RowViewModel(variableName, null);
+            var matlabVariable = new MatlabWorkspaceRowViewModel(variableName, null);
 
             try
             {
@@ -158,12 +158,12 @@ namespace DEHPMatlab.Services.MatlabConnector
         /// Put a variable to the Matlab workspace.
         /// The variable is override if the value already exists inside the workspace
         /// </summary>
-        /// <param name="rowViewModel">The variable to put inside Matlab</param>
-        public void PutVariable(RowViewModel rowViewModel)
+        /// <param name="matlabWorkspaceRowViewModel">The variable to put inside Matlab</param>
+        public void PutVariable(MatlabWorkspaceRowViewModel matlabWorkspaceRowViewModel)
         {
             try
             {
-                this.MatlabApp.PutWorkspaceData(rowViewModel.Name, WorkspaceName, rowViewModel.Value);
+                this.MatlabApp.PutWorkspaceData(matlabWorkspaceRowViewModel.Name, WorkspaceName, matlabWorkspaceRowViewModel.Value);
             }
             catch (COMException ex)
             {

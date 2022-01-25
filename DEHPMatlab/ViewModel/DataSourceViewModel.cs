@@ -103,6 +103,9 @@ namespace DEHPMatlab.ViewModel
         /// </summary>
         public IHubBrowserHeaderViewModel HubBrowserHeader { get; set; }
 
+        /// <summary>
+        /// Gets or sets the <see cref="IStatusBarControlViewModel"/>
+        /// </summary>
         public IStatusBarControlViewModel StatusBar { get; set; }
 
         /// <summary>

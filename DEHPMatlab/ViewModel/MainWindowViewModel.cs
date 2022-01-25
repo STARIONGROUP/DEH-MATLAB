@@ -55,6 +55,9 @@ namespace DEHPMatlab.ViewModel
         /// </summary>
         public IStatusBarControlViewModel StatusBarControlViewModel { get; }
 
+        /// <summary>
+        /// Gets the view model that represents the Dst data source
+        /// </summary>
         public IDstDataSourceViewModel DstDataSourceViewModel { get; }
 
         /// <summary>

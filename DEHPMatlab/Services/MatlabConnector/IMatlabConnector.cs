@@ -52,15 +52,15 @@ namespace DEHPMatlab.Services.MatlabConnector
         /// Retrieve a variable from the Matlab workspace
         /// </summary>
         /// <param name="variableName">The name of the varible</param>
-        /// <returns>The <see cref="RowViewModel"/> from the Matlab Workspace</returns>
-        RowViewModel GetVariable(string variableName);
+        /// <returns>The <see cref="MatlabWorkspaceRowViewModel"/> from the Matlab Workspace</returns>
+        MatlabWorkspaceRowViewModel GetVariable(string variableName);
 
         /// <summary>
         /// Put a variable to the Matlab workspace.
         /// The variable is override if the value already exists inside the workspace
         /// </summary>
-        /// <param name="rowViewModel">The variable to put inside Matlab</param>
-        void PutVariable(RowViewModel rowViewModel);
+        /// <param name="matlabWorkspaceRowViewModel">The variable to put inside Matlab</param>
+        void PutVariable(MatlabWorkspaceRowViewModel matlabWorkspaceRowViewModel);
 
         /// <summary>
         /// Execute a Matlab function

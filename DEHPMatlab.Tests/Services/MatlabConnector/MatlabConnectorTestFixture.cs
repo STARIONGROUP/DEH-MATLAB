@@ -112,7 +112,7 @@ namespace DEHPMatlab.Tests.Services.MatlabConnector
         public void VerifyPutVariable()
         {
             this.matlabConnector.MatlabApp = this.matlabApp.Object;
-            var variable = new RowViewModel("aVariable", 2.0d);
+            var variable = new MatlabWorkspaceRowViewModel("aVariable", 2.0d);
             Assert.DoesNotThrow(() => this.matlabConnector.PutVariable(variable));
 
             this.matlabApp.Setup(x => x.PutWorkspaceData(It.IsAny<string>(), "base"

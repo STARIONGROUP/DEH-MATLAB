@@ -1,5 +1,5 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="RowViewModel.cs" company="RHEA System S.A.">
+// <copyright file="MatlabWorkspaceRowViewModel.cs" company="RHEA System S.A.">
 // Copyright (c) 2020-2022 RHEA System S.A.
 // 
 // Author: Sam Gerené, Alex Vorobiev, Alexander van Delft, Nathanael Smiechowski, Antoine Théate.
@@ -27,14 +27,30 @@ namespace DEHPMatlab.ViewModel.Row
     using ReactiveUI;
 
     /// <summary>
-    /// The <see cref="RowViewModel"/> stores the value of variable from the Matlab Workspace
+    /// The <see cref="MatlabWorkspaceRowViewModel"/> stores the value of variable from the Matlab Workspace
     /// </summary>
-    public class RowViewModel: ReactiveObject
+    public class MatlabWorkspaceRowViewModel: ReactiveObject
     {
         /// <summary>
         /// Backing field for <see cref="Name"/>
         /// </summary>
         private string name;
+
+        /// <summary>
+        /// Backing field for <see cref="Value"/>
+        /// </summary>
+        private object value;
+
+        /// <summary>
+        /// Initializes a new <see cref="MatlabWorkspaceRowViewModel"/>
+        /// </summary>
+        /// <param name="name">The name of the variable</param>
+        /// <param name="value">The value of the variable</param>
+        public MatlabWorkspaceRowViewModel(string name, object value)
+        {
+            this.Name = name;
+            this.Value = value;
+        }
 
         /// <summary>
         /// The name of the variable
@@ -46,28 +62,12 @@ namespace DEHPMatlab.ViewModel.Row
         }
 
         /// <summary>
-        /// Backing field for <see cref="Value"/>
-        /// </summary>
-        private object value;
-
-        /// <summary>
         /// The value of the variable
         /// </summary>
         public object Value
         {
             get => this.value;
             set => this.RaiseAndSetIfChanged(ref this.value, value);
-        }
-
-        /// <summary>
-        /// Initializes a new <see cref="RowViewModel"/>
-        /// </summary>
-        /// <param name="name">The name of the variable</param>
-        /// <param name="value">The value of the variable</param>
-        public RowViewModel(string name, object value)
-        {
-            this.Name = name;
-            this.Value = value;
         }
     }
 }
