@@ -41,7 +41,7 @@ namespace DEHPMatlab.ViewModel
     /// View model that represents a data source panel which holds a tree like browser, a informational header and
     /// some control regarding the connection to the data source
     /// </summary>
-    public sealed class HubDataSourceViewModel: DataSourceViewModel, IHubDataSourceViewModel
+    public sealed class HubDataSourceViewModel : DataSourceViewModel, IHubDataSourceViewModel
     {
         /// <summary>
         /// The <see cref="IHubController"/>
@@ -90,8 +90,7 @@ namespace DEHPMatlab.ViewModel
 
             this.WhenAny(x => x.hubController.OpenIteration,
                     x => x.hubController.IsSessionOpen,
-                    (i, o) =>
-                        i.Value != null && o.Value)
+                    (i, o) => i.Value != null && o.Value)
                 .Subscribe(this.UpdateConnectButtonText);
         }
 
@@ -106,7 +105,7 @@ namespace DEHPMatlab.ViewModel
                 this.hubController.Close();
             }
             else
-            { 
+            {
                 this.NavigationService.ShowDialog<Login>();
 
                 if (this.hubController.IsSessionOpen && this.hubController.OpenIteration == null)

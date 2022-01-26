@@ -42,7 +42,7 @@ namespace DEHPMatlab.Services.MatlabConnector
     /// <summary>
     /// The <see cref="MatlabConnector"/> handle the connection to the Matlab Application Instance
     /// </summary>
-    public class MatlabConnector: ReactiveObject, IMatlabConnector
+    public class MatlabConnector : ReactiveObject, IMatlabConnector
     {
         /// <summary>
         /// The current class <see cref="Logger"/>
@@ -174,13 +174,13 @@ namespace DEHPMatlab.Services.MatlabConnector
         /// <summary>
         /// Execute a Matlab function
         /// </summary>
-        /// <param name="function">The function to execute</param>
+        /// <param name="functionName">The function to execute</param>
         /// <returns>The result of the funtion</returns>
-        public string ExecuteFunction(string function)
+        public string ExecuteFunction(string functionName)
         {
             try
             {
-                return this.MatlabApp.Execute(function);
+                return this.MatlabApp.Execute(functionName);
             }
             catch (COMException exception)
             {

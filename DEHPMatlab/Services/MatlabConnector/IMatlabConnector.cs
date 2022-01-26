@@ -65,8 +65,8 @@ namespace DEHPMatlab.Services.MatlabConnector
         /// <summary>
         /// Execute a Matlab function
         /// </summary>
-        /// <param name="function">The function to execute</param>
+        /// <param name="functionName">The function to execute</param>
         /// <returns>The result of the funtion</returns>
-        string ExecuteFunction(string function);
+        string ExecuteFunction(string functionName);
     }
 }

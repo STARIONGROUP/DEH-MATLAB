@@ -1,5 +1,5 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="MatlabWorkspaceRowViewModel.cs" company="RHEA System S.A.">
+// <copyright file="IDstBrowserHeaderViewModel.cs" company="RHEA System S.A.">
 // Copyright (c) 2020-2022 RHEA System S.A.
 // 
 // Author: Sam Gerené, Alex Vorobiev, Alexander van Delft, Nathanael Smiechowski, Antoine Théate.
@@ -22,52 +22,28 @@
 // </copyright>
 // --------------------------------------------------------------------------------------------------------------------
 
-namespace DEHPMatlab.ViewModel.Row
+namespace DEHPMatlab.ViewModel.Interfaces
 {
     using ReactiveUI;
 
     /// <summary>
-    /// The <see cref="MatlabWorkspaceRowViewModel"/> stores the value of variable from the Matlab Workspace
+    /// Interface definition for <see cref="DstBrowserHeaderViewModel"/>
     /// </summary>
-    public class MatlabWorkspaceRowViewModel : ReactiveObject
+    public interface IDstBrowserHeaderViewModel
     {
         /// <summary>
-        /// Backing field for <see cref="Name"/>
+        /// Gets or sets the name of the current loaded script
         /// </summary>
-        private string name;
+        string LoadedScriptName { get; set; }
 
         /// <summary>
-        /// Backing field for <see cref="Value"/>
+        /// <see cref="ReactiveCommand{T}"/> for loading a Matlab Script
         /// </summary>
-        private object value;
+        ReactiveCommand<object> LoadMatlabScriptCommand { get; set; }
 
         /// <summary>
-        /// Initializes a new <see cref="MatlabWorkspaceRowViewModel"/>
+        /// <see cref="ReactiveCommand{T}"/> for running the loaded Matlab Script
         /// </summary>
-        /// <param name="name">The name of the variable</param>
-        /// <param name="value">The value of the variable</param>
-        public MatlabWorkspaceRowViewModel(string name, object value)
-        {
-            this.Name = name;
-            this.Value = value;
-        }
-
-        /// <summary>
-        /// The name of the variable
-        /// </summary>
-        public string Name
-        {
-            get => this.name;
-            set => this.RaiseAndSetIfChanged(ref this.name, value);
-        }
-
-        /// <summary>
-        /// The value of the variable
-        /// </summary>
-        public object Value
-        {
-            get => this.value;
-            set => this.RaiseAndSetIfChanged(ref this.value, value);
-        }
+        ReactiveCommand<object> RunLoadedMatlabScriptCommand { get; set; }
     }
 }

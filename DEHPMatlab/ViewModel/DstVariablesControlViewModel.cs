@@ -1,5 +1,5 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="MatlabWorkspaceRowViewModel.cs" company="RHEA System S.A.">
+// <copyright file="DstVariablesControlViewModel.cs" company="RHEA System S.A.">
 // Copyright (c) 2020-2022 RHEA System S.A.
 // 
 // Author: Sam Gerené, Alex Vorobiev, Alexander van Delft, Nathanael Smiechowski, Antoine Théate.
@@ -22,52 +22,38 @@
 // </copyright>
 // --------------------------------------------------------------------------------------------------------------------
 
-namespace DEHPMatlab.ViewModel.Row
+namespace DEHPMatlab.ViewModel
 {
+    using DEHPMatlab.DstController;
+    using DEHPMatlab.ViewModel.Interfaces;
+    using DEHPMatlab.ViewModel.Row;
+    using DEHPMatlab.Views;
+
     using ReactiveUI;
 
     /// <summary>
-    /// The <see cref="MatlabWorkspaceRowViewModel"/> stores the value of variable from the Matlab Workspace
+    /// The view model for <see cref="DstVariablesControl"/> XAML
     /// </summary>
-    public class MatlabWorkspaceRowViewModel : ReactiveObject
+    public class DstVariablesControlViewModel : ReactiveObject, IDstVariablesControlViewModel
     {
         /// <summary>
-        /// Backing field for <see cref="Name"/>
+        /// Initializes a new <see cref="DstVariablesControlViewModel"/>
         /// </summary>
-        private string name;
-
-        /// <summary>
-        /// Backing field for <see cref="Value"/>
-        /// </summary>
-        private object value;
-
-        /// <summary>
-        /// Initializes a new <see cref="MatlabWorkspaceRowViewModel"/>
-        /// </summary>
-        /// <param name="name">The name of the variable</param>
-        /// <param name="value">The value of the variable</param>
-        public MatlabWorkspaceRowViewModel(string name, object value)
+        /// <param name="dstController">The <see cref="IDstController"/></param>
+        public DstVariablesControlViewModel(IDstController dstController)
         {
-            this.Name = name;
-            this.Value = value;
+            this.DstController = dstController;
+            this.InputVariables = this.DstController.MatlabWorkspaceInputRowViewModels;
         }
 
         /// <summary>
-        /// The name of the variable
+        /// Gets the collections of all <see cref="MatlabWorkspaceRowViewModel"/> detected as Input
         /// </summary>
-        public string Name
-        {
-            get => this.name;
-            set => this.RaiseAndSetIfChanged(ref this.name, value);
-        }
+        public ReactiveList<MatlabWorkspaceRowViewModel> InputVariables { get; }
 
         /// <summary>
-        /// The value of the variable
+        /// Gets the <see cref="IDstController"/>
         /// </summary>
-        public object Value
-        {
-            get => this.value;
-            set => this.RaiseAndSetIfChanged(ref this.value, value);
-        }
+        public IDstController DstController { get; }
     }
 }
