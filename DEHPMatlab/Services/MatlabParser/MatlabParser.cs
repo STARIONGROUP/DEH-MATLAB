@@ -152,7 +152,7 @@ namespace DEHPMatlab.Services.MatlabParser
         /// <returns>The path of the new script</returns>
         private string SaveModifiedScript(string directoryName, string newScriptContent)
         {
-            var filePath = $"{directoryName}\\f{DateTime.Now:yyyyMMddHHmmss}.m";
+            var filePath = Path.Combine(directoryName,$"f{DateTime.Now:yyyyMMddHHmmss}.m");
             File.WriteAllText(filePath, newScriptContent);
             return filePath;
         }
