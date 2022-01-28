@@ -35,6 +35,7 @@
 
   <ItemGroup>
     <PackageReference Include="DEHPCommon" Version="1.0.236" />
+    <PackageReference Include="IndexRange" Version="1.0.0" />
     <PackageReference Include="NLog" Version="4.6.8" />
     <PackageReference Include="reactiveui" Version="6.5.0" />
     <PackageReference Include="Rx-Linq" Version="2.2.5" />
@@ -43,6 +44,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Reference Include="MatlabCodeParser">
+      <HintPath>..\lib\MatlabCodeParser.dll</HintPath>
+    </Reference>
     <Reference Include="System.Web" />
   </ItemGroup>
 

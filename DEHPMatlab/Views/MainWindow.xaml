@@ -8,6 +8,7 @@
         xmlns:dxdo="http://schemas.devexpress.com/winfx/2008/xaml/docking"
         xmlns:publicationBrowser="clr-namespace:DEHPCommon.UserInterfaces.Views.PublicationBrowser;assembly=DEHPCommon"
         xmlns:objectBrowser="clr-namespace:DEHPCommon.UserInterfaces.Views.ObjectBrowser;assembly=DEHPCommon"
+        xmlns:views="clr-namespace:DEHPMatlab.Views"
         Title="DEHP Matlab Adapter" WindowState="Normal" WindowStartupLocation="CenterScreen"
         MinWidth="850" MinHeight="600" mc:Ignorable="d" Width="1500" Height="950">
     <DockPanel>
@@ -36,11 +37,14 @@
                         <dxdo:LayoutPanel Name="DstPanel" Caption="Matlab">
                             <Grid>
                                 <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"></RowDefinition>
-                                    <RowDefinition></RowDefinition>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
                                 <Button Width="150" Height="40" HorizontalAlignment="Center" Content="{Binding DstDataSourceViewModel.ConnectButtonText}" Command="{Binding DstDataSourceViewModel.ConnectCommand}" Margin="0,0,0,10"
                                         ToolTip="Connect or disconnect from a Matlab Instance"/>
+                                <views:DstBrowserHeader DataContext="{Binding DstDataSourceViewModel.DstBrowserHeader}" Grid.Row="1" Margin="0,0,0,10"/>
+                                <views:DstVariablesControl DataContext="{Binding DstDataSourceViewModel.DstVariablesControl}" Grid.Row="2"/>
                             </Grid>
                         </dxdo:LayoutPanel>
                         <dxdo:LayoutPanel Name="ImpactPanel" Caption="Impact">

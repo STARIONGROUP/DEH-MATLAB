@@ -30,13 +30,14 @@ namespace DEHPMatlab
     using System.Windows.Threading;
 
     using Autofac;
-    
+
     using DEHPCommon;
     using DEHPCommon.Services.NavigationService;
     using DEHPCommon.UserInterfaces.ViewModels.Interfaces;
 
     using DEHPMatlab.DstController;
     using DEHPMatlab.Services.MatlabConnector;
+    using DEHPMatlab.Services.MatlabParser;
     using DEHPMatlab.ViewModel;
     using DEHPMatlab.ViewModel.Interfaces;
     using DEHPMatlab.Views;
@@ -91,6 +92,8 @@ namespace DEHPMatlab
             containerBuilder.RegisterType<HubDataSourceViewModel>().As<IHubDataSourceViewModel>().SingleInstance();
             containerBuilder.RegisterType<MatlabStatusBarControlViewModel>().As<IStatusBarControlViewModel>().SingleInstance();
             containerBuilder.RegisterType<DstDataSourceViewModel>().As<IDstDataSourceViewModel>().SingleInstance();
+            containerBuilder.RegisterType<DstBrowserHeaderViewModel>().As<IDstBrowserHeaderViewModel>().SingleInstance();
+            containerBuilder.RegisterType<DstVariablesControlViewModel>().As<IDstVariablesControlViewModel>().SingleInstance();
         }
 
         /// <summary>
@@ -101,6 +104,7 @@ namespace DEHPMatlab
         {
             containerBuilder.RegisterType<MatlabConnector>().As<IMatlabConnector>().SingleInstance();
             containerBuilder.RegisterType<DstController.DstController>().As<IDstController>().SingleInstance();
+            containerBuilder.RegisterType<MatlabParser>().As<IMatlabParser>().SingleInstance();
         }
 
         /// <summary>

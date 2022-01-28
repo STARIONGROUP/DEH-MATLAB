@@ -53,18 +53,33 @@ namespace DEHPMatlab.ViewModel
         private readonly IHubController hubController;
 
         /// <summary>
+        /// Gets the <see cref="IDstBrowserHeaderViewModel"/>
+        /// </summary>
+        public IDstBrowserHeaderViewModel DstBrowserHeader { get; }
+
+        /// <summary>
+        /// Gets the <see cref="IDstVariablesControlViewModel"/>
+        /// </summary>
+        public IDstVariablesControlViewModel DstVariablesControl { get; }
+
+        /// <summary>
         /// Initialzes a new <see cref="DstDataSourceViewModel"/>
         /// </summary>
         /// <param name="navigationService">The <see cref="INavigationService"/></param>
         /// <param name="dstController">The <see cref="IDstController"/></param>
         /// <param name="hubController">The <see cref="IHubController"/></param>
         /// <param name="statusBar">The <see cref="IStatusBarControlViewModel"/></param>
+        /// <param name="dstBrowserHeader">The <see cref="IDstBrowserHeaderViewModel"/></param>
+        /// <param name="dstVariablesControl">The <see cref="IDstVariablesControlViewModel"/></param>
         public DstDataSourceViewModel(INavigationService navigationService, IDstController dstController
-            ,IHubController hubController, IStatusBarControlViewModel statusBar) : base(navigationService)
+            ,IHubController hubController, IStatusBarControlViewModel statusBar,
+            IDstBrowserHeaderViewModel dstBrowserHeader, IDstVariablesControlViewModel dstVariablesControl) : base(navigationService)
         {
             this.dstController = dstController;
             this.hubController = hubController;
+            this.DstBrowserHeader = dstBrowserHeader;
             this.StatusBar = statusBar;
+            this.DstVariablesControl = dstVariablesControl;
             this.DataSourceName = "Matlab";
             this.InitializeCommands();
         }

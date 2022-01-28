@@ -68,8 +68,8 @@ namespace DEHPMatlab.ViewModel
         /// <param name="statusBarControlViewModel">The <see cref="IStatusBarControlViewModel"/></param>
         /// <param name="dstDataSourceViewModel">The <see cref="IDstDataSourceViewModel"/></param>
         public MainWindowViewModel(INavigationService navigationService,
-            IHubDataSourceViewModel hubDataSourceViewModel, IStatusBarControlViewModel statusBarControlViewModel
-            ,IDstDataSourceViewModel dstDataSourceViewModel)
+            IHubDataSourceViewModel hubDataSourceViewModel, IStatusBarControlViewModel statusBarControlViewModel,
+            IDstDataSourceViewModel dstDataSourceViewModel)
         {
             this.navigationService = navigationService;
             this.HubDataSourceViewModel = hubDataSourceViewModel;

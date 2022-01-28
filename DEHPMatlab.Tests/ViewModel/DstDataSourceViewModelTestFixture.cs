@@ -30,6 +30,7 @@ namespace DEHPMatlab.Tests.ViewModel
 
     using DEHPMatlab.DstController;
     using DEHPMatlab.ViewModel;
+    using DEHPMatlab.ViewModel.Interfaces;
 
     using Moq;
 
@@ -43,7 +44,9 @@ namespace DEHPMatlab.Tests.ViewModel
         private Mock<IDstController> dstController;
         private Mock<IHubController> hubController;
         private Mock<IStatusBarControlViewModel> statusBar;
-        
+        private Mock<IDstBrowserHeaderViewModel> dstBrowserHeader;
+        private Mock<IDstVariablesControlViewModel> dstVariablesControl;
+
         [SetUp]
         public void Setup()
         {
@@ -51,19 +54,23 @@ namespace DEHPMatlab.Tests.ViewModel
 
             this.dstController = new Mock<IDstController>();
             this.dstController.Setup(x => x.IsSessionOpen).Returns(true);
-
+            
             this.hubController = new Mock<IHubController>();
-
             this.statusBar = new Mock<IStatusBarControlViewModel>();
+            this.dstBrowserHeader = new Mock<IDstBrowserHeaderViewModel>();
+            this.dstVariablesControl = new Mock<IDstVariablesControlViewModel>();
 
             this.viewModel = new DstDataSourceViewModel(this.navigationService.Object,
-                this.dstController.Object, this.hubController.Object, this.statusBar.Object);
+                this.dstController.Object, this.hubController.Object, this.statusBar.Object, 
+                this.dstBrowserHeader.Object, this.dstVariablesControl.Object);
         }
 
         [Test]
         public void VerifyProperties()
         {
             Assert.IsNotNull(this.viewModel.StatusBar);
+            Assert.IsNotNull(this.viewModel.DstBrowserHeader);
+            Assert.IsNotNull(this.viewModel.DstVariablesControl);
             Assert.AreEqual("Disconnect", this.viewModel.ConnectButtonText);
         }
 

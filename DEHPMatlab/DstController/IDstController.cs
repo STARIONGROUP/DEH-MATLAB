@@ -25,6 +25,9 @@
 namespace DEHPMatlab.DstController
 {
     using DEHPMatlab.Services.MatlabConnector;
+    using DEHPMatlab.ViewModel.Row;
+
+    using ReactiveUI;
 
     /// <summary>
     /// Interface defintion for <see cref="DstController"/>
@@ -37,6 +40,21 @@ namespace DEHPMatlab.DstController
         bool IsSessionOpen { get; set; }
 
         /// <summary>
+        /// The name of the current loaded Matlab script
+        /// </summary>
+        string LoadedScriptName { get; set; }
+
+        /// <summary>
+        /// Gets or sets whether a script is loaded
+        /// </summary>
+        bool IsScriptLoaded { get; set; }
+
+        /// <summary>
+        /// Gets the collection of <see cref="MatlabWorkspaceInputRowViewModels"/> detected as Input
+        /// </summary>
+        ReactiveList<MatlabWorkspaceRowViewModel> MatlabWorkspaceInputRowViewModels { get; }
+
+        /// <summary>
         /// Connects the adapter to a Matlab Instance
         /// </summary>
         void Connect();
@@ -45,5 +63,21 @@ namespace DEHPMatlab.DstController
         /// Disconnects the adapter to the Matlab Instance
         /// </summary>
         void Disconnect();
+
+        /// <summary>
+        /// Load a Matlab Script
+        /// </summary>
+        /// <param name="scriptPath">The path of the script to load</param>
+        void LoadScript(string scriptPath);
+
+        /// <summary>
+        /// Unload the Matlab Script
+        /// </summary>
+        void UnloadScript();
+
+        /// <summary>
+        /// Runs the currently loaded Matlab Script
+        /// </summary>
+        void RunMatlabScript();
     }
 }

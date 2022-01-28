@@ -28,6 +28,8 @@ namespace DEHPMatlab.Tests.DstController
 
     using DEHPMatlab.DstController;
     using DEHPMatlab.Services.MatlabConnector;
+    using DEHPMatlab.Services.MatlabParser;
+    using DEHPMatlab.ViewModel.Row;
 
     using Moq;
 
@@ -40,19 +42,24 @@ namespace DEHPMatlab.Tests.DstController
     {
         private DstController dstController;
         private Mock<IMatlabConnector> matlabConnector;
+        private IMatlabParser matlabParser;
 
         [SetUp]
         public void Setup()
         {
             RxApp.MainThreadScheduler = Scheduler.CurrentThread;
             this.matlabConnector = new Mock<IMatlabConnector>();
-            this.dstController = new DstController(this.matlabConnector.Object);
+            this.matlabConnector.Setup(x => x.ExecuteFunction(It.IsAny<string>())).Returns("");
+            this.matlabConnector.Setup(x => x.PutVariable(It.IsAny<MatlabWorkspaceRowViewModel>()));
+            this.matlabParser = new MatlabParser();
+            this.dstController = new DstController(this.matlabConnector.Object, this.matlabParser);
         }
 
         [Test]
         public void VerifyProperties()
         {
             Assert.IsFalse(this.dstController.IsSessionOpen);
+            Assert.IsNotNull(this.dstController.MatlabWorkspaceInputRowViewModels);
         }
 
         [Test]
@@ -67,6 +74,27 @@ namespace DEHPMatlab.Tests.DstController
         {
             Assert.DoesNotThrow(()=> this.dstController.Disconnect());
             this.matlabConnector.Verify(x => x.Disconnect(), Times.Once);
+        }
+
+        [Test]
+        public void VerifyLoadAndRunScript()
+        {
+            this.dstController.IsSessionOpen = true;
+            this.dstController.LoadScript("a");
+            Assert.IsFalse(this.dstController.IsScriptLoaded);
+            this.dstController.LoadScript("Resources/GNC_Lab4.m");
+            Assert.IsTrue(this.dstController.IsScriptLoaded);
+            Assert.AreEqual(this.dstController.MatlabWorkspaceInputRowViewModels.Count, 6);
+
+            this.dstController.RunMatlabScript();
+            this.dstController.MatlabWorkspaceInputRowViewModels[1].Value = 0;
+            this.matlabConnector.Verify(x=>x.ExecuteFunction(It.IsAny<string>()), Times.Once);
+
+            this.matlabConnector.Verify(x=>x.PutVariable(It.IsAny<MatlabWorkspaceRowViewModel>()), 
+                Times.Exactly(7));
+
+            Assert.DoesNotThrow(() => this.dstController.UnloadScript());
+            Assert.IsTrue(string.IsNullOrEmpty(this.dstController.LoadedScriptName));
         }
     }
 }
