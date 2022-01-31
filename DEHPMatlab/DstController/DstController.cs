@@ -171,7 +171,7 @@ namespace DEHPMatlab.DstController
                 this.IsBusy = true;
                 var sender = matlabWorkspaceRowViewModel.Sender;
 
-                if (sender.Value is double && double.TryParse(sender.Value.ToString(), out var valueAsDouble))
+                if (sender.Value is not double && double.TryParse(sender.Value.ToString(), out var valueAsDouble))
                 {
                     sender.Value = valueAsDouble;
                 }
