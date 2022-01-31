@@ -26,6 +26,9 @@ namespace DEHPMatlab.Tests.DstController
 {
     using System.Reactive.Concurrency;
 
+    using DEHPCommon.Enumerators;
+    using DEHPCommon.UserInterfaces.ViewModels.Interfaces;
+
     using DEHPMatlab.DstController;
     using DEHPMatlab.Services.MatlabConnector;
     using DEHPMatlab.Services.MatlabParser;
@@ -42,6 +45,7 @@ namespace DEHPMatlab.Tests.DstController
     {
         private DstController dstController;
         private Mock<IMatlabConnector> matlabConnector;
+        private Mock<IStatusBarControlViewModel> statusBar;
         private IMatlabParser matlabParser;
 
         [SetUp]
@@ -49,30 +53,39 @@ namespace DEHPMatlab.Tests.DstController
         {
             RxApp.MainThreadScheduler = Scheduler.CurrentThread;
             this.matlabConnector = new Mock<IMatlabConnector>();
-            this.matlabConnector.Setup(x => x.ExecuteFunction(It.IsAny<string>())).Returns("");
+            this.matlabConnector.Setup(x => x.ExecuteFunction(It.IsAny<string>())).ReturnsAsync("");
+            var variables = new object[1, 1];
+            variables[0, 0] = "a";
+ 
+            this.matlabConnector.Setup(x => x.GetVariable(It.IsAny<string>()))
+                .ReturnsAsync(new MatlabWorkspaceRowViewModel("a", variables));
+
             this.matlabConnector.Setup(x => x.PutVariable(It.IsAny<MatlabWorkspaceRowViewModel>()));
+            this.statusBar = new Mock<IStatusBarControlViewModel>();
+            this.statusBar.Setup(x => x.Append(It.IsAny<string>(), It.IsAny<StatusBarMessageSeverity>()));
             this.matlabParser = new MatlabParser();
-            this.dstController = new DstController(this.matlabConnector.Object, this.matlabParser);
+            this.dstController = new DstController(this.matlabConnector.Object, this.matlabParser, this.statusBar.Object);
         }
 
         [Test]
         public void VerifyProperties()
         {
             Assert.IsFalse(this.dstController.IsSessionOpen);
+            Assert.IsFalse(this.dstController.IsBusy);
             Assert.IsNotNull(this.dstController.MatlabWorkspaceInputRowViewModels);
         }
 
         [Test]
         public void VerifyConnect()
         {
-            Assert.DoesNotThrow(() =>this.dstController.Connect());
+            Assert.DoesNotThrowAsync(() =>this.dstController.Connect("Matlab.Autoserver"));
             this.matlabConnector.Verify(x => x.Connect("Matlab.Autoserver"), Times.Once);
         }
 
         [Test]
         public void VerifyDisconnect()
         {
-            Assert.DoesNotThrow(()=> this.dstController.Disconnect());
+            Assert.DoesNotThrowAsync(()=> this.dstController.Disconnect());
             this.matlabConnector.Verify(x => x.Disconnect(), Times.Once);
         }
 
@@ -86,12 +99,13 @@ namespace DEHPMatlab.Tests.DstController
             Assert.IsTrue(this.dstController.IsScriptLoaded);
             Assert.AreEqual(this.dstController.MatlabWorkspaceInputRowViewModels.Count, 6);
 
-            this.dstController.RunMatlabScript();
+            Assert.DoesNotThrowAsync(()=>this.dstController.RunMatlabScript());
+            this.dstController.MatlabAllWorkspaceRowViewModels.Add(this.dstController.MatlabWorkspaceInputRowViewModels[1]);
             this.dstController.MatlabWorkspaceInputRowViewModels[1].Value = 0;
-            this.matlabConnector.Verify(x=>x.ExecuteFunction(It.IsAny<string>()), Times.Once);
+            this.matlabConnector.Verify(x=>x.ExecuteFunction(It.IsAny<string>()), Times.Exactly(3));
 
             this.matlabConnector.Verify(x=>x.PutVariable(It.IsAny<MatlabWorkspaceRowViewModel>()), 
-                Times.Exactly(7));
+                Times.Exactly(8));
 
             Assert.DoesNotThrow(() => this.dstController.UnloadScript());
             Assert.IsTrue(string.IsNullOrEmpty(this.dstController.LoadedScriptName));

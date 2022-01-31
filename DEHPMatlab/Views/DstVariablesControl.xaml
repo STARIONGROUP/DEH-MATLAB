@@ -4,40 +4,75 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:dxg="http://schemas.devexpress.com/winfx/2008/xaml/grid"
+             xmlns:dx="http://schemas.devexpress.com/winfx/2008/xaml/core"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800" >
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
-        <TextBlock Grid.Row="0" FontSize="12" FontWeight="Black" Text="Inputs"/>
-        <dxg:TreeListControl Grid.Row="1" ItemsSource="{Binding InputVariables}">
-            <dxg:TreeListControl.View>
-                <dxg:TreeListView Name="InputVariable"
-                                  AllowEditing="False"
-                                  MaxHeight="150"
-                                  AutoWidth="False"
-                                  EditorShowMode="MouseUpFocused"
-                                  ExpandCollapseNodesOnNavigation="True"
-                                  ExpandStateFieldName="IsExpanded"
-                                  FixedLineWidth="0"
-                                  HorizontalScrollbarVisibility="Auto"
-                                  NavigationStyle="Cell"
-                                  ShowHorizontalLines="False"
-                                  ShowIndicator="False"
-                                  ShowNodeImages="False"
-                                  ShowVerticalLines="False"
-                                  TreeDerivationMode="Selfreference"
-                                  TreeLineStyle="Solid"
-                                  VerticalScrollbarVisibility="Auto">
-                </dxg:TreeListView>
-            </dxg:TreeListControl.View>
-            <dxg:TreeListControl.Columns>
-                <dxg:TreeListColumn FieldName="Name" Fixed="Left" AllowEditing="False"/>
-                <dxg:TreeListColumn FieldName="Value" AllowEditing="True"/>
-            </dxg:TreeListControl.Columns>
-        </dxg:TreeListControl>
-    </Grid>
+    <dx:LoadingDecorator BorderEffect="Default" BorderEffectColor="Blue" IsSplashScreenShown="{Binding IsBusy}" OwnerLock="LoadingContent">
+
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="150"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <TextBlock Grid.Row="0" FontSize="12" FontWeight="Black" Text="Inputs" Margin="4"/>
+            <dxg:TreeListControl Grid.Row="1" ItemsSource="{Binding InputVariables}">
+                <dxg:TreeListControl.View>
+                    <dxg:TreeListView Name="InputVariable"
+                                      AllowEditing="False"
+                                      Height="150"
+                                      AutoWidth="False"
+                                      EditorShowMode="MouseUpFocused"
+                                      ExpandCollapseNodesOnNavigation="True"
+                                      ExpandStateFieldName="IsExpanded"
+                                      FixedLineWidth="0"
+                                      HorizontalScrollbarVisibility="Auto"
+                                      NavigationStyle="Cell"
+                                      ShowHorizontalLines="False"
+                                      ShowIndicator="False"
+                                      ShowNodeImages="False"
+                                      ShowVerticalLines="False"
+                                      TreeDerivationMode="Selfreference"
+                                      TreeLineStyle="Solid"
+                                      VerticalScrollbarVisibility="Auto"
+                                      ToolTip="Input variables detected inside the script. Those variables are editable">
+                    </dxg:TreeListView>
+                </dxg:TreeListControl.View>
+                <dxg:TreeListControl.Columns>
+                    <dxg:TreeListColumn FieldName="Name" Fixed="Left" AllowEditing="False"/>
+                    <dxg:TreeListColumn FieldName="Value" AllowEditing="True"/>
+                </dxg:TreeListControl.Columns>
+            </dxg:TreeListControl>
+            <TextBlock Grid.Row="2" FontSize="12" FontWeight="Black" Text="Workspace" Margin="4"/>
+            <dxg:TreeListControl Grid.Row="3" ItemsSource="{Binding WorkspaceVariables}">
+                <dxg:TreeListControl.View>
+                    <dxg:TreeListView Name="WorkspaceVariables"
+                                      AllowEditing="False"
+                                      AutoWidth="False"
+                                      EditorShowMode="MouseUpFocused"
+                                      ExpandCollapseNodesOnNavigation="True"
+                                      ExpandStateFieldName="IsExpanded"
+                                      FixedLineWidth="0"
+                                      HorizontalScrollbarVisibility="Auto"
+                                      NavigationStyle="Cell"
+                                      ShowHorizontalLines="False"
+                                      ShowIndicator="False"
+                                      ShowNodeImages="False"
+                                      ShowVerticalLines="False"
+                                      TreeDerivationMode="Selfreference"
+                                      TreeLineStyle="Solid"
+                                      VerticalScrollbarVisibility="Auto"
+                                      KeyFieldName="Name"
+                                      ParentFieldName="ParentName"
+                                      ToolTip="All variables inside the Matlab Workspace">
+                    </dxg:TreeListView>
+                </dxg:TreeListControl.View>
+                <dxg:TreeListControl.Columns>
+                    <dxg:TreeListColumn FieldName="Name" Fixed="Left" AllowEditing="False"/>
+                    <dxg:TreeListColumn FieldName="Value" AllowEditing="False"/>
+                </dxg:TreeListControl.Columns>
+            </dxg:TreeListControl>
+        </Grid>
+    </dx:LoadingDecorator>
 </UserControl>

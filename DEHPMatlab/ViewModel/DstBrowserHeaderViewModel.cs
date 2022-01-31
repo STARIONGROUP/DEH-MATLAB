@@ -25,7 +25,9 @@
 namespace DEHPMatlab.ViewModel
 {
     using System;
+    using System.Reactive;
     using System.Reactive.Linq;
+    using System.Threading.Tasks;
 
     using DEHPCommon.Services.FileDialogService;
 
@@ -56,29 +58,46 @@ namespace DEHPMatlab.ViewModel
         private readonly IOpenSaveFileDialogService openSaveFileDialogService;
 
         /// <summary>
+        /// The <see cref="IDstVariablesControlViewModel"/>
+        /// </summary>
+        private readonly IDstVariablesControlViewModel dstVariablesControl;
+
+        /// <summary>
         /// Initializes a new <see cref="DstBrowserHeaderViewModel"/>
         /// </summary>
         /// <param name="dstController">The <see cref="IDstController"/></param>
         /// <param name="openSaveFileDialogService">The <see cref="IOpenSaveFileDialogService"/></param>
-        public DstBrowserHeaderViewModel(IDstController dstController,IOpenSaveFileDialogService openSaveFileDialogService)
+        /// <param name="dstVariablesControl">The <see cref="IDstVariablesControlViewModel"/></param>
+        public DstBrowserHeaderViewModel(IDstController dstController, IOpenSaveFileDialogService openSaveFileDialogService,
+            IDstVariablesControlViewModel dstVariablesControl)
         {
             this.dstController = dstController;
             this.openSaveFileDialogService = openSaveFileDialogService;
+            this.dstVariablesControl = dstVariablesControl;
+            this.InitializesObservables();
+        }
 
+        /// <summary>
+        /// Initializes all observables of the view model
+        /// </summary>
+        private void InitializesObservables()
+        {
             this.WhenAnyValue(x => x.dstController.IsSessionOpen,
-                    x=> x.dstController.LoadedScriptName)
+                    x => x.dstController.LoadedScriptName)
                 .ObserveOn(RxApp.MainThreadScheduler)
                 .Subscribe(_ => this.UpdateProperties());
 
             this.LoadMatlabScriptCommand = ReactiveCommand.Create(
-                this.WhenAnyValue(x => x.dstController.IsSessionOpen));
-            
+                this.WhenAny(x => x.dstController.IsSessionOpen, x => x.dstVariablesControl.IsBusy,(s,b) 
+                        => s.Value && !b.Value)
+                    .ObserveOn(RxApp.MainThreadScheduler));
+
             this.LoadMatlabScriptCommand.Subscribe(_ => this.LoadMatlabScript());
 
-            this.RunLoadedMatlabScriptCommand = ReactiveCommand.Create(
-                this.WhenAnyValue(x => x.dstController.IsScriptLoaded));
-
-            this.RunLoadedMatlabScriptCommand.Subscribe(_ => this.RunMatlabScript());
+            this.RunLoadedMatlabScriptCommand = ReactiveCommand.CreateAsyncTask(
+                this.WhenAny(x => x.dstController.IsScriptLoaded, x =>
+                    x.dstVariablesControl.IsBusy, (s, b) => s.Value && !b.Value)
+                    .ObserveOn(RxApp.MainThreadScheduler),async _ => await this.RunMatlabScript(), RxApp.MainThreadScheduler);
         }
 
         /// <summary>
@@ -98,7 +117,7 @@ namespace DEHPMatlab.ViewModel
         /// <summary>
         /// <see cref="ReactiveCommand{T}"/> for running the loaded Matlab Script
         /// </summary>
-        public ReactiveCommand<object> RunLoadedMatlabScriptCommand { get; set; }
+        public ReactiveCommand<Unit> RunLoadedMatlabScriptCommand { get; set; }
 
         /// <summary>
         /// Updates the view model's properties
@@ -118,16 +137,19 @@ namespace DEHPMatlab.ViewModel
 
             if (selectedScript != null && selectedScript.Length > 0)
             {
-                this.dstController.LoadScript(selectedScript[0]);
+                 this.dstController.LoadScript(selectedScript[0]);
             }
         }
 
         /// <summary>
         /// Runs the currently loaded Matlab Script
         /// </summary>
-        public void RunMatlabScript()
+        /// <returns>The <see cref="Task"/></returns>
+        public async Task RunMatlabScript()
         {
-            this.dstController.RunMatlabScript();
+            this.dstVariablesControl.IsBusy = true;
+            await this.dstController.RunMatlabScript();
+            this.dstVariablesControl.IsBusy = false;
         }
     }
 }

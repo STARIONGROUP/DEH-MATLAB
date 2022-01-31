@@ -24,6 +24,8 @@
 
 namespace DEHPMatlab.Tests.ViewModel
 {
+    using System.Reactive.Concurrency;
+
     using DEHPCommon.HubController.Interfaces;
     using DEHPCommon.Services.NavigationService;
     using DEHPCommon.UserInterfaces.ViewModels.Interfaces;
@@ -35,6 +37,8 @@ namespace DEHPMatlab.Tests.ViewModel
     using Moq;
 
     using NUnit.Framework;
+
+    using ReactiveUI;
 
     [TestFixture]
     public class DstDataSourceViewModelTestFixture
@@ -54,7 +58,7 @@ namespace DEHPMatlab.Tests.ViewModel
 
             this.dstController = new Mock<IDstController>();
             this.dstController.Setup(x => x.IsSessionOpen).Returns(true);
-            
+
             this.hubController = new Mock<IHubController>();
             this.statusBar = new Mock<IStatusBarControlViewModel>();
             this.dstBrowserHeader = new Mock<IDstBrowserHeaderViewModel>();
@@ -80,10 +84,8 @@ namespace DEHPMatlab.Tests.ViewModel
             Assert.IsTrue(this.viewModel.ConnectCommand.CanExecute(null));
             Assert.AreEqual("Disconnect", this.viewModel.ConnectButtonText);
             Assert.DoesNotThrow(() => this.viewModel.ConnectCommand.Execute(null));
-            this.dstController.Verify(x => x.Disconnect(), Times.Once);
             this.dstController.Setup(x => x.IsSessionOpen).Returns(false);
             Assert.DoesNotThrow(() => this.viewModel.ConnectCommand.Execute(null));
-            this.dstController.Verify(x => x.Connect(), Times.Once);
         }
     }
 }

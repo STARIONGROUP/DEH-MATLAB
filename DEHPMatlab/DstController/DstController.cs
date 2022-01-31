@@ -27,7 +27,12 @@ namespace DEHPMatlab.DstController
     using DEHPMatlab.Services.MatlabConnector;
 
     using System;
+    using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
+    using System.Threading.Tasks;
+
+    using DEHPCommon.UserInterfaces.ViewModels.Interfaces;
 
     using DEHPMatlab.Enumerator;
     using DEHPMatlab.Services.MatlabParser;
@@ -41,14 +46,14 @@ namespace DEHPMatlab.DstController
     public class DstController : ReactiveObject, IDstController
     {
         /// <summary>
-        /// The name of the COM Interop
-        /// </summary>
-        private const string ComInteropName = "Matlab.Autoserver";
-
-        /// <summary>
         /// The <see cref="IMatlabConnector"/> that handles the Matlab connection
         /// </summary>
         private readonly IMatlabConnector matlabConnector;
+
+        /// <summary>
+        /// The <see cref="IStatusBarControlViewModel"/>
+        /// </summary>
+        private readonly IStatusBarControlViewModel statusBar;
 
         /// <summary>
         /// The <see cref="IMatlabParser"/> that handles the parsing behaviour
@@ -71,6 +76,11 @@ namespace DEHPMatlab.DstController
         private bool isScriptLoaded;
 
         /// <summary>
+        /// Backing field for <see cref="IsBusy"/>
+        /// </summary>
+        private bool isBusy;
+
+        /// <summary>
         /// The path of the script to run
         /// </summary>
         private string loadedScriptPath;
@@ -80,11 +90,22 @@ namespace DEHPMatlab.DstController
         /// </summary>
         /// <param name="matlabConnector">The <see cref="IMatlabConnector"/></param>
         /// <param name="matlabParser">The <see cref="IMatlabParser"/></param>
-        public DstController(IMatlabConnector matlabConnector, IMatlabParser matlabParser)
+        /// <param name="statusBar">The <see cref="IStatusBarControlViewModel"/></param>
+        public DstController(IMatlabConnector matlabConnector, IMatlabParser matlabParser, IStatusBarControlViewModel statusBar)
         {
             this.matlabConnector = matlabConnector;
             this.matlabParser = matlabParser;
+            this.statusBar = statusBar;
             this.InitializeObservables();
+        }
+
+        /// <summary>
+        /// Destructor of the <see cref="DstController"/>.
+        /// Handles the destruction of the loaded script.
+        /// </summary>
+        ~DstController()
+        {
+            this.UnloadScript();
         }
 
         /// <summary>
@@ -115,10 +136,24 @@ namespace DEHPMatlab.DstController
         }
 
         /// <summary>
+        /// Gets or sets whether this <see cref="IDstController"/> is busy
+        /// </summary>
+        public bool IsBusy
+        {
+            get => this.isBusy;
+            set => this.RaiseAndSetIfChanged(ref this.isBusy, value);
+        }
+
+        /// <summary>
         /// Gets the collection of <see cref="MatlabWorkspaceInputRowViewModels"/> detected as inputs
         /// </summary>
         public ReactiveList<MatlabWorkspaceRowViewModel> MatlabWorkspaceInputRowViewModels { get; }
             = new ReactiveList<MatlabWorkspaceRowViewModel>() { ChangeTrackingEnabled = true };
+
+        /// <summary>
+        /// Gets the collections of all <see cref="MatlabWorkspaceRowViewModel"/> included in the Matlab Workspace
+        /// </summary>
+        public ReactiveList<MatlabWorkspaceRowViewModel> MatlabAllWorkspaceRowViewModels { get; } = new ReactiveList<MatlabWorkspaceRowViewModel>();
 
         /// <summary>
         /// Initializes all <see cref="DstController"/> observables
@@ -140,7 +175,26 @@ namespace DEHPMatlab.DstController
         /// <param name="matlabWorkspaceRowViewModel">The <see cref="IReactivePropertyChangedEventArgs{TSender}"/></param>
         private void UpdateVariable(IReactivePropertyChangedEventArgs<MatlabWorkspaceRowViewModel> matlabWorkspaceRowViewModel)
         {
-            this.matlabConnector.PutVariable(matlabWorkspaceRowViewModel.Sender);
+            if (this.IsSessionOpen)
+            {
+                this.IsBusy = true;
+                var sender = matlabWorkspaceRowViewModel.Sender;
+
+                if (sender.Value.GetType() != typeof(double) && double.TryParse(sender.Value.ToString(), out var valueAsDouble))
+                {
+                    sender.Value = valueAsDouble;
+                }
+
+                this.matlabConnector.PutVariable(sender);
+                var inWorkspaceVariable = this.MatlabAllWorkspaceRowViewModels.FirstOrDefault(x => x.Name == sender.Name);
+
+                if (inWorkspaceVariable != null)
+                {
+                    inWorkspaceVariable.Value = sender.Value;
+                }
+
+                this.IsBusy = false;
+            }
         }
 
         /// <summary>
@@ -154,19 +208,23 @@ namespace DEHPMatlab.DstController
         /// <summary>
         /// Connects to the Matlab Instance
         /// </summary>
-        public void Connect()
+        /// <param name="matlabVersion">The wanted version of Matlab to launch</param>
+        /// <returns>The <see cref="Task"/></returns>
+        public async Task Connect(string matlabVersion)
         {
-            this.matlabConnector.Connect(ComInteropName);
+            await this.matlabConnector.Connect(matlabVersion);
+            this.MatlabWorkspaceInputRowViewModels.Clear();
+            await this.LoadMatlabWorkspace();
         }
 
         /// <summary>
         /// Closes the Matlab Instance connection
         /// </summary>
-        public void Disconnect()
+        /// <returns>The <see cref="Task"/></returns>
+        public async Task Disconnect()
         {
-            this.matlabConnector.Disconnect();
+            await this.matlabConnector.Disconnect();
             this.UnloadScript();
-            this.MatlabWorkspaceInputRowViewModels.Clear();
         }
 
         /// <summary>
@@ -176,8 +234,9 @@ namespace DEHPMatlab.DstController
         public void LoadScript(string scriptPath)
         {
             this.UnloadScript();
+            this.MatlabWorkspaceInputRowViewModels.Clear();
 
-            var detectedInputs = this.matlabParser.ParseMatlabScript(scriptPath, 
+            List<MatlabWorkspaceRowViewModel> detectedInputs = this.matlabParser.ParseMatlabScript(scriptPath, 
                 out this.loadedScriptPath);
 
             if (!string.IsNullOrEmpty(this.loadedScriptPath))
@@ -193,22 +252,26 @@ namespace DEHPMatlab.DstController
         /// </summary>
         public void UnloadScript()
         {
-            if (this.isScriptLoaded)
+            if (this.IsScriptLoaded)
             {
-                File.Delete(this.loadedScriptPath);
+                if (File.Exists(this.loadedScriptPath))
+                {
+                    File.Delete(this.loadedScriptPath);
+                }
             }
 
             this.LoadedScriptName = string.Empty;
             this.IsScriptLoaded = false;
-            this.MatlabWorkspaceInputRowViewModels.Clear();
         }
 
         /// <summary>
         /// Runs the currently loaded Matlab script
         /// </summary>
-        public void RunMatlabScript()
+        /// <returns>The <see cref="Task"/></returns>
+        public async Task RunMatlabScript()
         {
-            this.matlabConnector.ExecuteFunction(functionName: $"run('{this.loadedScriptPath}')");
+            this.statusBar.Append(await this.matlabConnector.ExecuteFunction(functionName: $"run('{this.loadedScriptPath}')"));
+            await this.LoadMatlabWorkspace();
         }
 
         /// <summary>
@@ -216,12 +279,47 @@ namespace DEHPMatlab.DstController
         /// </summary>
         public void UploadMatlabInputs()
         {
+            this.IsBusy = true;
+
+            foreach (var matlabWorkspaceInputRowViewModel in this.MatlabWorkspaceInputRowViewModels)
+            {
+                if (this.IsSessionOpen)
+                {
+                    Task.Run(() => this.matlabConnector.PutVariable(matlabWorkspaceInputRowViewModel));
+                }
+            }
+
+            this.IsBusy = false;
+        }
+
+        /// <summary>
+        /// Load all variables include in the Matlab Workspace
+        /// </summary>
+        /// <returns>The <see cref="Task"/></returns>
+        public async Task LoadMatlabWorkspace()
+        {
             if (this.IsSessionOpen)
             {
-                foreach (var matlabWorkspaceInputRowViewModel in this.MatlabWorkspaceInputRowViewModels)
+                this.MatlabAllWorkspaceRowViewModels.Clear();
+                var uniqueVariable = $"uv{DateTime.Now:yyyyMMddHHmmss}";
+                await this.matlabConnector.ExecuteFunction($"{uniqueVariable} = who");
+                List<MatlabWorkspaceRowViewModel> variables = new List<MatlabWorkspaceRowViewModel>();
+                var workspaceVariable = await this.matlabConnector.GetVariable(uniqueVariable);
+
+                if (workspaceVariable.Value.GetType() == typeof(object[,]))
                 {
-                    this.matlabConnector.PutVariable(matlabWorkspaceInputRowViewModel);
+                    if (workspaceVariable.Value is object[,] allVariables)
+                    {
+                        foreach (var variable in allVariables)
+                        {
+                            var matlabVariable = await this.matlabConnector.GetVariable(variable.ToString());
+                            variables.AddRange(matlabVariable.UnwrapVariableRowViewModels());
+                        }
+                    }
                 }
+
+                this.MatlabAllWorkspaceRowViewModels.AddRange(variables);
+                await this.matlabConnector.ExecuteFunction($"clear {uniqueVariable}");
             }
         }
     }

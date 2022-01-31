@@ -24,6 +24,9 @@
 
 namespace DEHPMatlab.ViewModel.Row
 {
+    using System;
+    using System.Collections.Generic;
+
     using ReactiveUI;
 
     /// <summary>
@@ -40,6 +43,11 @@ namespace DEHPMatlab.ViewModel.Row
         /// Backing field for <see cref="Value"/>
         /// </summary>
         private object value;
+
+        /// <summary>
+        /// Backing field for <see cref="ParentName"/>
+        /// </summary>
+        private string parentName;
 
         /// <summary>
         /// Initializes a new <see cref="MatlabWorkspaceRowViewModel"/>
@@ -68,6 +76,47 @@ namespace DEHPMatlab.ViewModel.Row
         {
             get => this.value;
             set => this.RaiseAndSetIfChanged(ref this.value, value);
+        }
+
+        /// <summary>
+        /// The name of the parent of the <see cref="MatlabWorkspaceRowViewModel"/> (used in case of Array)
+        /// </summary>
+        public string ParentName
+        {
+            get => this.parentName;
+            set => this.RaiseAndSetIfChanged(ref this.parentName, value);
+        }
+
+        /// <summary>
+        /// If the <see cref="Value"/> is an Array, unwraps all neested <see cref="MatlabWorkspaceRowViewModel"/>
+        /// </summary>
+        /// <returns>A list of all nested <see cref="MatlabWorkspaceRowViewModel"/> including itself</returns>
+        public List<MatlabWorkspaceRowViewModel> UnwrapVariableRowViewModels()
+        {
+            List<MatlabWorkspaceRowViewModel> unwrappedArray = new List<MatlabWorkspaceRowViewModel>() { this };
+
+            if (this.Value != null && this.Value.GetType().IsArray)
+            {
+                var array = (Array)this.Value;
+
+                for (var i = 0; i < array.GetLength(0); i++)
+                {
+                    for (var j = 0; j < array.GetLength(1); j++)
+                    {
+                        var variable =
+                            new MatlabWorkspaceRowViewModel($"{this.Name}[{i},{j}]", array.GetValue(i, j))
+                            {
+                                ParentName = this.Name
+                            };
+
+                        unwrappedArray.AddRange(variable.UnwrapVariableRowViewModels());
+                    }
+                }
+
+                this.Value = null;
+            }
+
+            return unwrappedArray;
         }
     }
 }

@@ -1,5 +1,5 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="DstVariablesControlViewModelTestFixture.cs" company="RHEA System S.A.">
+// <copyright file="DstConnectTestFixture.cs" company="RHEA System S.A.">
 // Copyright (c) 2020-2022 RHEA System S.A.
 // 
 // Author: Sam Gerené, Alex Vorobiev, Alexander van Delft, Nathanael Smiechowski, Antoine Théate.
@@ -22,50 +22,54 @@
 // </copyright>
 // --------------------------------------------------------------------------------------------------------------------
 
-namespace DEHPMatlab.Tests.ViewModel
+namespace DEHPMatlab.Tests.ViewModel.Dialogs
 {
+    using DEHPCommon.UserInterfaces.Behaviors;
+
     using DEHPMatlab.DstController;
-    using DEHPMatlab.ViewModel;
-    using DEHPMatlab.ViewModel.Row;
+    using DEHPMatlab.ViewModel.Dialogs;
 
     using Moq;
 
     using NUnit.Framework;
 
-    using ReactiveUI;
-
     [TestFixture]
-    public class DstVariablesControlViewModelTestFixture
+    public class DstConnectTestFixture
     {
-        private DstVariablesControlViewModel viewModel;
+        private DstConnectViewModel viewModel;
         private Mock<IDstController> dstController;
 
         [SetUp]
         public void Setup()
         {
             this.dstController = new Mock<IDstController>();
-            
-            this.dstController.Setup(x => x.MatlabWorkspaceInputRowViewModels).Returns(
-                new ReactiveList<MatlabWorkspaceRowViewModel>()
-                {
-                    new MatlabWorkspaceRowViewModel("a",5)
-                });
-            this.dstController.Setup(x => x.MatlabAllWorkspaceRowViewModels).Returns(
-                new ReactiveList<MatlabWorkspaceRowViewModel>()
-                {
-                    new MatlabWorkspaceRowViewModel("b", 0)
-                });
 
-            this.viewModel = new DstVariablesControlViewModel(this.dstController.Object);
+            this.viewModel = new DstConnectViewModel(this.dstController.Object);
         }
 
         [Test]
         public void VerifyProperties()
         {
-            Assert.AreEqual(this.dstController.Object.MatlabWorkspaceInputRowViewModels.Count, this.viewModel.InputVariables.Count);
-            Assert.AreEqual(this.dstController.Object.MatlabWorkspaceInputRowViewModels[0], this.viewModel.InputVariables[0]);
+            Assert.IsNull(this.viewModel.CloseWindowBehavior);
+            this.viewModel.CloseWindowBehavior = new Mock<ICloseWindowBehavior>().Object;
+            Assert.IsNotNull(this.viewModel.CloseWindowBehavior);
+            Assert.IsNotNull(this.viewModel.MatlabVersionDictionary);
+            Assert.IsNotNull(this.viewModel.ConnectCommand);
             Assert.IsFalse(this.viewModel.IsBusy);
-            Assert.AreEqual(this.viewModel.WorkspaceVariables.Count, 1);
+            Assert.AreEqual(this.viewModel.SelectedMatlabVersion.Key, "latest");
+            Assert.IsTrue(string.IsNullOrEmpty(this.viewModel.ErrorMessageText));
+        }
+
+        [Test]
+        public void VerifyConnection()
+        {
+            this.dstController.Setup(x => x.Connect(It.IsAny<string>()));
+            this.dstController.Setup(x => x.IsSessionOpen).Returns(false);
+            Assert.DoesNotThrowAsync(async () => await this.viewModel.ConnectCommand.ExecuteAsyncTask(null));
+            Assert.IsFalse(string.IsNullOrEmpty(this.viewModel.ErrorMessageText));
+            this.dstController.Setup(x => x.IsSessionOpen).Returns(true);
+            Assert.DoesNotThrowAsync(async () => await this.viewModel.ConnectCommand.ExecuteAsyncTask(null));
+            this.dstController.Verify(x => x.Connect("Matlab.Application"), Times.Exactly(2));
         }
     }
 }

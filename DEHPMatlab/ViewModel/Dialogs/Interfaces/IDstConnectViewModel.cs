@@ -1,5 +1,5 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="IDstBrowserHeaderViewModel.cs" company="RHEA System S.A.">
+// <copyright file="IDstConnectViewModel.cs" company="RHEA System S.A.">
 // Copyright (c) 2020-2022 RHEA System S.A.
 // 
 // Author: Sam Gerené, Alex Vorobiev, Alexander van Delft, Nathanael Smiechowski, Antoine Théate.
@@ -22,30 +22,48 @@
 // </copyright>
 // --------------------------------------------------------------------------------------------------------------------
 
-namespace DEHPMatlab.ViewModel.Interfaces
+namespace DEHPMatlab.ViewModel.Dialogs.Interfaces
 {
+    using System.Collections.Generic;
     using System.Reactive;
+
+    using DEHPCommon.UserInterfaces.Behaviors;
 
     using ReactiveUI;
 
     /// <summary>
-    /// Interface definition for <see cref="DstBrowserHeaderViewModel"/>
+    /// Interface definition for <see cref="DstConnectViewModel"/>
     /// </summary>
-    public interface IDstBrowserHeaderViewModel
+    public interface IDstConnectViewModel
     {
         /// <summary>
-        /// Gets or sets the name of the current loaded script
+        /// Gets or sets whether this view model is busy or not
         /// </summary>
-        string LoadedScriptName { get; set; }
+        bool IsBusy { get; set; }
 
         /// <summary>
-        /// <see cref="ReactiveCommand{T}"/> for loading a Matlab Script
+        /// The currently selected MatlabVersion
         /// </summary>
-        ReactiveCommand<object> LoadMatlabScriptCommand { get; set; }
+        KeyValuePair<string,string> SelectedMatlabVersion { get; set; }
 
         /// <summary>
-        /// <see cref="ReactiveCommand{T}"/> for running the loaded Matlab Script
+        /// Display this message if we cannot connect to the selected MatlabVersion
         /// </summary>
-        ReactiveCommand<Unit> RunLoadedMatlabScriptCommand { get; set; }
+        string ErrorMessageText { get; set; }
+
+        /// <summary>
+        /// The <see cref="Dictionary{TKey,TValue}"/> containing all Matlab Version
+        /// </summary>
+        Dictionary<string, string> MatlabVersionDictionary { get; }
+
+        /// <summary>
+        /// The <see cref="ReactiveCommand"/> for initialize the connection to Matlab
+        /// </summary>
+        ReactiveCommand<Unit> ConnectCommand { get; }
+
+        /// <summary>
+        /// Gets or sets the <see cref="ICloseWindowBehavior"/> instance
+        /// </summary>
+        ICloseWindowBehavior CloseWindowBehavior { get; set; }
     }
 }

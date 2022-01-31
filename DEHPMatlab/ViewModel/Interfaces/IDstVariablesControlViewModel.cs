@@ -34,8 +34,18 @@ namespace DEHPMatlab.ViewModel.Interfaces
     public interface IDstVariablesControlViewModel
     {
         /// <summary>
+        /// Gets or sets the assert indicating whether the view is busy
+        /// </summary>
+        bool IsBusy { get; set; }
+
+        /// <summary>
         /// Gets the collections of all <see cref="MatlabWorkspaceRowViewModel"/> detected as Input
         /// </summary>
         ReactiveList<MatlabWorkspaceRowViewModel> InputVariables { get; }
+
+        /// <summary>
+        /// Gets the collections of all <see cref="MatlabWorkspaceRowViewModel"/> included in the Matlab Workspace
+        /// </summary>
+        ReactiveList<MatlabWorkspaceRowViewModel> WorkspaceVariables { get; }
     }
 }
