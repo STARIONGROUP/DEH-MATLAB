@@ -24,6 +24,7 @@
 
 namespace DEHPMatlab.Tests.Services.MatlabConnector
 {
+    using System;
     using System.Reactive.Concurrency;
     using System.Runtime.InteropServices;
 
@@ -58,7 +59,6 @@ namespace DEHPMatlab.Tests.Services.MatlabConnector
             this.matlabApp = new Mock<MLApp>();
             this.matlabApp.Setup(x => x.PutWorkspaceData(It.IsAny<string>(), "base", It.IsAny<object>()));
             this.matlabApp.Setup(x => x.Execute(It.IsAny<string>())).Returns("ans = 1");
-            this.matlabApp.Setup(x => x.Quit());
         }
 
         [Test]
@@ -79,8 +79,11 @@ namespace DEHPMatlab.Tests.Services.MatlabConnector
         [Test]
         public void VerifyDisconnection()
         {
-            Assert.DoesNotThrow( () => this.matlabConnector.Disconnect());
+            Assert.DoesNotThrow(() => this.matlabConnector.Disconnect());
             Assert.DoesNotThrow(() => this.matlabConnector.Connect(ComInteropName));
+            this.matlabConnector.MatlabApp = null;
+            Assert.DoesNotThrow(() => this.matlabConnector.Disconnect());
+            this.matlabApp.Setup(x => x.Execute("quit")).Throws<NullReferenceException>();
             Assert.DoesNotThrow(() => this.matlabConnector.Disconnect());
         }
 
@@ -96,16 +99,15 @@ namespace DEHPMatlab.Tests.Services.MatlabConnector
             Assert.AreEqual(variable.Value, 2.5d);
 
             this.matlabApp.Setup(x => x.GetVariable(It.IsAny<string>(), "base"))
-                .Throws(new COMException(""));
+                .Throws(new COMException("The RPC server is unavailable."));
 
-            this.matlabConnector.GetVariable("aVariable");
+            Assert.DoesNotThrow(()=>this.matlabConnector.GetVariable("aVariable"));
+            this.matlabConnector.MatlabApp = this.matlabApp.Object;
 
             this.matlabApp.Setup(x => x.GetVariable(It.IsAny<string>(), "base"))
                .Throws(new COMException("An exception message"));
 
-            this.matlabConnector.GetVariable("aVariable");
-
-            this.matlabApp.Verify(x=> x.Quit(), Times.Once);
+            Assert.DoesNotThrow(() => this.matlabConnector.GetVariable("aVariable"));
         }
 
         [Test]
@@ -118,14 +120,12 @@ namespace DEHPMatlab.Tests.Services.MatlabConnector
             this.matlabApp.Setup(x => x.PutWorkspaceData(It.IsAny<string>(), "base"
                     , It.IsAny<object>())).Throws(new COMException(""));
 
-            this.matlabConnector.PutVariable(variable);
+            Assert.DoesNotThrow(() => this.matlabConnector.PutVariable(variable));
 
             this.matlabApp.Setup(x => x.PutWorkspaceData(It.IsAny<string>(), "base"
                 , It.IsAny<object>())).Throws(new COMException("An exception message"));
 
-            this.matlabConnector.PutVariable(variable);
-
-            this.matlabApp.Verify(x => x.Quit(), Times.Once);
+            Assert.DoesNotThrow(() => this.matlabConnector.PutVariable(variable));
         }
 
         [Test]
@@ -134,8 +134,7 @@ namespace DEHPMatlab.Tests.Services.MatlabConnector
             this.matlabConnector.MatlabApp = this.matlabApp.Object;
             Assert.DoesNotThrow(() => this.matlabConnector.ExecuteFunction("clear"));
             this.matlabApp.Setup(x => x.Execute(It.IsAny<string>())).Throws(new COMException());
-            this.matlabConnector.ExecuteFunction("clear");
-            this.matlabApp.Verify(x=> x.Quit(), Times.Once);
+            Assert.DoesNotThrow(() => this.matlabConnector.ExecuteFunction("clear"));
         }
     }
 }

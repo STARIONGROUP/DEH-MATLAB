@@ -1,5 +1,5 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="IDstBrowserHeaderViewModel.cs" company="RHEA System S.A.">
+// <copyright file="DstConnect.xaml.cs" company="RHEA System S.A.">
 // Copyright (c) 2020-2022 RHEA System S.A.
 // 
 // Author: Sam Gerené, Alex Vorobiev, Alexander van Delft, Nathanael Smiechowski, Antoine Théate.
@@ -22,30 +22,22 @@
 // </copyright>
 // --------------------------------------------------------------------------------------------------------------------
 
-namespace DEHPMatlab.ViewModel.Interfaces
+namespace DEHPMatlab.Views.Dialogs
 {
-    using System.Reactive;
-
-    using ReactiveUI;
+    using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
-    /// Interface definition for <see cref="DstBrowserHeaderViewModel"/>
+    /// Interaction logic for DstConnect.xaml
     /// </summary>
-    public interface IDstBrowserHeaderViewModel
+    public partial class DstConnect
     {
         /// <summary>
-        /// Gets or sets the name of the current loaded script
+        /// Initializes a new <see cref="DstConnect"/>
         /// </summary>
-        string LoadedScriptName { get; set; }
-
-        /// <summary>
-        /// <see cref="ReactiveCommand{T}"/> for loading a Matlab Script
-        /// </summary>
-        ReactiveCommand<object> LoadMatlabScriptCommand { get; set; }
-
-        /// <summary>
-        /// <see cref="ReactiveCommand{T}"/> for running the loaded Matlab Script
-        /// </summary>
-        ReactiveCommand<Unit> RunLoadedMatlabScriptCommand { get; set; }
+        [ExcludeFromCodeCoverage]
+        public DstConnect()
+        {
+            this.InitializeComponent();
+        }
     }
 }

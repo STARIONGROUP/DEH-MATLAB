@@ -39,6 +39,8 @@ namespace DEHPMatlab
     using DEHPMatlab.Services.MatlabConnector;
     using DEHPMatlab.Services.MatlabParser;
     using DEHPMatlab.ViewModel;
+    using DEHPMatlab.ViewModel.Dialogs;
+    using DEHPMatlab.ViewModel.Dialogs.Interfaces;
     using DEHPMatlab.ViewModel.Interfaces;
     using DEHPMatlab.Views;
 
@@ -94,6 +96,7 @@ namespace DEHPMatlab
             containerBuilder.RegisterType<DstDataSourceViewModel>().As<IDstDataSourceViewModel>().SingleInstance();
             containerBuilder.RegisterType<DstBrowserHeaderViewModel>().As<IDstBrowserHeaderViewModel>().SingleInstance();
             containerBuilder.RegisterType<DstVariablesControlViewModel>().As<IDstVariablesControlViewModel>().SingleInstance();
+            containerBuilder.RegisterType<DstConnectViewModel>().As<IDstConnectViewModel>().SingleInstance();
         }
 
         /// <summary>
@@ -141,6 +144,16 @@ namespace DEHPMatlab
             }
 
             base.OnStartup(e);
+        }
+
+        /// <summary>
+        /// Occurs when <see cref="Application"/> is closed
+        /// </summary>
+        /// <param name="e">The <see cref="ExitEventArgs"/></param>
+        protected override void OnExit(ExitEventArgs e)
+        {
+            AppContainer.Container.Resolve<IDstController>().Disconnect();
+            base.OnExit(e);
         }
 
         /// <summary>

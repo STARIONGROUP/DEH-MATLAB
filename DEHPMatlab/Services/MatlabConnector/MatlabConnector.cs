@@ -26,6 +26,7 @@ namespace DEHPMatlab.Services.MatlabConnector
 {
     using System;
     using System.Runtime.InteropServices;
+    using System.Threading.Tasks;
 
     using DEHPCommon.Enumerators;
     using DEHPCommon.UserInterfaces.ViewModels.Interfaces;
@@ -97,15 +98,14 @@ namespace DEHPMatlab.Services.MatlabConnector
             {
                 var matlabType = Type.GetTypeFromProgID(comInteropName);
                 this.MatlabApp = Activator.CreateInstance(matlabType) as MLApp;
+                this.MatlabConnectorStatus = MatlabConnectorStatus.Connected;
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
                 this.MatlabConnectorStatus = MatlabConnectorStatus.Disconnected;
-                this.statusBarControl.Append($"{ex.Message}");
-                this.logger.Error($"Exception: {ex.Message}");
+                this.statusBarControl.Append($"{e.Message}");
+                this.logger.Error($"Exception: {e.Message}");
             }
-
-            this.MatlabConnectorStatus = MatlabConnectorStatus.Connected;
         }
 
         /// <summary>
@@ -115,15 +115,16 @@ namespace DEHPMatlab.Services.MatlabConnector
         {
             try
             {
-                this.MatlabApp.Quit();
-                this.MatlabApp = null;
+                this.MatlabApp.Execute("quit");
             }
             catch (Exception ex)
             {
+                this.MatlabApp?.Quit();
                 this.statusBarControl.Append($"{ex.Message}");
                 this.logger.Error($"Exception: {ex.Message}");
             }
 
+            this.MatlabApp = null;
             this.MatlabConnectorStatus = MatlabConnectorStatus.Disconnected;
         }
 
@@ -142,13 +143,7 @@ namespace DEHPMatlab.Services.MatlabConnector
             }
             catch (COMException ex)
             {
-                if (!string.IsNullOrEmpty(ex.Message))
-                {
-                    this.Disconnect();
-                }
-
-                this.statusBarControl.Append($"{ex.Message}", StatusBarMessageSeverity.Error);
-                this.logger.Error($"Exception: {ex.Message}");
+                this.CheckIfMatlabDisconnected(ex);
             }
 
             return matlabVariable;
@@ -175,27 +170,27 @@ namespace DEHPMatlab.Services.MatlabConnector
         /// Execute a Matlab function
         /// </summary>
         /// <param name="functionName">The function to execute</param>
-        /// <returns>The result of the funtion</returns>
+        /// <returns>The result of the funtion as a <see cref="Task{T}"/></returns>
         public string ExecuteFunction(string functionName)
         {
             try
             {
-                return this.MatlabApp.Execute(functionName);
+                return this.MatlabApp?.Execute(functionName);
             }
-            catch (COMException exception)
+            catch (COMException ex)
             {
-                this.CheckIfMatlabDisconnected(exception);
+                this.CheckIfMatlabDisconnected(ex);
                 return string.Empty;
             }
         }
 
         /// <summary>
-        /// Checks if the the Matlab applicaiton is still running or not.
+        /// Checks if the the Matlab application is still running or not.
         /// </summary>
         /// <param name="exception">The <see cref="COMException"/></param>
         private void CheckIfMatlabDisconnected(COMException exception)
         {
-            if (!string.IsNullOrEmpty(exception.Message))
+            if (exception.Message.Contains("The RPC server is unavailable."))
             {
                 this.Disconnect();
             }

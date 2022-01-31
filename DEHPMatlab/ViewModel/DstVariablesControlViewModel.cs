@@ -31,11 +31,18 @@ namespace DEHPMatlab.ViewModel
 
     using ReactiveUI;
 
+    using System;
+
     /// <summary>
     /// The view model for <see cref="DstVariablesControl"/> XAML
     /// </summary>
     public class DstVariablesControlViewModel : ReactiveObject, IDstVariablesControlViewModel
     {
+        /// <summary>
+        /// Backing field for <see cref="IsBusy"/>
+        /// </summary>
+        private bool isBusy;
+
         /// <summary>
         /// Initializes a new <see cref="DstVariablesControlViewModel"/>
         /// </summary>
@@ -44,12 +51,38 @@ namespace DEHPMatlab.ViewModel
         {
             this.DstController = dstController;
             this.InputVariables = this.DstController.MatlabWorkspaceInputRowViewModels;
+            this.WorkspaceVariables = this.DstController.MatlabAllWorkspaceRowViewModels;
+
+            this.WhenAnyValue(x => x.DstController.IsBusy)
+                .Subscribe(_ => this.UpdateProperties());
+        }
+
+        /// <summary>
+        /// Update this view model properties
+        /// </summary>
+        private void UpdateProperties()
+        {
+            this.IsBusy = this.DstController.IsBusy;
+        }
+
+        /// <summary>
+        /// Gets or sets the assert indicating whether the view is busy
+        /// </summary>
+        public bool IsBusy
+        {
+            get => this.isBusy;
+            set => this.RaiseAndSetIfChanged(ref this.isBusy, value);
         }
 
         /// <summary>
         /// Gets the collections of all <see cref="MatlabWorkspaceRowViewModel"/> detected as Input
         /// </summary>
         public ReactiveList<MatlabWorkspaceRowViewModel> InputVariables { get; }
+
+        /// <summary>
+        /// Gets the collections of all <see cref="MatlabWorkspaceRowViewModel"/> included in the Matlab Workspace
+        /// </summary>
+        public ReactiveList<MatlabWorkspaceRowViewModel> WorkspaceVariables { get; }
 
         /// <summary>
         /// Gets the <see cref="IDstController"/>

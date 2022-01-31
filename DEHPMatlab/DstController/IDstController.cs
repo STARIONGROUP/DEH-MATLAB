@@ -24,6 +24,8 @@
 
 namespace DEHPMatlab.DstController
 {
+    using System.Threading.Tasks;
+
     using DEHPMatlab.Services.MatlabConnector;
     using DEHPMatlab.ViewModel.Row;
 
@@ -50,14 +52,26 @@ namespace DEHPMatlab.DstController
         bool IsScriptLoaded { get; set; }
 
         /// <summary>
+        /// Gets or sets whether this <see cref="IDstController"/> is busy
+        /// </summary>
+        bool IsBusy { get; set; }
+
+        /// <summary>
         /// Gets the collection of <see cref="MatlabWorkspaceInputRowViewModels"/> detected as Input
         /// </summary>
         ReactiveList<MatlabWorkspaceRowViewModel> MatlabWorkspaceInputRowViewModels { get; }
 
         /// <summary>
+        /// Gets the collections of all <see cref="MatlabWorkspaceRowViewModel"/> included in the Matlab Workspace
+        /// </summary>
+        ReactiveList<MatlabWorkspaceRowViewModel> MatlabAllWorkspaceRowViewModels { get; }
+
+        /// <summary>
         /// Connects the adapter to a Matlab Instance
         /// </summary>
-        void Connect();
+        /// <param name="matlabVersion">The wanted version of Matlab to launch</param>
+        /// <returns>The <see cref="Task"/></returns>
+        Task Connect(string matlabVersion);
 
         /// <summary>
         /// Disconnects the adapter to the Matlab Instance
@@ -78,6 +92,7 @@ namespace DEHPMatlab.DstController
         /// <summary>
         /// Runs the currently loaded Matlab Script
         /// </summary>
-        void RunMatlabScript();
+        /// <returns>The <see cref="Task"/></returns>
+        Task RunMatlabScript();
     }
 }

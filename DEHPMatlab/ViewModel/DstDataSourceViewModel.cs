@@ -34,8 +34,11 @@ namespace DEHPMatlab.ViewModel
 
     using System;
     using System.Reactive.Linq;
+    using System.Threading.Tasks;
 
     using DEHPCommon.UserInterfaces.ViewModels.Interfaces;
+
+    using DEHPMatlab.Views.Dialogs;
 
     /// <summary>
     /// The <see cref="DstDataSourceViewModel"/> is the view model for the panel that will display controls and data relative to Matlab
@@ -72,7 +75,7 @@ namespace DEHPMatlab.ViewModel
         /// <param name="dstBrowserHeader">The <see cref="IDstBrowserHeaderViewModel"/></param>
         /// <param name="dstVariablesControl">The <see cref="IDstVariablesControlViewModel"/></param>
         public DstDataSourceViewModel(INavigationService navigationService, IDstController dstController
-            ,IHubController hubController, IStatusBarControlViewModel statusBar,
+            , IHubController hubController, IStatusBarControlViewModel statusBar,
             IDstBrowserHeaderViewModel dstBrowserHeader, IDstVariablesControlViewModel dstVariablesControl) : base(navigationService)
         {
             this.dstController = dstController;
@@ -90,8 +93,9 @@ namespace DEHPMatlab.ViewModel
         protected override void InitializeCommands()
         {
             IObservable<bool> canExecute = this.WhenAny(x => x.dstController.IsSessionOpen,
-                x => x.hubController.IsSessionOpen, (d, h)
-                    => d.Value || h.Value);
+                x => x.hubController.IsSessionOpen, 
+                x => x.DstVariablesControl.IsBusy, (d, h, b)
+                    => (d.Value || h.Value) && !b.Value);
 
             this.ConnectCommand = ReactiveCommand.Create(canExecute, RxApp.MainThreadScheduler);
             this.ConnectCommand.Subscribe(_ => this.ConnectCommandExecute());
@@ -110,14 +114,18 @@ namespace DEHPMatlab.ViewModel
         /// </summary>
         protected override void ConnectCommandExecute()
         {
+            this.DstVariablesControl.IsBusy = true;
+
             if (this.dstController.IsSessionOpen)
             {
-                this.dstController.Disconnect();
+                Task.Run(() => this.dstController.Disconnect());
             }
             else
             {
-                this.dstController.Connect();
+                this.NavigationService.ShowDialog<DstConnect>();
             }
+
+            this.DstVariablesControl.IsBusy = false;
         }
     }
 }

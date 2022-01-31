@@ -30,6 +30,7 @@ namespace DEHPMatlab.Tests.ViewModel
 
     using DEHPMatlab.DstController;
     using DEHPMatlab.ViewModel;
+    using DEHPMatlab.ViewModel.Interfaces;
 
     using Moq;
 
@@ -43,6 +44,7 @@ namespace DEHPMatlab.Tests.ViewModel
         private DstBrowserHeaderViewModel viewModel;
         private Mock<IDstController> dstController;
         private Mock<IOpenSaveFileDialogService> openSaveFile;
+        private Mock<IDstVariablesControlViewModel> dstVariablesControl;
 
         [SetUp]
         public void Setup()
@@ -57,7 +59,9 @@ namespace DEHPMatlab.Tests.ViewModel
 
             this.openSaveFile = new Mock<IOpenSaveFileDialogService>();
 
-            this.viewModel = new DstBrowserHeaderViewModel(this.dstController.Object, this.openSaveFile.Object);
+            this.dstVariablesControl = new Mock<IDstVariablesControlViewModel>();
+
+            this.viewModel = new DstBrowserHeaderViewModel(this.dstController.Object, this.openSaveFile.Object, this.dstVariablesControl.Object);
         }
 
         [Test]
