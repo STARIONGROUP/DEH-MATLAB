@@ -171,7 +171,7 @@ namespace DEHPMatlab.DstController
                 this.IsBusy = true;
                 var sender = matlabWorkspaceRowViewModel.Sender;
 
-                if (sender.Value.GetType() != typeof(double) && double.TryParse(sender.Value.ToString(), out var valueAsDouble))
+                if (sender.Value is double && double.TryParse(sender.Value.ToString(), out var valueAsDouble))
                 {
                     sender.Value = valueAsDouble;
                 }
@@ -242,12 +242,9 @@ namespace DEHPMatlab.DstController
         /// </summary>
         public void UnloadScript()
         {
-            if (this.IsScriptLoaded)
+            if (this.IsScriptLoaded && File.Exists(this.loadedScriptPath))
             {
-                if (File.Exists(this.loadedScriptPath))
-                {
-                    File.Delete(this.loadedScriptPath);
-                }
+                File.Delete(this.loadedScriptPath);
             }
 
             this.LoadedScriptName = string.Empty;
@@ -300,21 +297,18 @@ namespace DEHPMatlab.DstController
 
                 var workspaceVariable = this.matlabConnector.GetVariable(uniqueVariable);
 
-                if (workspaceVariable.Value.GetType() == typeof(object[,]))
-                {
-                    await Task.Run(() =>
+                await Task.Run(() =>
+                    {
+                        if (workspaceVariable.Value is object[,] allVariables)
                         {
-                            if (workspaceVariable.Value is object[,] allVariables)
+                            foreach (var variable in allVariables)
                             {
-                                foreach (var variable in allVariables)
-                                {
-                                    var matlabVariable = this.matlabConnector.GetVariable(variable.ToString());
-                                    variables.AddRange(matlabVariable.UnwrapVariableRowViewModels());
-                                }
+                                var matlabVariable = this.matlabConnector.GetVariable(variable.ToString());
+                                variables.AddRange(matlabVariable.UnwrapVariableRowViewModels());
                             }
                         }
-                    );
-                }
+                    }
+                );
 
                 this.MatlabAllWorkspaceRowViewModels.AddRange(variables);
                 this.matlabConnector.ExecuteFunction($"clear {uniqueVariable}");
