@@ -85,23 +85,36 @@ namespace DEHPMatlab.ViewModel.Dialogs
         /// </summary>
         private void PopulateDictionary()
         {
+            this.GenerateMatlabVersions(2014,4,6,8,false);
+            this.GenerateMatlabVersions(2016,0,11,9,true);
             this.MatlabVersionDictionary["latest"] = "Lastest Installed Version";
-            this.MatlabVersionDictionary["9.11"] = "Matlab R2021b";
-            this.MatlabVersionDictionary["9.10"] = "Matlab R2021a";
-            this.MatlabVersionDictionary["9.9"] = "Matlab R2020b";
-            this.MatlabVersionDictionary["9.8"] = "Matlab R2020a";
-            this.MatlabVersionDictionary["9.7"] = "Matlab R2019b";
-            this.MatlabVersionDictionary["9.6"] = "Matlab R2019a";
-            this.MatlabVersionDictionary["9.5"] = "Matlab R2018b";
-            this.MatlabVersionDictionary["9.4"] = "Matlab R2018a";
-            this.MatlabVersionDictionary["9.3"] = "Matlab R2017b";
-            this.MatlabVersionDictionary["9.2"] = "Matlab R2017a";
-            this.MatlabVersionDictionary["9.1"] = "Matlab R2016b";
-            this.MatlabVersionDictionary["9.0"] = "Matlab R2016a";
-            this.MatlabVersionDictionary["8.6"] = "Matlab R2015b";
-            this.MatlabVersionDictionary["8.5"] = "Matlab R2015a";
-            this.MatlabVersionDictionary["8.4"] = "Matlab R2014b";
+            this.MatlabVersionDictionary = this.MatlabVersionDictionary.Reverse().ToDictionary(x => x.Key, x => x.Value);
             this.SelectedMatlabVersion = this.MatlabVersionDictionary.SingleOrDefault(p => p.Key == "latest");
+        }
+
+        /// <summary>
+        /// Generate all the Matlab Versions regarding to the given parameters
+        /// </summary>
+        /// <param name="startYear">The starting year</param>
+        /// <param name="startMinorVersion">The starting minor Version</param>
+        /// <param name="stopMinorVersion">The last minor Version</param>
+        /// <param name="majorVersion">The major Version</param>
+        /// <param name="versionAIsEvenNumber">True is the version ends with 'a' when the minor is an even number</param>
+        private void GenerateMatlabVersions(int startYear, int startMinorVersion, int stopMinorVersion, int majorVersion, bool versionAIsEvenNumber)
+        {
+            var currentYear = startYear;
+
+            for (var i = startMinorVersion; i <= stopMinorVersion; i++)
+            {
+                var isVersionA = versionAIsEvenNumber ? i % 2 == 0 : i % 2 == 1;
+
+                this.MatlabVersionDictionary[$"{majorVersion}.{i}"] = $"Matlab R{currentYear}" + (isVersionA ? "a" : "b");
+
+                if (!isVersionA)
+                {
+                    currentYear++;
+                }
+            }
         }
 
         /// <summary>
@@ -157,7 +170,7 @@ namespace DEHPMatlab.ViewModel.Dialogs
         /// <summary>
         /// The <see cref="Dictionary{TKey,TValue}"/> containing all Matlab Version
         /// </summary>
-        public Dictionary<string, string> MatlabVersionDictionary { get; }
+        public Dictionary<string, string> MatlabVersionDictionary { get; private set; }
 
         /// <summary>
         /// The <see cref="ReactiveCommand"/> for initialize the connection to Matlab

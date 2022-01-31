@@ -100,15 +100,6 @@ namespace DEHPMatlab.DstController
         }
 
         /// <summary>
-        /// Destructor of the <see cref="DstController"/>.
-        /// Handles the destruction of the loaded script.
-        /// </summary>
-        ~DstController()
-        {
-            this.UnloadScript();
-        }
-
-        /// <summary>
         /// Asserts that the <see cref="IMatlabConnector"/> is connected 
         /// </summary>
         public bool IsSessionOpen
@@ -212,7 +203,7 @@ namespace DEHPMatlab.DstController
         /// <returns>The <see cref="Task"/></returns>
         public async Task Connect(string matlabVersion)
         {
-            await this.matlabConnector.Connect(matlabVersion);
+            this.matlabConnector.Connect(matlabVersion);
             this.MatlabWorkspaceInputRowViewModels.Clear();
             await this.LoadMatlabWorkspace();
         }
@@ -220,10 +211,9 @@ namespace DEHPMatlab.DstController
         /// <summary>
         /// Closes the Matlab Instance connection
         /// </summary>
-        /// <returns>The <see cref="Task"/></returns>
-        public async Task Disconnect()
+        public void Disconnect()
         {
-            await this.matlabConnector.Disconnect();
+            this.matlabConnector.Disconnect();
             this.UnloadScript();
         }
 
@@ -236,7 +226,7 @@ namespace DEHPMatlab.DstController
             this.UnloadScript();
             this.MatlabWorkspaceInputRowViewModels.Clear();
 
-            List<MatlabWorkspaceRowViewModel> detectedInputs = this.matlabParser.ParseMatlabScript(scriptPath, 
+            var detectedInputs = this.matlabParser.ParseMatlabScript(scriptPath, 
                 out this.loadedScriptPath);
 
             if (!string.IsNullOrEmpty(this.loadedScriptPath))
@@ -270,7 +260,7 @@ namespace DEHPMatlab.DstController
         /// <returns>The <see cref="Task"/></returns>
         public async Task RunMatlabScript()
         {
-            this.statusBar.Append(await this.matlabConnector.ExecuteFunction(functionName: $"run('{this.loadedScriptPath}')"));
+            this.statusBar.Append(await Task.Run(() => this.matlabConnector.ExecuteFunction(functionName: $"run('{this.loadedScriptPath}')")));
             await this.LoadMatlabWorkspace();
         }
 
@@ -301,25 +291,33 @@ namespace DEHPMatlab.DstController
             if (this.IsSessionOpen)
             {
                 this.MatlabAllWorkspaceRowViewModels.Clear();
+
                 var uniqueVariable = $"uv{DateTime.Now:yyyyMMddHHmmss}";
-                await this.matlabConnector.ExecuteFunction($"{uniqueVariable} = who");
-                List<MatlabWorkspaceRowViewModel> variables = new List<MatlabWorkspaceRowViewModel>();
-                var workspaceVariable = await this.matlabConnector.GetVariable(uniqueVariable);
+
+                this.matlabConnector.ExecuteFunction($"{uniqueVariable} = who");
+
+                var variables = new List<MatlabWorkspaceRowViewModel>();
+
+                var workspaceVariable = this.matlabConnector.GetVariable(uniqueVariable);
 
                 if (workspaceVariable.Value.GetType() == typeof(object[,]))
                 {
-                    if (workspaceVariable.Value is object[,] allVariables)
-                    {
-                        foreach (var variable in allVariables)
+                    await Task.Run(() =>
                         {
-                            var matlabVariable = await this.matlabConnector.GetVariable(variable.ToString());
-                            variables.AddRange(matlabVariable.UnwrapVariableRowViewModels());
+                            if (workspaceVariable.Value is object[,] allVariables)
+                            {
+                                foreach (var variable in allVariables)
+                                {
+                                    var matlabVariable = this.matlabConnector.GetVariable(variable.ToString());
+                                    variables.AddRange(matlabVariable.UnwrapVariableRowViewModels());
+                                }
+                            }
                         }
-                    }
+                    );
                 }
 
                 this.MatlabAllWorkspaceRowViewModels.AddRange(variables);
-                await this.matlabConnector.ExecuteFunction($"clear {uniqueVariable}");
+                this.matlabConnector.ExecuteFunction($"clear {uniqueVariable}");
             }
         }
     }

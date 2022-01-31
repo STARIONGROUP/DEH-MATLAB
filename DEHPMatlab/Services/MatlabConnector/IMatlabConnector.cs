@@ -24,8 +24,6 @@
 
 namespace DEHPMatlab.Services.MatlabConnector
 {
-    using System.Threading.Tasks;
-
     using DEHPMatlab.Enumerator;
     using DEHPMatlab.ViewModel.Row;
 
@@ -43,35 +41,32 @@ namespace DEHPMatlab.Services.MatlabConnector
         /// Creates an new Matlab Instance and connects to it
         /// </summary>
         /// <param name="comInteropName">The name of the COM Interop</param>
-        /// <returns>The <see cref="Task"/></returns>
-        Task Connect(string comInteropName);
+        void Connect(string comInteropName);
 
         /// <summary>
         /// Closes the connection to the Matlab Instance
         /// </summary>
-        /// <returns>The <see cref="Task"/></returns>
-        Task Disconnect();
+        void Disconnect();
 
         /// <summary>
         /// Retrieve a variable from the Matlab workspace
         /// </summary>
         /// <param name="variableName">The name of the varible</param>
-        /// <returns>The <see cref="MatlabWorkspaceRowViewModel"/> from the Matlab Workspace as a <see cref="Task"/></returns>
-        Task<MatlabWorkspaceRowViewModel> GetVariable(string variableName);
+        /// <returns>The <see cref="MatlabWorkspaceRowViewModel"/> from the Matlab Workspace</returns>
+        MatlabWorkspaceRowViewModel GetVariable(string variableName);
 
         /// <summary>
         /// Put a variable to the Matlab workspace.
         /// The variable is override if the value already exists inside the workspace
         /// </summary>
         /// <param name="matlabWorkspaceRowViewModel">The variable to put inside Matlab</param>
-        /// <returns>The <see cref="Task"/></returns>
-        Task PutVariable(MatlabWorkspaceRowViewModel matlabWorkspaceRowViewModel);
+        void PutVariable(MatlabWorkspaceRowViewModel matlabWorkspaceRowViewModel);
 
         /// <summary>
         /// Execute a Matlab function
         /// </summary>
         /// <param name="functionName">The function to execute</param>
-        /// <returns>The result of the funtion as a <see cref="Task{T}"/></returns>
-        Task<string> ExecuteFunction(string functionName);
+        /// <returns>The result of the funtion</returns>
+        string ExecuteFunction(string functionName);
     }
 }

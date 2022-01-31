@@ -147,6 +147,16 @@ namespace DEHPMatlab
         }
 
         /// <summary>
+        /// Occurs when <see cref="Application"/> is closed
+        /// </summary>
+        /// <param name="e">The <see cref="ExitEventArgs"/></param>
+        protected override void OnExit(ExitEventArgs e)
+        {
+            AppContainer.Container.Resolve<IDstController>().Disconnect();
+            base.OnExit(e);
+        }
+
+        /// <summary>
         /// Handles dispatcher unhandled exception
         /// </summary>
         /// <param name="sender">The <see cref="object"/> sender</param>

@@ -92,35 +92,30 @@ namespace DEHPMatlab.Services.MatlabConnector
         /// Launch a Matlab Instance and connects to it
         /// </summary>
         /// <param name="comInteropName">The name of the COM Interop</param>
-        /// <returns>The <see cref="Task"/></returns>
-        public async Task Connect(string comInteropName)
+        public void Connect(string comInteropName)
         {
-            await Task.Run(() =>
+            try
             {
-                try
-                {
-                    var matlabType = Type.GetTypeFromProgID(comInteropName);
-                    this.MatlabApp = Activator.CreateInstance(matlabType) as MLApp;
-                    this.MatlabConnectorStatus = MatlabConnectorStatus.Connected;
-                }
-                catch (Exception e)
-                {
-                    this.MatlabConnectorStatus = MatlabConnectorStatus.Disconnected;
-                    this.statusBarControl.Append($"{e.Message}");
-                    this.logger.Error($"Exception: {e.Message}");
-                }
-            });
+                var matlabType = Type.GetTypeFromProgID(comInteropName);
+                this.MatlabApp = Activator.CreateInstance(matlabType) as MLApp;
+                this.MatlabConnectorStatus = MatlabConnectorStatus.Connected;
+            }
+            catch (Exception e)
+            {
+                this.MatlabConnectorStatus = MatlabConnectorStatus.Disconnected;
+                this.statusBarControl.Append($"{e.Message}");
+                this.logger.Error($"Exception: {e.Message}");
+            }
         }
 
         /// <summary>
         /// Close the Matlab instance
         /// </summary>
-        /// <returns>The <see cref="Task"/></returns>
-        public async Task Disconnect()
+        public void Disconnect()
         {
             try
             {
-                await this.ExecuteFunction("quit");
+                this.MatlabApp.Execute("quit");
             }
             catch (Exception ex)
             {
@@ -137,22 +132,19 @@ namespace DEHPMatlab.Services.MatlabConnector
         /// Retrieve a variable from the Matlab workspace
         /// </summary>
         /// <param name="variableName">The name of the variable</param>
-        /// <returns>The <see cref="MatlabWorkspaceRowViewModel"/> from the Matlab Workspace as a <see cref="Task{T}"/></returns>
-        public async Task<MatlabWorkspaceRowViewModel> GetVariable(string variableName)
+        /// <returns>The <see cref="MatlabWorkspaceRowViewModel"/> from the Matlab Workspace</returns>
+        public MatlabWorkspaceRowViewModel GetVariable(string variableName)
         {
             var matlabVariable = new MatlabWorkspaceRowViewModel(variableName, null);
 
-            await Task.Run(() =>
+            try
             {
-                try
-                {
-                    matlabVariable.Value = this.MatlabApp.GetVariable(matlabVariable.Name, WorkspaceName);
-                }
-                catch (COMException ex)
-                {
-                    this.CheckIfMatlabDisconnected(ex);
-                }
-            });
+                matlabVariable.Value = this.MatlabApp.GetVariable(matlabVariable.Name, WorkspaceName);
+            }
+            catch (COMException ex)
+            {
+                this.CheckIfMatlabDisconnected(ex);
+            }
 
             return matlabVariable;
         }
@@ -162,20 +154,16 @@ namespace DEHPMatlab.Services.MatlabConnector
         /// The variable is override if the value already exists inside the workspace
         /// </summary>
         /// <param name="matlabWorkspaceRowViewModel">The variable to put inside Matlab</param>
-        /// <returns>The <see cref="Task"/></returns>
-        public async Task PutVariable(MatlabWorkspaceRowViewModel matlabWorkspaceRowViewModel)
+        public void PutVariable(MatlabWorkspaceRowViewModel matlabWorkspaceRowViewModel)
         {
-            await Task.Run(() =>
+            try
             {
-                try
-                {
-                    this.MatlabApp.PutWorkspaceData(matlabWorkspaceRowViewModel.Name, WorkspaceName, matlabWorkspaceRowViewModel.Value);
-                }
-                catch (COMException ex)
-                {
-                    this.CheckIfMatlabDisconnected(ex);
-                }
-            });
+                this.MatlabApp.PutWorkspaceData(matlabWorkspaceRowViewModel.Name, WorkspaceName, matlabWorkspaceRowViewModel.Value);
+            }
+            catch (COMException ex)
+            {
+                this.CheckIfMatlabDisconnected(ex);
+            }
         }
 
         /// <summary>
@@ -183,20 +171,17 @@ namespace DEHPMatlab.Services.MatlabConnector
         /// </summary>
         /// <param name="functionName">The function to execute</param>
         /// <returns>The result of the funtion as a <see cref="Task{T}"/></returns>
-        public async Task<string> ExecuteFunction(string functionName)
+        public string ExecuteFunction(string functionName)
         {
-            return await Task.Run(() =>
+            try
             {
-                try
-                {
-                    return this.MatlabApp.Execute(functionName);
-                }
-                catch (COMException ex)
-                {
-                    this.CheckIfMatlabDisconnected(ex);
-                    return string.Empty;
-                }
-            });
+                return this.MatlabApp?.Execute(functionName);
+            }
+            catch (COMException ex)
+            {
+                this.CheckIfMatlabDisconnected(ex);
+                return string.Empty;
+            }
         }
 
         /// <summary>
@@ -207,13 +192,7 @@ namespace DEHPMatlab.Services.MatlabConnector
         {
             if (exception.Message.Contains("The RPC server is unavailable."))
             {
-                this.Disconnect().ContinueWith(t =>
-                {
-                    if (t.IsFaulted)
-                    {
-                        this.logger.Error($"Exception: {t.Exception}");
-                    }
-                });
+                this.Disconnect();
             }
 
             this.statusBarControl.Append($"{exception.Message}", StatusBarMessageSeverity.Error);

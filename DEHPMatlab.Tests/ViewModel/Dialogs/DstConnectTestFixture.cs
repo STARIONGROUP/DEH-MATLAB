@@ -58,6 +58,8 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
             Assert.IsFalse(this.viewModel.IsBusy);
             Assert.AreEqual(this.viewModel.SelectedMatlabVersion.Key, "latest");
             Assert.IsTrue(string.IsNullOrEmpty(this.viewModel.ErrorMessageText));
+            Assert.AreEqual(this.viewModel.MatlabVersionDictionary["8.4"], "Matlab R2014b");
+            Assert.AreEqual(this.viewModel.MatlabVersionDictionary["9.11"], "Matlab R2021b");
         }
 
         [Test]

@@ -24,6 +24,7 @@
 
 namespace DEHPMatlab.Tests.Services.MatlabConnector
 {
+    using System;
     using System.Reactive.Concurrency;
     using System.Runtime.InteropServices;
 
@@ -71,40 +72,42 @@ namespace DEHPMatlab.Tests.Services.MatlabConnector
         [Test]
         public void VerifyConnection()
         {
-            Assert.DoesNotThrowAsync(() => this.matlabConnector.Connect("aCOMName"));
-            Assert.DoesNotThrowAsync(() => this.matlabConnector.Connect(ComInteropName));
+            Assert.DoesNotThrow(() => this.matlabConnector.Connect("aCOMName"));
+            Assert.DoesNotThrow(() => this.matlabConnector.Connect(ComInteropName));
         }
 
         [Test]
         public void VerifyDisconnection()
         {
-            Assert.DoesNotThrowAsync(() => this.matlabConnector.Disconnect());
-            Assert.DoesNotThrowAsync(() => this.matlabConnector.Connect(ComInteropName));
+            Assert.DoesNotThrow(() => this.matlabConnector.Disconnect());
+            Assert.DoesNotThrow(() => this.matlabConnector.Connect(ComInteropName));
             this.matlabConnector.MatlabApp = null;
-            Assert.DoesNotThrowAsync(() => this.matlabConnector.Disconnect());
+            Assert.DoesNotThrow(() => this.matlabConnector.Disconnect());
+            this.matlabApp.Setup(x => x.Execute("quit")).Throws<NullReferenceException>();
+            Assert.DoesNotThrow(() => this.matlabConnector.Disconnect());
         }
 
         [Test]
         public void VerifyGetVariable()
         {
             this.matlabConnector.MatlabApp = this.matlabApp.Object;
-            var variable = this.matlabConnector.GetVariable("aVariable").Result;
+            var variable = this.matlabConnector.GetVariable("aVariable");
             Assert.IsNull(variable.Value);
             Assert.AreEqual(variable.Name, "aVariable");
             this.matlabApp.Setup(x => x.GetVariable(It.IsAny<string>(), "base")).Returns(2.5d);
-            variable = this.matlabConnector.GetVariable("aVariable").Result;
+            variable = this.matlabConnector.GetVariable("aVariable");
             Assert.AreEqual(variable.Value, 2.5d);
 
             this.matlabApp.Setup(x => x.GetVariable(It.IsAny<string>(), "base"))
                 .Throws(new COMException("The RPC server is unavailable."));
 
-            Assert.DoesNotThrowAsync(()=>this.matlabConnector.GetVariable("aVariable"));
+            Assert.DoesNotThrow(()=>this.matlabConnector.GetVariable("aVariable"));
             this.matlabConnector.MatlabApp = this.matlabApp.Object;
 
             this.matlabApp.Setup(x => x.GetVariable(It.IsAny<string>(), "base"))
                .Throws(new COMException("An exception message"));
 
-            Assert.DoesNotThrowAsync(() => this.matlabConnector.GetVariable("aVariable"));
+            Assert.DoesNotThrow(() => this.matlabConnector.GetVariable("aVariable"));
         }
 
         [Test]
@@ -112,26 +115,26 @@ namespace DEHPMatlab.Tests.Services.MatlabConnector
         {
             this.matlabConnector.MatlabApp = this.matlabApp.Object;
             var variable = new MatlabWorkspaceRowViewModel("aVariable", 2.0d);
-            Assert.DoesNotThrowAsync(() => this.matlabConnector.PutVariable(variable));
+            Assert.DoesNotThrow(() => this.matlabConnector.PutVariable(variable));
 
             this.matlabApp.Setup(x => x.PutWorkspaceData(It.IsAny<string>(), "base"
                     , It.IsAny<object>())).Throws(new COMException(""));
 
-            Assert.DoesNotThrowAsync(() => this.matlabConnector.PutVariable(variable));
+            Assert.DoesNotThrow(() => this.matlabConnector.PutVariable(variable));
 
             this.matlabApp.Setup(x => x.PutWorkspaceData(It.IsAny<string>(), "base"
                 , It.IsAny<object>())).Throws(new COMException("An exception message"));
 
-            Assert.DoesNotThrowAsync(() => this.matlabConnector.PutVariable(variable));
+            Assert.DoesNotThrow(() => this.matlabConnector.PutVariable(variable));
         }
 
         [Test]
         public void VerifyExecuteFunction()
         {
             this.matlabConnector.MatlabApp = this.matlabApp.Object;
-            Assert.DoesNotThrowAsync(() => this.matlabConnector.ExecuteFunction("clear"));
+            Assert.DoesNotThrow(() => this.matlabConnector.ExecuteFunction("clear"));
             this.matlabApp.Setup(x => x.Execute(It.IsAny<string>())).Throws(new COMException());
-            Assert.DoesNotThrowAsync(() => this.matlabConnector.ExecuteFunction("clear"));
+            Assert.DoesNotThrow(() => this.matlabConnector.ExecuteFunction("clear"));
         }
     }
 }

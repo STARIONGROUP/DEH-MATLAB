@@ -76,8 +76,7 @@ namespace DEHPMatlab.DstController
         /// <summary>
         /// Disconnects the adapter to the Matlab Instance
         /// </summary>
-        /// <returns>The <see cref="Task"/></returns>
-        Task Disconnect();
+        void Disconnect();
 
         /// <summary>
         /// Load a Matlab Script
