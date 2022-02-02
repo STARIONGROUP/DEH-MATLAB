@@ -1,4 +1,4 @@
-﻿// --------------------------------------------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------------------------------------
 // <copyright file="DstControllerTestFixture.cs" company="RHEA System S.A.">
 // Copyright (c) 2020-2022 RHEA System S.A.
 // 
@@ -95,7 +95,7 @@ namespace DEHPMatlab.Tests.DstController
             this.dstController.IsSessionOpen = true;
             this.dstController.LoadScript("a");
             Assert.IsFalse(this.dstController.IsScriptLoaded);
-            this.dstController.LoadScript("Resources/GNC_Lab4.m");
+            this.dstController.LoadScript(Path.Combine("Resources","GNC_Lab4.m"));
             Assert.IsTrue(this.dstController.IsScriptLoaded);
             Assert.AreEqual(this.dstController.MatlabWorkspaceInputRowViewModels.Count, 6);
 

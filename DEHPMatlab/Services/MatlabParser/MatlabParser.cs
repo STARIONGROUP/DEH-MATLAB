@@ -1,4 +1,4 @@
-﻿// --------------------------------------------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------------------------------------
 // <copyright file="MatlabParser.cs" company="RHEA System S.A.">
 // Copyright (c) 2020-2022 RHEA System S.A.
 // 
@@ -139,6 +139,7 @@ namespace DEHPMatlab.Services.MatlabParser
             catch (Exception ex)
             {
                 this.logger.Error($"Error while parsing the file : {ex.Message}");
+                throw;
             }
 
             return rowViewModels;

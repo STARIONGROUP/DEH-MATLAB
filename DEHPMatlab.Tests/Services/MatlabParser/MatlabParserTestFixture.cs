@@ -1,4 +1,4 @@
-﻿// --------------------------------------------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------------------------------------
 // <copyright file="MatlabParserTestFixture.cs" company="RHEA System S.A.">
 // Copyright (c) 2020-2022 RHEA System S.A.
 // 
@@ -49,10 +49,10 @@ namespace DEHPMatlab.Tests.Services.MatlabParser
             string modifiedScriptFilePath;
             Assert.DoesNotThrow(()=> this.parser.ParseMatlabScript("anInvalidPath", out modifiedScriptFilePath));
 
-            List<MatlabWorkspaceRowViewModel> matlabWorkspaceViewModels = this.parser.ParseMatlabScript("Resources/GNC_Lab4.m", 
+            List<MatlabWorkspaceRowViewModel> matlabWorkspaceViewModels = this.parser.ParseMatlabScript(Path.Combine("Resources", "GNC_Lab4.m"), 
                 out modifiedScriptFilePath);
 
-            Assert.AreEqual(matlabWorkspaceViewModels.Count, 6);
+            Assert.AreEqual(6, matlabWorkspaceViewModels.Count);
             Assert.IsTrue(File.Exists(modifiedScriptFilePath));
             File.Delete(modifiedScriptFilePath);
         }
