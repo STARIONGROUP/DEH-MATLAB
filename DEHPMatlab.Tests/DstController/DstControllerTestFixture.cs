@@ -24,9 +24,11 @@
 
 namespace DEHPMatlab.Tests.DstController
 {
+    using System.IO;
     using System.Reactive.Concurrency;
 
     using DEHPCommon.Enumerators;
+    using DEHPCommon.MappingEngine;
     using DEHPCommon.UserInterfaces.ViewModels.Interfaces;
 
     using DEHPMatlab.DstController;
