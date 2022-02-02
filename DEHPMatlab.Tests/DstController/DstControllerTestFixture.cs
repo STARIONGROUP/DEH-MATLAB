@@ -95,7 +95,7 @@ namespace DEHPMatlab.Tests.DstController
         public void VerifyLoadAndRunScript()
         {
             this.dstController.IsSessionOpen = true;
-            this.dstController.LoadScript("a");
+            Assert.Throws<FileNotFoundException>(() => this.dstController.LoadScript("a"));
             Assert.IsFalse(this.dstController.IsScriptLoaded);
             this.dstController.LoadScript(Path.Combine("Resources","GNC_Lab4.m"));
             Assert.IsTrue(this.dstController.IsScriptLoaded);

@@ -47,7 +47,7 @@ namespace DEHPMatlab.Tests.Services.MatlabParser
         public void VerifyParsing()
         {
             string modifiedScriptFilePath;
-            Assert.DoesNotThrow(()=> this.parser.ParseMatlabScript("anInvalidPath", out modifiedScriptFilePath));
+            Assert.Throws<FileNotFoundException>(()=> this.parser.ParseMatlabScript("anInvalidPath", out modifiedScriptFilePath));
 
             List<MatlabWorkspaceRowViewModel> matlabWorkspaceViewModels = this.parser.ParseMatlabScript(Path.Combine("Resources", "GNC_Lab4.m"), 
                 out modifiedScriptFilePath);
