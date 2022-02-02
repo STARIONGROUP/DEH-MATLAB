@@ -24,6 +24,7 @@
 
 namespace DEHPMatlab.Tests.DstController
 {
+    using System;
     using System.IO;
     using System.Reactive.Concurrency;
 
@@ -97,7 +98,7 @@ namespace DEHPMatlab.Tests.DstController
             this.dstController.IsSessionOpen = true;
             Assert.Throws<FileNotFoundException>(() => this.dstController.LoadScript("a"));
             Assert.IsFalse(this.dstController.IsScriptLoaded);
-            this.dstController.LoadScript(Path.Combine("Resources","GNC_Lab4.m"));
+            this.dstController.LoadScript(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources","GNC_Lab4.m"));
             Assert.IsTrue(this.dstController.IsScriptLoaded);
             Assert.AreEqual(this.dstController.MatlabWorkspaceInputRowViewModels.Count, 6);
 
