@@ -139,12 +139,12 @@ namespace DEHPMatlab.DstController
         /// Gets the collection of <see cref="MatlabWorkspaceInputRowViewModels"/> detected as inputs
         /// </summary>
         public ReactiveList<MatlabWorkspaceRowViewModel> MatlabWorkspaceInputRowViewModels { get; }
-            = new ReactiveList<MatlabWorkspaceRowViewModel>() { ChangeTrackingEnabled = true };
+            = new() { ChangeTrackingEnabled = true };
 
         /// <summary>
         /// Gets the collections of all <see cref="MatlabWorkspaceRowViewModel"/> included in the Matlab Workspace
         /// </summary>
-        public ReactiveList<MatlabWorkspaceRowViewModel> MatlabAllWorkspaceRowViewModels { get; } = new ReactiveList<MatlabWorkspaceRowViewModel>();
+        public ReactiveList<MatlabWorkspaceRowViewModel> MatlabAllWorkspaceRowViewModels { get; } = new();
 
         /// <summary>
         /// Initializes all <see cref="DstController"/> observables
@@ -257,8 +257,10 @@ namespace DEHPMatlab.DstController
         /// <returns>The <see cref="Task"/></returns>
         public async Task RunMatlabScript()
         {
+            this.IsBusy = true;
             this.statusBar.Append(await Task.Run(() => this.matlabConnector.ExecuteFunction(functionName: $"run('{this.loadedScriptPath}')")));
             await this.LoadMatlabWorkspace();
+            this.IsBusy = false;
         }
 
         /// <summary>

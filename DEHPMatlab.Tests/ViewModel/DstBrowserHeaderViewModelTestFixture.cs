@@ -67,7 +67,7 @@ namespace DEHPMatlab.Tests.ViewModel
         [Test]
         public void VerifyProperties()
         {
-            Assert.AreEqual(this.viewModel.LoadedScriptName, "aScript.m");
+            Assert.AreEqual("aScript.m", this.viewModel.LoadedScriptName);
             Assert.IsTrue(this.viewModel.LoadMatlabScriptCommand.CanExecute(null));
             Assert.IsTrue(this.viewModel.RunLoadedMatlabScriptCommand.CanExecute(null));
         }

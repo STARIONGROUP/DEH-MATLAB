@@ -27,6 +27,9 @@ namespace DEHPMatlab.ViewModel.Row
     using System;
     using System.Collections.Generic;
 
+    using CDP4Common.EngineeringModelData;
+    using CDP4Common.SiteDirectoryData;
+
     using ReactiveUI;
 
     /// <summary>
@@ -48,6 +51,36 @@ namespace DEHPMatlab.ViewModel.Row
         /// Backing field for <see cref="ParentName"/>
         /// </summary>
         private string parentName;
+
+        /// <summary>
+        /// Backing field for <see cref="SelectedParameter"/>
+        /// </summary>
+        private Parameter selectedParameter;
+
+        /// <summary>
+        /// Backing field for <see cref="SelectedOption"/>
+        /// </summary>
+        private Option selectedOption;
+
+        /// <summary>
+        /// Backing field for <see cref="SelectedActualFiniteState"/>
+        /// </summary>
+        private ActualFiniteState selectedActualFiniteState;
+
+        /// <summary>
+        /// Backing field for <see cref="SelectedElementDefinition"/>
+        /// </summary>
+        private ElementDefinition selectedElementDefinition;
+
+        /// <summary>
+        /// Backing field for <see cref="SelectedParameterType"/>
+        /// </summary>
+        private ParameterType selectedParameterType;
+
+        /// <summary>
+        /// Backing field for <see cref="SelectedScale"/>
+        /// </summary>
+        private MeasurementScale selectedScale;
 
         /// <summary>
         /// Initializes a new <see cref="MatlabWorkspaceRowViewModel"/>
@@ -88,12 +121,71 @@ namespace DEHPMatlab.ViewModel.Row
         }
 
         /// <summary>
+        /// Gets or sets the selected <see cref="Parameter"/>
+        /// </summary>
+        public Parameter SelectedParameter
+        {
+            get => this.selectedParameter;
+            set => this.RaiseAndSetIfChanged(ref this.selectedParameter, value);
+        }
+
+        /// <summary>
+        /// Gets or sets the selected <see cref="Option"/>
+        /// </summary>
+        public Option SelectedOption
+        {
+            get => this.selectedOption;
+            set => this.RaiseAndSetIfChanged(ref this.selectedOption, value);
+        }
+
+        /// <summary>
+        /// Gets or sets the selected <see cref="ActualFiniteState"/>
+        /// </summary>
+        public ActualFiniteState SelectedActualFiniteState
+        {
+            get => this.selectedActualFiniteState;
+            set => this.RaiseAndSetIfChanged(ref this.selectedActualFiniteState, value);
+        }
+
+        /// <summary>
+        /// Gets or sets the selected <see cref="ElementDefinition"/>
+        /// </summary>
+        public ElementDefinition SelectedElementDefinition
+        {
+            get => this.selectedElementDefinition;
+            set => this.RaiseAndSetIfChanged(ref this.selectedElementDefinition, value);
+        }
+
+        /// <summary>
+        /// Gets or sets the selected <see cref="Parameter"/>
+        /// </summary>
+        public ParameterType SelectedParameterType
+        {
+            get => this.selectedParameterType;
+            set => this.RaiseAndSetIfChanged(ref this.selectedParameterType, value);
+        }
+
+        /// <summary>
+        /// Gets or sets the selected <see cref="ActualFiniteState"/>
+        /// </summary>
+        public MeasurementScale SelectedScale
+        {
+            get => this.selectedScale;
+            set => this.RaiseAndSetIfChanged(ref this.selectedScale, value);
+        }
+
+        /// <summary>
+        /// Gets or sets the collection of selected <see cref="ElementUsage"/>s
+        /// </summary>
+        public ReactiveList<ElementUsage> SelectedElementUsages { get; set; } = new();
+
+        /// <summary>
         /// If the <see cref="Value"/> is an Array, unwraps all neested <see cref="MatlabWorkspaceRowViewModel"/>
         /// </summary>
         /// <returns>A list of all nested <see cref="MatlabWorkspaceRowViewModel"/> including itself</returns>
         public List<MatlabWorkspaceRowViewModel> UnwrapVariableRowViewModels()
         {
-            List<MatlabWorkspaceRowViewModel> unwrappedArray = new List<MatlabWorkspaceRowViewModel>() { this };
+            List<MatlabWorkspaceRowViewModel> unwrappedArray = new() { this };
 
             if (this.Value != null && this.Value.GetType().IsArray)
             {

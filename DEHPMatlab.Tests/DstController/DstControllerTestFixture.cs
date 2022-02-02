@@ -100,7 +100,7 @@ namespace DEHPMatlab.Tests.DstController
             Assert.IsFalse(this.dstController.IsScriptLoaded);
             this.dstController.LoadScript(Path.Combine(TestContext.CurrentContext.TestDirectory, "Resources","GNC_Lab4.m"));
             Assert.IsTrue(this.dstController.IsScriptLoaded);
-            Assert.AreEqual(this.dstController.MatlabWorkspaceInputRowViewModels.Count, 6);
+            Assert.AreEqual(6, this.dstController.MatlabWorkspaceInputRowViewModels.Count);
 
             Assert.DoesNotThrowAsync(()=>this.dstController.RunMatlabScript());
             this.dstController.MatlabAllWorkspaceRowViewModels.Add(this.dstController.MatlabWorkspaceInputRowViewModels[1]);
