@@ -89,7 +89,7 @@ for:
       -returntargetcode
       -hideskipped:All;Attribute
       -output:"%TEST_COVERAGE%"
-      -filter:"+[DEHPEcosimPro*]* -[*.Tests*]* -[*.Views]*"
+      -filter:"+[DEHPMatlab*]* -[*.Tests*]* -[*.Views]*"
       -excludebyattribute:*.ExcludeFromCodeCoverageAttribute
   after_test:
     - ps: >-
