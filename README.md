@@ -11,8 +11,8 @@ AppVeyor is used to build and test the DEHP MATLAB
 
 Branch | Build Status
 ------- | :------------
-Master |  [![Build Status](https://ci.appveyor.com/api/projects/status/h83f47e4g3xdxxsw/branch/master?svg=true)](https://ci.appveyor.com/api/projects/status/h83f47e4g3xdxxsw)
-Development |  [![Build Status](https://ci.appveyor.com/api/projects/status/h83f47e4g3xdxxsw/branch/development?svg=true)](https://ci.appveyor.com/api/projects/status/h83f47e4g3xdxxsw)
+Master |  [![Build status](https://ci.appveyor.com/api/projects/status/sn5n6i80qv33mn9m/branch/master?svg=true)](https://ci.appveyor.com/project/rheagroup/deh-matlab/branch/master)
+Development |  [![Build status](https://ci.appveyor.com/api/projects/status/sn5n6i80qv33mn9m/branch/development?svg=true)](https://ci.appveyor.com/project/rheagroup/deh-matlab/branch/development)(https://ci.appveyor.com/api/projects/status/h83f47e4g3xdxxsw)
 
 [![Build history](https://buildstats.info/appveyor/chart/rheagroup/dehp-matlab)](https://ci.appveyor.com/project/rheagroup/dehp-matlab/history)
 
