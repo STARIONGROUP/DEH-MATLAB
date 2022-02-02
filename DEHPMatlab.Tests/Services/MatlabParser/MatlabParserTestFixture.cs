@@ -50,7 +50,7 @@ namespace DEHPMatlab.Tests.Services.MatlabParser
             string modifiedScriptFilePath;
             Assert.Throws<FileNotFoundException>(()=> this.parser.ParseMatlabScript("anInvalidPath", out modifiedScriptFilePath));
 
-            List<MatlabWorkspaceRowViewModel> matlabWorkspaceViewModels = this.parser.ParseMatlabScript(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "GNC_Lab4.m"), 
+            List<MatlabWorkspaceRowViewModel> matlabWorkspaceViewModels = this.parser.ParseMatlabScript(Path.Combine(TestContext.CurrentContext.TestDirectory, "Resources", "GNC_Lab4.m"), 
                 out modifiedScriptFilePath);
 
             Assert.AreEqual(6, matlabWorkspaceViewModels.Count);

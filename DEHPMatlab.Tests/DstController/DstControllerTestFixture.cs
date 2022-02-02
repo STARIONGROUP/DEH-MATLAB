@@ -98,7 +98,7 @@ namespace DEHPMatlab.Tests.DstController
             this.dstController.IsSessionOpen = true;
             Assert.Throws<FileNotFoundException>(() => this.dstController.LoadScript("a"));
             Assert.IsFalse(this.dstController.IsScriptLoaded);
-            this.dstController.LoadScript(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources","GNC_Lab4.m"));
+            this.dstController.LoadScript(Path.Combine(TestContext.CurrentContext.TestDirectory, "Resources","GNC_Lab4.m"));
             Assert.IsTrue(this.dstController.IsScriptLoaded);
             Assert.AreEqual(this.dstController.MatlabWorkspaceInputRowViewModels.Count, 6);
 
@@ -108,7 +108,7 @@ namespace DEHPMatlab.Tests.DstController
             Assert.IsTrue(string.IsNullOrEmpty(this.dstController.MatlabWorkspaceInputRowViewModels[1].ParentName));
             this.matlabConnector.Verify(x=>x.ExecuteFunction(It.IsAny<string>()), Times.Exactly(3));
 
-            this.matlabConnector.Verify(x=>x.PutVariable(It.IsAny<MatlabWorkspaceRowViewModel>()), 
+            this.matlabConnector.Verify(x=>x.PutVariable(It.IsAny<MatlabWorkspaceRowViewModel>()),
                 Times.Exactly(8));
 
             Assert.DoesNotThrow(() => this.dstController.UnloadScript());
