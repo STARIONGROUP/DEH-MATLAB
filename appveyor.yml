@@ -76,7 +76,7 @@ for:
           Write-Host Skipping Sonar Scanning
         }
   build:
-    project: DEHPEcosimPro.sln
+    project: DEHPMatlab.sln
   
   test_script:
     - nunit3-console DEHPMatlab-tests.nunit --result=testresults.xml;format=AppVeyor
