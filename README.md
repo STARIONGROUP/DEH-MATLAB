@@ -14,7 +14,7 @@ Branch | Build Status
 Master |  [![Build status](https://ci.appveyor.com/api/projects/status/sn5n6i80qv33mn9m/branch/master?svg=true)](https://ci.appveyor.com/project/rheagroup/deh-matlab/branch/master)
 Development |  [![Build status](https://ci.appveyor.com/api/projects/status/sn5n6i80qv33mn9m/branch/development?svg=true)](https://ci.appveyor.com/project/rheagroup/deh-matlab/branch/development)
 
-[![Build history](https://buildstats.info/appveyor/chart/rheagroup/dehp-matlab)](https://ci.appveyor.com/project/rheagroup/dehp-matlab/history)
+[![Build history](https://buildstats.info/appveyor/chart/rheagroup/deh-matlab)](https://ci.appveyor.com/project/rheagroup/deh-matlab/history)
 
 ## SonarQube Status:
 
