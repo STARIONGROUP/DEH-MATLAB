@@ -9,18 +9,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <COMReference Include="MLApp">
-      <WrapperTool>tlbimp</WrapperTool>
-      <VersionMinor>0</VersionMinor>
-      <VersionMajor>1</VersionMajor>
-      <Guid>c36e46ab-6a81-457b-9f91-a7719a06287f</Guid>
-      <Lcid>0</Lcid>
-      <Isolated>false</Isolated>
-      <EmbedInteropTypes>true</EmbedInteropTypes>
-    </COMReference>
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.9.4" />
     <PackageReference Include="Moq" Version="4.14.5" />
     <PackageReference Include="NUnit" Version="3.13.1" />
@@ -39,6 +27,12 @@
 
   <ItemGroup>
     <Folder Include="ViewModel\Dialogs\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="matlabcom">
+      <HintPath>..\lib\matlabcom.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>

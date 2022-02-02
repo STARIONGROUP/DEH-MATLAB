@@ -34,7 +34,7 @@ namespace DEHPMatlab.Tests.Services.MatlabConnector
     using DEHPMatlab.Services.MatlabConnector;
     using DEHPMatlab.ViewModel.Row;
 
-    using MLApp;
+    using matlabcom;
 
     using Moq;
 

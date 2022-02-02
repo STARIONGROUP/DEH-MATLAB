@@ -34,7 +34,7 @@ namespace DEHPMatlab.Services.MatlabConnector
     using DEHPMatlab.Enumerator;
     using DEHPMatlab.ViewModel.Row;
 
-    using MLApp;
+    using matlabcom;
 
     using NLog;
 
@@ -115,11 +115,11 @@ namespace DEHPMatlab.Services.MatlabConnector
         {
             try
             {
-                this.MatlabApp.Execute("quit");
+                this.MatlabApp?.Execute("quit");
+                this.MatlabApp?.Quit();
             }
             catch (Exception ex)
             {
-                this.MatlabApp?.Quit();
                 this.statusBarControl.Append($"{ex.Message}");
                 this.logger.Error($"Exception: {ex.Message}");
             }
