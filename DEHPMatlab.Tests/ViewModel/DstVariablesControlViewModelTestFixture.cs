@@ -65,7 +65,7 @@ namespace DEHPMatlab.Tests.ViewModel
             Assert.AreEqual(this.dstController.Object.MatlabWorkspaceInputRowViewModels.Count, this.viewModel.InputVariables.Count);
             Assert.AreEqual(this.dstController.Object.MatlabWorkspaceInputRowViewModels[0], this.viewModel.InputVariables[0]);
             Assert.IsFalse(this.viewModel.IsBusy);
-            Assert.AreEqual(this.viewModel.WorkspaceVariables.Count, 1);
+            Assert.AreEqual(1, this.viewModel.WorkspaceVariables.Count);
         }
     }
 }

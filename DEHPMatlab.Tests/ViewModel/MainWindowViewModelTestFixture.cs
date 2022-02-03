@@ -24,7 +24,6 @@
 
 namespace DEHPMatlab.Tests.ViewModel
 {
-    using DEHPCommon.Services.NavigationService;
     using DEHPCommon.UserInterfaces.Behaviors;
     using DEHPCommon.UserInterfaces.ViewModels.Interfaces;
 
@@ -39,7 +38,6 @@ namespace DEHPMatlab.Tests.ViewModel
     public class MainWindowViewModelTestFixture
     {
         private MainWindowViewModel viewModel;
-        private Mock<INavigationService> navigationService;
         private Mock<IHubDataSourceViewModel> hubDataSourceViewModel;
         private Mock<IStatusBarControlViewModel> statusBarControlViewModel;
         private Mock<IDstDataSourceViewModel> dstDataSourceViewModel;
@@ -47,12 +45,11 @@ namespace DEHPMatlab.Tests.ViewModel
         [SetUp]
         public void Setup()
         {
-            this.navigationService = new Mock<INavigationService>();
             this.hubDataSourceViewModel = new Mock<IHubDataSourceViewModel>();
             this.statusBarControlViewModel = new Mock<IStatusBarControlViewModel>();
             this.dstDataSourceViewModel = new Mock<IDstDataSourceViewModel>();
 
-            this.viewModel = new MainWindowViewModel(this.navigationService.Object,this.hubDataSourceViewModel.Object,
+            this.viewModel = new MainWindowViewModel(this.hubDataSourceViewModel.Object,
                 this.statusBarControlViewModel.Object, this.dstDataSourceViewModel.Object);
         }
 

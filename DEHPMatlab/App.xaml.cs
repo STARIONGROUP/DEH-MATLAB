@@ -93,10 +93,10 @@ namespace DEHPMatlab
             containerBuilder.RegisterType<MainWindowViewModel>().As<IMainWindowViewModel>().SingleInstance();
             containerBuilder.RegisterType<HubDataSourceViewModel>().As<IHubDataSourceViewModel>().SingleInstance();
             containerBuilder.RegisterType<MatlabStatusBarControlViewModel>().As<IStatusBarControlViewModel>().SingleInstance();
-            containerBuilder.RegisterType<DstDataSourceViewModel>().As<IDstDataSourceViewModel>().SingleInstance();
-            containerBuilder.RegisterType<DstBrowserHeaderViewModel>().As<IDstBrowserHeaderViewModel>().SingleInstance();
-            containerBuilder.RegisterType<DstVariablesControlViewModel>().As<IDstVariablesControlViewModel>().SingleInstance();
-            containerBuilder.RegisterType<DstConnectViewModel>().As<IDstConnectViewModel>().SingleInstance();
+            containerBuilder.RegisterType<DstDataSourceViewModel>().As<IDstDataSourceViewModel>();
+            containerBuilder.RegisterType<DstBrowserHeaderViewModel>().As<IDstBrowserHeaderViewModel>();
+            containerBuilder.RegisterType<DstVariablesControlViewModel>().As<IDstVariablesControlViewModel>();
+            containerBuilder.RegisterType<DstConnectViewModel>().As<IDstConnectViewModel>();
         }
 
         /// <summary>

@@ -24,7 +24,6 @@
 
 namespace DEHPMatlab.ViewModel
 {
-    using DEHPCommon.Services.NavigationService;
     using DEHPCommon.UserInterfaces.Behaviors;
     using DEHPCommon.UserInterfaces.ViewModels.Interfaces;
 
@@ -39,11 +38,6 @@ namespace DEHPMatlab.ViewModel
         /// Gets or sets the <see cref="ISwitchLayoutPanelOrderBehavior"/>
         /// </summary>
         public ISwitchLayoutPanelOrderBehavior SwitchPanelBehavior { get; set; }
-
-        /// <summary>
-        /// The <see cref="INavigationService"/>
-        /// </summary>
-        private readonly INavigationService navigationService;
 
         /// <summary>
         /// Gets the view model that represents the 10-25 data source
@@ -63,15 +57,12 @@ namespace DEHPMatlab.ViewModel
         /// <summary>
         /// Create a new instance of <see cref="MainWindowViewModel"/>
         /// </summary>
-        /// <param name="navigationService">A <see cref="INavigationService"/></param>
         /// <param name="hubDataSourceViewModel">A <see cref="IHubDataSourceViewModel"/></param>
         /// <param name="statusBarControlViewModel">The <see cref="IStatusBarControlViewModel"/></param>
         /// <param name="dstDataSourceViewModel">The <see cref="IDstDataSourceViewModel"/></param>
-        public MainWindowViewModel(INavigationService navigationService,
-            IHubDataSourceViewModel hubDataSourceViewModel, IStatusBarControlViewModel statusBarControlViewModel,
+        public MainWindowViewModel(IHubDataSourceViewModel hubDataSourceViewModel, IStatusBarControlViewModel statusBarControlViewModel,
             IDstDataSourceViewModel dstDataSourceViewModel)
         {
-            this.navigationService = navigationService;
             this.HubDataSourceViewModel = hubDataSourceViewModel;
             this.StatusBarControlViewModel = statusBarControlViewModel;
             this.DstDataSourceViewModel = dstDataSourceViewModel;

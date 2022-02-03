@@ -93,10 +93,10 @@ namespace DEHPMatlab.Tests.Services.MatlabConnector
             this.matlabConnector.MatlabApp = this.matlabApp.Object;
             var variable = this.matlabConnector.GetVariable("aVariable");
             Assert.IsNull(variable.Value);
-            Assert.AreEqual(variable.Name, "aVariable");
+            Assert.AreEqual("aVariable", variable.Name);
             this.matlabApp.Setup(x => x.GetVariable(It.IsAny<string>(), "base")).Returns(2.5d);
             variable = this.matlabConnector.GetVariable("aVariable");
-            Assert.AreEqual(variable.Value, 2.5d);
+            Assert.AreEqual(2.5d, variable.Value);
 
             this.matlabApp.Setup(x => x.GetVariable(It.IsAny<string>(), "base"))
                 .Throws(new COMException("The RPC server is unavailable."));

@@ -56,10 +56,10 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
             Assert.IsNotNull(this.viewModel.MatlabVersionDictionary);
             Assert.IsNotNull(this.viewModel.ConnectCommand);
             Assert.IsFalse(this.viewModel.IsBusy);
-            Assert.AreEqual(this.viewModel.SelectedMatlabVersion.Key, "latest");
+            Assert.AreEqual("latest", this.viewModel.SelectedMatlabVersion.Key);
             Assert.IsTrue(string.IsNullOrEmpty(this.viewModel.ErrorMessageText));
-            Assert.AreEqual(this.viewModel.MatlabVersionDictionary["8.4"], "Matlab R2014b");
-            Assert.AreEqual(this.viewModel.MatlabVersionDictionary["9.11"], "Matlab R2021b");
+            Assert.AreEqual("Matlab R2014b", this.viewModel.MatlabVersionDictionary["8.4"]);
+            Assert.AreEqual("Matlab R2021b", this.viewModel.MatlabVersionDictionary["9.11"]);
         }
 
         [Test]
@@ -67,10 +67,10 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
         {
             this.dstController.Setup(x => x.Connect(It.IsAny<string>()));
             this.dstController.Setup(x => x.IsSessionOpen).Returns(false);
-            Assert.DoesNotThrowAsync(async () => await this.viewModel.ConnectCommand.ExecuteAsyncTask(null));
+            Assert.DoesNotThrowAsync(async () => await this.viewModel.ConnectCommand.ExecuteAsyncTask());
             Assert.IsFalse(string.IsNullOrEmpty(this.viewModel.ErrorMessageText));
             this.dstController.Setup(x => x.IsSessionOpen).Returns(true);
-            Assert.DoesNotThrowAsync(async () => await this.viewModel.ConnectCommand.ExecuteAsyncTask(null));
+            Assert.DoesNotThrowAsync(async () => await this.viewModel.ConnectCommand.ExecuteAsyncTask());
             this.dstController.Verify(x => x.Connect("Matlab.Application"), Times.Exactly(2));
         }
     }

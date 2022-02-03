@@ -34,7 +34,6 @@ namespace DEHPMatlab.ViewModel
 
     using System;
     using System.Reactive.Linq;
-    using System.Threading.Tasks;
 
     using DEHPCommon.UserInterfaces.ViewModels.Interfaces;
 
@@ -118,7 +117,7 @@ namespace DEHPMatlab.ViewModel
 
             if (this.dstController.IsSessionOpen)
             {
-                Task.Run(() => this.dstController.Disconnect());
+                this.dstController.Disconnect();
             }
             else
             {
