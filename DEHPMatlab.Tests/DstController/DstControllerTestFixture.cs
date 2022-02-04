@@ -164,15 +164,15 @@ namespace DEHPMatlab.Tests.DstController
                     new MatlabWorkspaceRowViewModel("a", "b")
                 });
             
-            this.dstController.Map(new List<MappedElementDefinitionRowViewModel>()
+            this.dstController.Map(new List<ParameterToMatlabVariableMappingRowViewModel>()
             {
-                new MappedElementDefinitionRowViewModel()
+                new ParameterToMatlabVariableMappingRowViewModel()
             });
 
             Assert.AreEqual(1, this.dstController.HubMapResult.Count);
-            Assert.DoesNotThrow(() => this.dstController.Map(new List<MappedElementDefinitionRowViewModel>()));
+            Assert.DoesNotThrow(() => this.dstController.Map(new List<ParameterToMatlabVariableMappingRowViewModel>()));
             this.mappingEngine.Setup(x => x.Map(It.IsAny<object>())).Throws<InvalidOperationException>();
-            Assert.Throws<InvalidOperationException>(() => this.dstController.Map(default(List<MappedElementDefinitionRowViewModel>)));
+            Assert.Throws<InvalidOperationException>(() => this.dstController.Map(default(List<ParameterToMatlabVariableMappingRowViewModel>)));
         }
     }
 }

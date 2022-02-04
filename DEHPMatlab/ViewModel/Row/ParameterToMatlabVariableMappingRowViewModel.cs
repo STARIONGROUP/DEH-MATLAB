@@ -1,5 +1,5 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="MappedElementDefinitionRowViewModel.cs" company="RHEA System S.A.">
+// <copyright file="ParameterToMatlabVariableMappingRowViewModel.cs" company="RHEA System S.A.">
 // Copyright (c) 2020-2022 RHEA System S.A.
 // 
 // Author: Sam Gerené, Alex Vorobiev, Alexander van Delft, Nathanael Smiechowski, Antoine Théate.
@@ -30,12 +30,19 @@ namespace DEHPMatlab.ViewModel.Row
 
     using System;
 
+    using NLog;
+
     /// <summary>
     /// Represents an association between an <see cref="ElementBase"/> and a <see cref="MatlabWorkspaceRowViewModel"/> for
     /// update the <see cref="MatlabWorkspaceRowViewModel"/> value
     /// </summary>
-    public class MappedElementDefinitionRowViewModel : ReactiveObject
+    public class ParameterToMatlabVariableMappingRowViewModel : ReactiveObject
     {
+        /// <summary>
+        /// The <see cref="NLog"/> logger
+        /// </summary>
+        private readonly Logger logger = LogManager.GetCurrentClassLogger();
+
         /// <summary>
         /// Backing field for <see cref="SelectedParameter"/>
         /// </summary>
@@ -67,9 +74,9 @@ namespace DEHPMatlab.ViewModel.Row
         private object value;
 
         /// <summary>
-        /// Initializes a new <see cref="MappedElementDefinitionRowViewModel"/>
+        /// Initializes a new <see cref="ParameterToMatlabVariableMappingRowViewModel"/>
         /// </summary>
-        public MappedElementDefinitionRowViewModel()
+        public ParameterToMatlabVariableMappingRowViewModel()
         {
             this.WhenAnyValue(x => x.SelectedParameter,
                 x => x.SelectedOption,
@@ -114,7 +121,7 @@ namespace DEHPMatlab.ViewModel.Row
         }
 
         /// <summary>
-        /// Asserts the validity for the mapping of this <see cref="MappedElementDefinitionRowViewModel"/>
+        /// Asserts the validity for the mapping of this <see cref="ParameterToMatlabVariableMappingRowViewModel"/>
         /// </summary>
         public bool IsValid
         {
@@ -132,12 +139,20 @@ namespace DEHPMatlab.ViewModel.Row
         }
 
         /// <summary>
-        /// Verify the validity of this <see cref="MappedElementDefinitionRowViewModel"/>
+        /// Verify the validity of this <see cref="ParameterToMatlabVariableMappingRowViewModel"/>
         /// </summary>
         private void VerifyValidity()
         {
-            this.Value = this.SelectedParameter?.QueryParameterBaseValueSet(this.SelectedOption, this.SelectedState).ActualValue[0];
-            this.IsValid = this.Value != null && this.Value.ToString() != "-" && this.SelectedMatlabVariable != null;
+            try
+            {
+                this.Value = this.SelectedParameter?.QueryParameterBaseValueSet(this.SelectedOption, this.SelectedState).ActualValue[0];
+                this.IsValid = this.Value != null && this.Value.ToString() != "-" && this.SelectedMatlabVariable != null;
+            }
+            catch (Exception ex)
+            {
+                this.logger.Error(ex);
+                this.IsValid = false;
+            }
         }
     }
 }

@@ -34,17 +34,17 @@ namespace DEHPMatlab.MappingRules
 
     /// <summary>
     /// The <see cref="ElementDefinitionToMatlabVariableRule"/> is a <see cref="IMappingRule"/> for the <see cref="MappingEngine"/>
-    /// That takes a <see cref="List{T}"/> of <see cref="MappedElementDefinitionRowViewModel"/>
+    /// That takes a <see cref="List{T}"/> of <see cref="ParameterToMatlabVariableMappingRowViewModel"/>
     /// as input and outputs a collection of <see cref="MatlabWorkspaceRowViewModel"/>
     /// </summary>
-    public class ElementDefinitionToMatlabVariableRule : MappingRule<List<MappedElementDefinitionRowViewModel>, List<MatlabWorkspaceRowViewModel>>
+    public class ElementDefinitionToMatlabVariableRule : MappingRule<List<ParameterToMatlabVariableMappingRowViewModel>, List<MatlabWorkspaceRowViewModel>>
     {
         /// <summary>
-        /// Transform a <see cref="List{T}"/> of <see cref="MappedElementDefinitionRowViewModel"/> into an <see cref="MatlabWorkspaceRowViewModel"/>
+        /// Transform a <see cref="List{T}"/> of <see cref="ParameterToMatlabVariableMappingRowViewModel"/> into an <see cref="MatlabWorkspaceRowViewModel"/>
         /// </summary>
-        /// <param name="input">The <see cref="List{T}"/> of <see cref="MappedElementDefinitionRowViewModel"/></param>
+        /// <param name="input">The <see cref="List{T}"/> of <see cref="ParameterToMatlabVariableMappingRowViewModel"/></param>
         /// <returns>A collection of <see cref="MatlabWorkspaceRowViewModel"/></returns>
-        public override List<MatlabWorkspaceRowViewModel> Transform(List<MappedElementDefinitionRowViewModel> input)
+        public override List<MatlabWorkspaceRowViewModel> Transform(List<ParameterToMatlabVariableMappingRowViewModel> input)
         {
             return input.Select(x =>
                 new MatlabWorkspaceRowViewModel(x.SelectedMatlabVariable.Name, x.Value)

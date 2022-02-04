@@ -39,7 +39,7 @@ namespace DEHPMatlab.Tests.MappingRules
     public class ElementDefinitionToMatlabVariableRuleTestFixture
     {
         private ElementDefinitionToMatlabVariableRule rule;
-        private List<MappedElementDefinitionRowViewModel> elements;
+        private List<ParameterToMatlabVariableMappingRowViewModel> elements;
         private Option option1;
         private Option option2;
         private ActualFiniteState state1;
@@ -55,9 +55,9 @@ namespace DEHPMatlab.Tests.MappingRules
             this.state1 = new ActualFiniteState();
             this.state2 = new ActualFiniteState();
 
-            this.elements = new List<MappedElementDefinitionRowViewModel>()
+            this.elements = new List<ParameterToMatlabVariableMappingRowViewModel>()
             {
-                new MappedElementDefinitionRowViewModel()
+                new ParameterToMatlabVariableMappingRowViewModel()
                 {
                     SelectedMatlabVariable = new MatlabWorkspaceRowViewModel("a", 0.5d),
                     SelectedParameter = new Parameter()
@@ -73,7 +73,36 @@ namespace DEHPMatlab.Tests.MappingRules
                         }
                     }
                 },
-                new MappedElementDefinitionRowViewModel()
+                new ParameterToMatlabVariableMappingRowViewModel()
+                {
+                    SelectedMatlabVariable = new MatlabWorkspaceRowViewModel("c", "-45"),
+                    SelectedParameter = new Parameter()
+                    {
+                        IsOptionDependent = true,
+                        StateDependence = new ActualFiniteStateList()
+                        {
+                            ActualState = { this.state1, this.state2 }
+                        },
+                        ValueSet =
+                        {
+                            new ParameterValueSet()
+                            {
+                                Computed = new ValueArray<string>(new List<string>(){"-15","-"}),
+                                ValueSwitch = ParameterSwitchKind.COMPUTED,
+                                ActualState = this.state1,
+                                ActualOption = this.option2
+                            },
+                            new ParameterValueSet()
+                            {
+                                Computed = new ValueArray<string>(new List<string>(){"15","-"}),
+                                ValueSwitch = ParameterSwitchKind.COMPUTED,
+                                ActualState = this.state2,
+                                ActualOption = this.option1
+                            }
+                        }
+                    }
+                },
+                new ParameterToMatlabVariableMappingRowViewModel()
                 {
                     SelectedMatlabVariable = new MatlabWorkspaceRowViewModel("b", "-45"),
                     SelectedOption =  this.option1,
@@ -110,11 +139,11 @@ namespace DEHPMatlab.Tests.MappingRules
         [Test]
         public void VerifyTransform()
         {
-            Assert.IsTrue(this.elements.TrueForAll(x => x.IsValid));
+            Assert.IsFalse(this.elements.TrueForAll(x => x.IsValid));
             var variables = this.rule.Transform(this.elements);
             var firstVariable = variables.First();
             var lastVariable = variables.Last();
-            Assert.AreEqual(2, variables.Count);
+            Assert.AreEqual(3, variables.Count);
             Assert.AreEqual("5", firstVariable.Value);
             Assert.AreEqual(0.5d, this.elements.First().SelectedMatlabVariable.Value);
             Assert.AreEqual("15", lastVariable.Value);

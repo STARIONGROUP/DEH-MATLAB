@@ -401,8 +401,8 @@ namespace DEHPMatlab.DstController
         /// <summary>
         /// Map the provided collection using the corresponding rule in the assembly and the <see cref="MappingEngine"/>
         /// </summary>
-        /// <param name="hubElementDefitions">The <see cref="List{T}"/> of see <see cref="MappedElementDefinitionRowViewModel"/></param>
-        public void Map(List<MappedElementDefinitionRowViewModel> hubElementDefitions)
+        /// <param name="hubElementDefitions">The <see cref="List{T}"/> of see <see cref="ParameterToMatlabVariableMappingRowViewModel"/></param>
+        public void Map(List<ParameterToMatlabVariableMappingRowViewModel> hubElementDefitions)
         {
             if (this.mappingEngine.Map(hubElementDefitions) is List<MatlabWorkspaceRowViewModel> variables && variables.Any())
             {
