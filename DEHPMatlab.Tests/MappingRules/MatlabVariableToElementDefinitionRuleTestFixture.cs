@@ -47,10 +47,12 @@ namespace DEHPMatlab.Tests.MappingRules
 
     using NUnit.Framework;
 
+    using ReactiveUI;
+
     [TestFixture]
     public class MatlabVariableToElementDefinitionRuleTestFixture
     {
-        private MatlabVariableToElementDefintionRule rule;
+        private MatlabVariableToElementDefinitionRule rule;
         private List<MatlabWorkspaceRowViewModel> variables;
         private Mock<IHubController> hubController;
         private Uri uri;
@@ -104,7 +106,7 @@ namespace DEHPMatlab.Tests.MappingRules
                 }
             };
 
-            this.rule = new MatlabVariableToElementDefintionRule();
+            this.rule = new MatlabVariableToElementDefinitionRule();
 
             this.SetParameterTypes();
 
@@ -267,11 +269,11 @@ namespace DEHPMatlab.Tests.MappingRules
                     SelectedOption = new Option(),
                     SelectedActualFiniteState = this.actualFiniteStates.ActualState.First(),
                     SelectedElementDefinition = elementDefinition,
-                    SelectedElementUsages = { elementUsage },
                     SelectedParameter = parameter,
                     SelectedParameterType = parameter.ParameterType
                 });
 
+            this.variables.Last().SelectedElementUsages = new ReactiveList<ElementUsage>(){ elementUsage };
             var elements = this.rule.Transform(this.variables).OfType<ElementDefinition>();
             var definiton = elements.Last();
             var firstContainedElement = definiton.ContainedElement.First();

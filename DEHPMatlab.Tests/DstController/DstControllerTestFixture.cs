@@ -27,6 +27,7 @@ namespace DEHPMatlab.Tests.DstController
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Reactive.Concurrency;
 
     using CDP4Common.EngineeringModelData;
@@ -108,25 +109,34 @@ namespace DEHPMatlab.Tests.DstController
             this.dstController.IsSessionOpen = true;
             Assert.Throws<FileNotFoundException>(() => this.dstController.LoadScript("a"));
             Assert.IsFalse(this.dstController.IsScriptLoaded);
+            this.dstController.MatlabWorkspaceInputRowViewModels.Add(new MatlabWorkspaceRowViewModel("RE", 0.5));
             this.dstController.LoadScript(Path.Combine(TestContext.CurrentContext.TestDirectory, "Resources","GNC_Lab4.m"));
             Assert.IsTrue(this.dstController.IsScriptLoaded);
             Assert.AreEqual(6, this.dstController.MatlabWorkspaceInputRowViewModels.Count);
+            
+            Assert.AreEqual(6370, this.dstController.MatlabWorkspaceInputRowViewModels
+                .First(x => x.Name == "RE").Value);
 
+            this.dstController.MatlabAllWorkspaceRowViewModels.Add(new MatlabWorkspaceRowViewModel("a", 45));
             Assert.DoesNotThrowAsync(()=>this.dstController.RunMatlabScript());
+
+            Assert.AreNotEqual(45,this.dstController.MatlabAllWorkspaceRowViewModels
+                .First(x => x.Name == "a").Value);
+
             this.dstController.MatlabAllWorkspaceRowViewModels.Add(this.dstController.MatlabWorkspaceInputRowViewModels[1]);
             this.dstController.MatlabWorkspaceInputRowViewModels[1].Value = 0;
             Assert.IsTrue(string.IsNullOrEmpty(this.dstController.MatlabWorkspaceInputRowViewModels[1].ParentName));
             this.matlabConnector.Verify(x=>x.ExecuteFunction(It.IsAny<string>()), Times.Exactly(3));
 
             this.matlabConnector.Verify(x=>x.PutVariable(It.IsAny<MatlabWorkspaceRowViewModel>()),
-                Times.Exactly(8));
+                Times.Exactly(24));
 
             Assert.DoesNotThrow(() => this.dstController.UnloadScript());
             Assert.IsTrue(string.IsNullOrEmpty(this.dstController.LoadedScriptName));
         }
 
         [Test]
-        public void VerifyMap()
+        public void VerifyMappingFromDstToHub()
         {
             this.mappingEngine.Setup(x => x.Map(It.IsAny<object>()))
                 .Returns(new List<ElementBase>()
@@ -143,6 +153,26 @@ namespace DEHPMatlab.Tests.DstController
             Assert.DoesNotThrow(() => this.dstController.Map(new List<MatlabWorkspaceRowViewModel>()));
             this.mappingEngine.Setup(x => x.Map(It.IsAny<object>())).Throws<InvalidOperationException>();
             Assert.Throws<InvalidOperationException>(() => this.dstController.Map(default(List<MatlabWorkspaceRowViewModel>)));
+        }
+
+        [Test]
+        public void VerifyMappingFromHubToDst()
+        {
+            this.mappingEngine.Setup(x => x.Map(It.IsAny<object>()))
+                .Returns(new List<MatlabWorkspaceRowViewModel>()
+                {
+                    new MatlabWorkspaceRowViewModel("a", "b")
+                });
+            
+            this.dstController.Map(new List<MappedElementDefinitionRowViewModel>()
+            {
+                new MappedElementDefinitionRowViewModel()
+            });
+
+            Assert.AreEqual(1, this.dstController.HubMapResult.Count);
+            Assert.DoesNotThrow(() => this.dstController.Map(new List<MappedElementDefinitionRowViewModel>()));
+            this.mappingEngine.Setup(x => x.Map(It.IsAny<object>())).Throws<InvalidOperationException>();
+            Assert.Throws<InvalidOperationException>(() => this.dstController.Map(default(List<MappedElementDefinitionRowViewModel>)));
         }
     }
 }
