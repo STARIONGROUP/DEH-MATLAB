@@ -78,9 +78,14 @@ namespace DEHPMatlab.DstController
         ReactiveList<MatlabWorkspaceRowViewModel> MatlabAllWorkspaceRowViewModels { get; }
 
         /// <summary>
-        /// Gets the colection of mapped <see cref="Parameter"/>s And <see cref="ParameterOverride"/>s through their container
+        /// Gets the collection of mapped <see cref="Parameter"/>s And <see cref="ParameterOverride"/>s through their container
         /// </summary>
         ReactiveList<ElementBase> DstMapResult { get; }
+
+        /// <summary>
+        /// Gets the collection of mapped <see cref="MatlabWorkspaceRowViewModel"/>s
+        /// </summary>
+        ReactiveList<MatlabWorkspaceRowViewModel> HubMapResult { get; }
 
         /// <summary>
         /// Connects the adapter to a Matlab Instance
@@ -114,7 +119,13 @@ namespace DEHPMatlab.DstController
         /// <summary>
         /// Map the provided collection using the corresponding rule in the assembly and the <see cref="MappingEngine"/>
         /// </summary>
-        /// <param name="dstVariables">The <see cref="List{T}"/> of <see cref="MatlabWorkspaceRowViewModel"/> data</param>
+        /// <param name="dstVariables">The <see cref="List{T}"/> of <see cref="MatlabWorkspaceRowViewModel"/></param>
         void Map(List<MatlabWorkspaceRowViewModel> dstVariables);
+
+        /// <summary>
+        /// Map the provided collection using the corresponding rule in the assembly and the <see cref="MappingEngine"/>
+        /// </summary>
+        /// <param name="hubElementDefitions">The <see cref="List{T}"/> of see <see cref="ParameterToMatlabVariableMappingRowViewModel"/></param>
+        void Map(List<ParameterToMatlabVariableMappingRowViewModel> hubElementDefitions);
     }
 }

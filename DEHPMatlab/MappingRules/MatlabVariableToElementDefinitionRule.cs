@@ -1,5 +1,5 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="MatlabVariableToElementDefintionRule.cs" company="RHEA System S.A.">
+// <copyright file="MatlabVariableToElementDefinitionRule.cs" company="RHEA System S.A.">
 // Copyright (c) 2020-2022 RHEA System S.A.
 // 
 // Author: Sam Gerené, Alex Vorobiev, Alexander van Delft, Nathanael Smiechowski, Antoine Théate.
@@ -46,10 +46,10 @@ namespace DEHPMatlab.MappingRules
     using NLog;
 
     /// <summary>
-    /// The <see cref="MatlabVariableToElementDefintionRule"/> is a <see cref="IMappingRule"/> for the <see cref="MappingEngine"/>
+    /// The <see cref="MatlabVariableToElementDefinitionRule"/> is a <see cref="IMappingRule"/> for the <see cref="MappingEngine"/>
     /// That takes a <see cref="List{T}"/> of <see cref="MatlabWorkspaceRowViewModel"/> as input and outputs a E-TM-10-25 <see cref="ElementDefinition"/>
     /// </summary>
-    public class MatlabVariableToElementDefintionRule : MappingRule<List<MatlabWorkspaceRowViewModel>, List<ElementBase>>
+    public class MatlabVariableToElementDefinitionRule : MappingRule<List<MatlabWorkspaceRowViewModel>, List<ElementBase>>
     {
         /// <summary>
         /// The current class logger

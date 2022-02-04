@@ -181,6 +181,11 @@ namespace DEHPMatlab.DstController
         public ReactiveList<ElementBase> DstMapResult { get; } = new();
 
         /// <summary>
+        /// Gets the collection of mapped <see cref="MatlabWorkspaceRowViewModel"/>s
+        /// </summary>
+        public ReactiveList<MatlabWorkspaceRowViewModel> HubMapResult { get; } = new();
+
+        /// <summary>
         /// Initializes all <see cref="DstController"/> observables
         /// </summary>
         private void InitializeObservables()
@@ -211,13 +216,6 @@ namespace DEHPMatlab.DstController
                 }
 
                 this.matlabConnector.PutVariable(sender);
-                var inWorkspaceVariable = this.MatlabAllWorkspaceRowViewModels.FirstOrDefault(x => x.Name == sender.Name);
-
-                if (inWorkspaceVariable != null)
-                {
-                    inWorkspaceVariable.Value = sender.Value;
-                }
-
                 this.IsBusy = false;
             }
         }
@@ -258,16 +256,29 @@ namespace DEHPMatlab.DstController
         public void LoadScript(string scriptPath)
         {
             this.UnloadScript();
-            this.MatlabWorkspaceInputRowViewModels.Clear();
 
-            var detectedInputs = this.matlabParser.ParseMatlabScript(scriptPath, 
+            var detectedInputs = this.matlabParser.ParseMatlabScript(scriptPath,
                 out this.loadedScriptPath);
 
             if (!string.IsNullOrEmpty(this.loadedScriptPath))
             {
                 this.LoadedScriptName = Path.GetFileName(scriptPath);
                 this.IsScriptLoaded = true;
-                this.MatlabWorkspaceInputRowViewModels.AddRange(detectedInputs);
+
+                foreach (var detectedInput in detectedInputs)
+                {
+                    var alreadyInside = this.MatlabWorkspaceInputRowViewModels
+                        .FirstOrDefault(x => x.Name == detectedInput.Name);
+
+                    if (alreadyInside != null)
+                    {
+                        alreadyInside.Value = detectedInput.Value;
+                    }
+                    else
+                    {
+                        this.MatlabWorkspaceInputRowViewModels.Add(detectedInput);
+                    }
+                }
             }
         }
 
@@ -310,6 +321,18 @@ namespace DEHPMatlab.DstController
                 {
                     Task.Run(() => this.matlabConnector.PutVariable(matlabWorkspaceInputRowViewModel));
                 }
+
+                var variableInsideWorkspace = this.MatlabAllWorkspaceRowViewModels.FirstOrDefault(x => 
+                    x.Name == matlabWorkspaceInputRowViewModel.Name);
+
+                if (variableInsideWorkspace == null)
+                {
+                    this.MatlabAllWorkspaceRowViewModels.Add(matlabWorkspaceInputRowViewModel);
+                }
+                else
+                {
+                    variableInsideWorkspace.Value = matlabWorkspaceInputRowViewModel.Value;
+                }
             }
 
             this.IsBusy = false;
@@ -323,8 +346,6 @@ namespace DEHPMatlab.DstController
         {
             if (this.IsSessionOpen)
             {
-                this.MatlabAllWorkspaceRowViewModels.Clear();
-
                 var uniqueVariable = $"uv{DateTime.Now:yyyyMMddHHmmss}";
 
                 this.matlabConnector.ExecuteFunction($"{uniqueVariable} = who");
@@ -346,7 +367,21 @@ namespace DEHPMatlab.DstController
                     }
                 );
 
-                this.MatlabAllWorkspaceRowViewModels.AddRange(variables);
+                foreach (var matlabVariable in variables)
+                {
+                    var variableAlreadyPresent = this.MatlabAllWorkspaceRowViewModels
+                        .FirstOrDefault(x => x.Name == matlabVariable.Name);
+
+                    if (variableAlreadyPresent != null)
+                    {
+                        variableAlreadyPresent.Value = matlabVariable.Value;
+                    }
+                    else
+                    {
+                        this.MatlabAllWorkspaceRowViewModels.Add(matlabVariable);
+                    }
+                }
+
                 this.matlabConnector.ExecuteFunction($"clear {uniqueVariable}");
             }
         }
@@ -360,6 +395,18 @@ namespace DEHPMatlab.DstController
             if (this.mappingEngine.Map(dstVariables) is List<ElementBase> elements && elements.Any())
             {
                 this.DstMapResult.AddRange(elements);
+            }
+        }
+
+        /// <summary>
+        /// Map the provided collection using the corresponding rule in the assembly and the <see cref="MappingEngine"/>
+        /// </summary>
+        /// <param name="hubElementDefitions">The <see cref="List{T}"/> of see <see cref="ParameterToMatlabVariableMappingRowViewModel"/></param>
+        public void Map(List<ParameterToMatlabVariableMappingRowViewModel> hubElementDefitions)
+        {
+            if (this.mappingEngine.Map(hubElementDefitions) is List<MatlabWorkspaceRowViewModel> variables && variables.Any())
+            {
+                this.HubMapResult.AddRange(variables);
             }
         }
     }
