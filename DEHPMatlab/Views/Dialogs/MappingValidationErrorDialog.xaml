@@ -1,0 +1,30 @@
+﻿<dx:DXDialogWindow x:Class="DEHPMatlab.Views.Dialogs.MappingValidationErrorDialog"
+                   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" 
+                   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                   xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                   xmlns:dx="http://schemas.devexpress.com/winfx/2008/xaml/core"
+                   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                   mc:Ignorable="d"
+                   Title="Mapping error" Height="250" Width="280" ResizeMode="NoResize"
+                   WindowStartupLocation="CenterScreen" Topmost="True">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"></RowDefinition>
+            <RowDefinition></RowDefinition>
+        </Grid.RowDefinitions>
+        <Image Source="{dx:DXImage 'SvgImages/Icon Builder/Security_WarningCircled1.svg'}" VerticalAlignment="Top" Height="50"></Image>
+        <TextBlock Grid.Row="1" TextAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Run Text="There is a mapping error!"/>
+            <LineBreak></LineBreak>
+            <LineBreak></LineBreak>
+            <Run Text="One or more selected ParameterTypes"/>
+            <LineBreak></LineBreak>
+            <Run Text="are incompatible with the mapped variables"/>
+            <LineBreak></LineBreak>
+        </TextBlock>
+    </Grid>
+    <dx:DXDialogWindow.FooterButtons>
+        <dx:DialogButton ToolTip="Cancel the mapping and stay in the mapping dialog to correct the errors" Content="Cancel" MinWidth="65" DialogResult="Cancel"/>
+        <dx:DialogButton ToolTip="Continue with the valid mapping, ignoring errors" IsDefault="True" Content="Continue" MinWidth="65" DialogResult="OK"/>
+    </dx:DXDialogWindow.FooterButtons>
+</dx:DXDialogWindow>

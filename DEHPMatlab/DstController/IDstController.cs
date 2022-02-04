@@ -24,7 +24,13 @@
 
 namespace DEHPMatlab.DstController
 {
+    using System.Collections.Generic;
     using System.Threading.Tasks;
+
+    using CDP4Common.EngineeringModelData;
+
+    using DEHPCommon.Enumerators;
+    using DEHPCommon.MappingEngine;
 
     using DEHPMatlab.Services.MatlabConnector;
     using DEHPMatlab.ViewModel.Row;
@@ -57,6 +63,11 @@ namespace DEHPMatlab.DstController
         bool IsBusy { get; set; }
 
         /// <summary>
+        /// Gets or sets the <see cref="MappingDirection"/>
+        /// </summary>
+        MappingDirection MappingDirection { get; set; }
+
+        /// <summary>
         /// Gets the collection of <see cref="MatlabWorkspaceInputRowViewModels"/> detected as Input
         /// </summary>
         ReactiveList<MatlabWorkspaceRowViewModel> MatlabWorkspaceInputRowViewModels { get; }
@@ -65,6 +76,11 @@ namespace DEHPMatlab.DstController
         /// Gets the collections of all <see cref="MatlabWorkspaceRowViewModel"/> included in the Matlab Workspace
         /// </summary>
         ReactiveList<MatlabWorkspaceRowViewModel> MatlabAllWorkspaceRowViewModels { get; }
+
+        /// <summary>
+        /// Gets the colection of mapped <see cref="Parameter"/>s And <see cref="ParameterOverride"/>s through their container
+        /// </summary>
+        ReactiveList<ElementBase> DstMapResult { get; }
 
         /// <summary>
         /// Connects the adapter to a Matlab Instance
@@ -94,5 +110,11 @@ namespace DEHPMatlab.DstController
         /// </summary>
         /// <returns>The <see cref="Task"/></returns>
         Task RunMatlabScript();
+
+        /// <summary>
+        /// Map the provided collection using the corresponding rule in the assembly and the <see cref="MappingEngine"/>
+        /// </summary>
+        /// <param name="dstVariables">The <see cref="List{T}"/> of <see cref="MatlabWorkspaceRowViewModel"/> data</param>
+        void Map(List<MatlabWorkspaceRowViewModel> dstVariables);
     }
 }

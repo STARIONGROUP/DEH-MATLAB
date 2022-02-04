@@ -25,8 +25,11 @@
 namespace DEHPMatlab.Tests.DstController
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Reactive.Concurrency;
+
+    using CDP4Common.EngineeringModelData;
 
     using DEHPCommon.Enumerators;
     using DEHPCommon.MappingEngine;
@@ -49,6 +52,7 @@ namespace DEHPMatlab.Tests.DstController
         private DstController dstController;
         private Mock<IMatlabConnector> matlabConnector;
         private Mock<IStatusBarControlViewModel> statusBar;
+        private Mock<IMappingEngine> mappingEngine;
         private IMatlabParser matlabParser;
 
         [SetUp]
@@ -67,7 +71,10 @@ namespace DEHPMatlab.Tests.DstController
             this.statusBar = new Mock<IStatusBarControlViewModel>();
             this.statusBar.Setup(x => x.Append(It.IsAny<string>(), It.IsAny<StatusBarMessageSeverity>()));
             this.matlabParser = new MatlabParser();
-            this.dstController = new DstController(this.matlabConnector.Object, this.matlabParser, this.statusBar.Object);
+
+            this.mappingEngine = new Mock<IMappingEngine>();
+
+            this.dstController = new DstController(this.matlabConnector.Object, this.matlabParser, this.statusBar.Object, this.mappingEngine.Object);
         }
 
         [Test]
@@ -76,6 +83,9 @@ namespace DEHPMatlab.Tests.DstController
             Assert.IsFalse(this.dstController.IsSessionOpen);
             Assert.IsFalse(this.dstController.IsBusy);
             Assert.IsNotNull(this.dstController.MatlabWorkspaceInputRowViewModels);
+            Assert.AreEqual(MappingDirection.FromDstToHub, this.dstController.MappingDirection);
+            this.dstController.MappingDirection = MappingDirection.FromHubToDst;
+            Assert.AreEqual(MappingDirection.FromHubToDst, this.dstController.MappingDirection);
         }
 
         [Test]
@@ -113,6 +123,26 @@ namespace DEHPMatlab.Tests.DstController
 
             Assert.DoesNotThrow(() => this.dstController.UnloadScript());
             Assert.IsTrue(string.IsNullOrEmpty(this.dstController.LoadedScriptName));
+        }
+
+        [Test]
+        public void VerifyMap()
+        {
+            this.mappingEngine.Setup(x => x.Map(It.IsAny<object>()))
+                .Returns(new List<ElementBase>()
+                {
+                    new ElementDefinition()
+                });
+
+            this.dstController.Map(new List<MatlabWorkspaceRowViewModel>()
+            {
+                new MatlabWorkspaceRowViewModel("a","b")
+            });
+
+            Assert.AreEqual(1, this.dstController.DstMapResult.Count);
+            Assert.DoesNotThrow(() => this.dstController.Map(new List<MatlabWorkspaceRowViewModel>()));
+            this.mappingEngine.Setup(x => x.Map(It.IsAny<object>())).Throws<InvalidOperationException>();
+            Assert.Throws<InvalidOperationException>(() => this.dstController.Map(default(List<MatlabWorkspaceRowViewModel>)));
         }
     }
 }

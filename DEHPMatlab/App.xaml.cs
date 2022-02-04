@@ -32,6 +32,7 @@ namespace DEHPMatlab
     using Autofac;
 
     using DEHPCommon;
+    using DEHPCommon.MappingEngine;
     using DEHPCommon.Services.NavigationService;
     using DEHPCommon.UserInterfaces.ViewModels.Interfaces;
 
@@ -97,6 +98,7 @@ namespace DEHPMatlab
             containerBuilder.RegisterType<DstBrowserHeaderViewModel>().As<IDstBrowserHeaderViewModel>();
             containerBuilder.RegisterType<DstVariablesControlViewModel>().As<IDstVariablesControlViewModel>();
             containerBuilder.RegisterType<DstConnectViewModel>().As<IDstConnectViewModel>();
+            containerBuilder.RegisterType<DstMappingConfigurationDialogViewModel>().As<IDstMappingConfigurationDialogViewModel>();
         }
 
         /// <summary>
@@ -108,6 +110,7 @@ namespace DEHPMatlab
             containerBuilder.RegisterType<MatlabConnector>().As<IMatlabConnector>().SingleInstance();
             containerBuilder.RegisterType<DstController.DstController>().As<IDstController>().SingleInstance();
             containerBuilder.RegisterType<MatlabParser>().As<IMatlabParser>().SingleInstance();
+            containerBuilder.RegisterType<MappingEngine>().As<IMappingEngine>().WithParameter(MappingEngine.ParameterName, Assembly.GetExecutingAssembly());
         }
 
         /// <summary>

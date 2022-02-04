@@ -24,9 +24,20 @@
 
 namespace DEHPMatlab.Tests.ViewModel
 {
+    using System.Linq;
+
+    using Autofac;
+
+    using DEHPCommon;
+    using DEHPCommon.HubController.Interfaces;
+    using DEHPCommon.Services.NavigationService;
+    using DEHPCommon.UserInterfaces.ViewModels.Interfaces;
+
     using DEHPMatlab.DstController;
     using DEHPMatlab.ViewModel;
+    using DEHPMatlab.ViewModel.Dialogs.Interfaces;
     using DEHPMatlab.ViewModel.Row;
+    using DEHPMatlab.Views.Dialogs;
 
     using Moq;
 
@@ -39,6 +50,10 @@ namespace DEHPMatlab.Tests.ViewModel
     {
         private DstVariablesControlViewModel viewModel;
         private Mock<IDstController> dstController;
+        private Mock<IHubController> hubController;
+        private Mock<INavigationService> navigationService;
+        private Mock<IStatusBarControlViewModel> statusBar;
+        private Mock<IDstMappingConfigurationDialogViewModel> dstMappingConfiguration;
 
         [SetUp]
         public void Setup()
@@ -50,13 +65,28 @@ namespace DEHPMatlab.Tests.ViewModel
                 {
                     new MatlabWorkspaceRowViewModel("a",5)
                 });
+
             this.dstController.Setup(x => x.MatlabAllWorkspaceRowViewModels).Returns(
                 new ReactiveList<MatlabWorkspaceRowViewModel>()
                 {
                     new MatlabWorkspaceRowViewModel("b", 0)
                 });
 
-            this.viewModel = new DstVariablesControlViewModel(this.dstController.Object);
+            this.hubController = new Mock<IHubController>();
+            
+            this.navigationService = new Mock<INavigationService>();
+
+            this.navigationService.Setup(x =>
+                x.ShowDialog<DstMappingConfigurationDialog, IDstMappingConfigurationDialogViewModel>
+                    (It.IsAny<IDstMappingConfigurationDialogViewModel>())).Returns(false);
+
+            this.statusBar = new Mock<IStatusBarControlViewModel>();
+
+            this.dstMappingConfiguration = new Mock<IDstMappingConfigurationDialogViewModel>();
+            this.dstMappingConfiguration.Setup(x => x.Variables).Returns(new ReactiveList<MatlabWorkspaceRowViewModel>());
+
+            this.viewModel = new DstVariablesControlViewModel(this.dstController.Object, this.hubController.Object,
+                this.navigationService.Object, this.statusBar.Object);
         }
 
         [Test]
@@ -66,6 +96,24 @@ namespace DEHPMatlab.Tests.ViewModel
             Assert.AreEqual(this.dstController.Object.MatlabWorkspaceInputRowViewModels[0], this.viewModel.InputVariables[0]);
             Assert.IsFalse(this.viewModel.IsBusy);
             Assert.AreEqual(1, this.viewModel.WorkspaceVariables.Count);
+            Assert.AreEqual(0,this.viewModel.SelectedThings.Count);
+            this.viewModel.SelectedThing = this.viewModel.WorkspaceVariables.First();
+            Assert.AreEqual(this.viewModel.WorkspaceVariables.First(), this.viewModel.SelectedThing);
+            Assert.IsFalse(this.viewModel.MapCommand.CanExecute(null));
+        }
+
+        [Test]
+        public void VerifyMapCommand()
+        {
+            Assert.DoesNotThrow(() => this.viewModel.MapCommand.Execute(null));
+            var containerBuilder = new ContainerBuilder();
+            containerBuilder.RegisterInstance(this.dstMappingConfiguration.Object).As<IDstMappingConfigurationDialogViewModel>();
+            AppContainer.Container = containerBuilder.Build();
+            this.viewModel.SelectedThings.AddRange(this.viewModel.WorkspaceVariables);
+            Assert.DoesNotThrow(() => this.viewModel.MapCommand.Execute(null));
+            
+            this.navigationService.Verify(x => 
+                x.ShowDialog<DstMappingConfigurationDialog, IDstMappingConfigurationDialogViewModel>(this.dstMappingConfiguration.Object), Times.Once);
         }
     }
 }

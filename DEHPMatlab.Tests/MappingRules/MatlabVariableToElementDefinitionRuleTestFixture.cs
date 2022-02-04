@@ -31,6 +31,7 @@ namespace DEHPMatlab.Tests.MappingRules
     using Autofac;
 
     using CDP4Common.EngineeringModelData;
+    using CDP4Common.Exceptions;
     using CDP4Common.SiteDirectoryData;
     using CDP4Common.Types;
 
@@ -59,7 +60,6 @@ namespace DEHPMatlab.Tests.MappingRules
         private Iteration iteration;
         private ActualFiniteStateList actualFiniteStates;
         private RatioScale scale;
-        private SimpleQuantityKind quantityKindParameterType;
         private SampledFunctionParameterType scalarParameterType;
         private SampledFunctionParameterType dateTimeParameterType;
 
@@ -112,7 +112,8 @@ namespace DEHPMatlab.Tests.MappingRules
             {
                 new MatlabWorkspaceRowViewModel("mass", 500)
                 {
-                    SelectedParameterType = this.scalarParameterType
+                    SelectedParameterType = this.scalarParameterType,
+                    SelectedScale = this.scale
                 }
             };
         }
@@ -172,24 +173,29 @@ namespace DEHPMatlab.Tests.MappingRules
             };
 
             this.scale = new RatioScale() { NumberSet = NumberSetKind.REAL_NUMBER_SET };
-
-            this.quantityKindParameterType = new SimpleQuantityKind()
-            {
-                DefaultScale = this.scale,
-                PossibleScale = { this.scale },
-                Name = "SimpleQuantityKind"
-            };
         }
 
         [Test]
         public void VerifyMapToNewElementDefintion()
         {
             this.iteration.Element.Add(new ElementDefinition(){ Name = "mass" });
-            var elements = this.rule.Transform(this.variables).OfType<ElementDefinition>().ToList();
-            Assert.AreEqual(1, elements.Count);
-            Assert.AreEqual(1, elements.Last().Parameter.Count);
+            var elementDefiniton = new ElementDefinition() { Name = "anotherElement" };
+            var simpleQuantity = new SimpleQuantityKind(Guid.NewGuid(), null, null);
+            var parameter = new Parameter(Guid.NewGuid(), null, null){ParameterType = simpleQuantity};
+            elementDefiniton.Parameter.Add(parameter);
+            
+            this.variables.Add(new MatlabWorkspaceRowViewModel("aName", 5)
+            {
+                SelectedParameterType = simpleQuantity,
+                SelectedElementDefinition = elementDefiniton
+            });
 
-            var firstParameter = elements.Last().Parameter.First();
+            Assert.Throws<IncompleteModelException>(() => this.rule.Transform(this.variables));
+            parameter.ValueSet.Add(new ParameterValueSet(Guid.NewGuid(), null, null));
+            var elements = this.rule.Transform(this.variables).OfType<ElementDefinition>().ToList();
+            Assert.AreEqual(2, elements.Count);
+            Assert.AreEqual(1, elements.First().Parameter.Count);
+            var firstParameter = elements.First().Parameter.First();
             Assert.AreEqual("TextXQuantity", firstParameter.ParameterType.Name);
             var firstParameterValueSet = firstParameter.ValueSet.Last();
             Assert.AreEqual("500", firstParameterValueSet.Computed[0]);

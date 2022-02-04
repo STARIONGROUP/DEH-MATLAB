@@ -32,6 +32,10 @@ namespace DEHPMatlab.DstController
     using System.Linq;
     using System.Threading.Tasks;
 
+    using CDP4Common.EngineeringModelData;
+
+    using DEHPCommon.Enumerators;
+    using DEHPCommon.MappingEngine;
     using DEHPCommon.UserInterfaces.ViewModels.Interfaces;
 
     using DEHPMatlab.Enumerator;
@@ -39,6 +43,8 @@ namespace DEHPMatlab.DstController
     using DEHPMatlab.ViewModel.Row;
 
     using ReactiveUI;
+
+    using File = System.IO.File;
 
     /// <summary>
     /// The <see cref="DstController"/> takes care of retrieving data from and to Matlab
@@ -61,6 +67,11 @@ namespace DEHPMatlab.DstController
         private readonly IMatlabParser matlabParser;
 
         /// <summary>
+        /// The <see cref="IMappingEngine"/>
+        /// </summary>
+        private readonly IMappingEngine mappingEngine;
+
+        /// <summary>
         /// Backing field for <see cref="IsSessionOpen"/>
         /// </summary>
         private bool isSessionOpen;
@@ -81,6 +92,11 @@ namespace DEHPMatlab.DstController
         private bool isBusy;
 
         /// <summary>
+        /// Backing field for <see cref="MappingDirection"/>
+        /// </summary>
+        private MappingDirection mappingDirection;
+
+        /// <summary>
         /// The path of the script to run
         /// </summary>
         private string loadedScriptPath;
@@ -91,11 +107,15 @@ namespace DEHPMatlab.DstController
         /// <param name="matlabConnector">The <see cref="IMatlabConnector"/></param>
         /// <param name="matlabParser">The <see cref="IMatlabParser"/></param>
         /// <param name="statusBar">The <see cref="IStatusBarControlViewModel"/></param>
-        public DstController(IMatlabConnector matlabConnector, IMatlabParser matlabParser, IStatusBarControlViewModel statusBar)
+        /// <param name="mappingEngine">The <see cref="IMappingEngine"/></param>
+        public DstController(IMatlabConnector matlabConnector, IMatlabParser matlabParser,
+            IStatusBarControlViewModel statusBar, IMappingEngine mappingEngine)
         {
             this.matlabConnector = matlabConnector;
             this.matlabParser = matlabParser;
             this.statusBar = statusBar;
+            this.mappingEngine = mappingEngine;
+
             this.InitializeObservables();
         }
 
@@ -136,6 +156,15 @@ namespace DEHPMatlab.DstController
         }
 
         /// <summary>
+        /// Gets or sets the <see cref="MappingDirection"/>
+        /// </summary>
+        public MappingDirection MappingDirection
+        {
+            get => this.mappingDirection;
+            set => this.RaiseAndSetIfChanged(ref this.mappingDirection, value);
+        }
+
+        /// <summary>
         /// Gets the collection of <see cref="MatlabWorkspaceInputRowViewModels"/> detected as inputs
         /// </summary>
         public ReactiveList<MatlabWorkspaceRowViewModel> MatlabWorkspaceInputRowViewModels { get; }
@@ -145,6 +174,11 @@ namespace DEHPMatlab.DstController
         /// Gets the collections of all <see cref="MatlabWorkspaceRowViewModel"/> included in the Matlab Workspace
         /// </summary>
         public ReactiveList<MatlabWorkspaceRowViewModel> MatlabAllWorkspaceRowViewModels { get; } = new();
+
+        /// <summary>
+        /// Gets the colection of mapped <see cref="Parameter"/>s And <see cref="ParameterOverride"/>s through their container
+        /// </summary>
+        public ReactiveList<ElementBase> DstMapResult { get; } = new();
 
         /// <summary>
         /// Initializes all <see cref="DstController"/> observables
@@ -314,6 +348,18 @@ namespace DEHPMatlab.DstController
 
                 this.MatlabAllWorkspaceRowViewModels.AddRange(variables);
                 this.matlabConnector.ExecuteFunction($"clear {uniqueVariable}");
+            }
+        }
+
+        /// <summary>
+        /// Map the provided collection using the corresponding rule in the assembly and the <see cref="MappingEngine"/>
+        /// </summary>
+        /// <param name="dstVariables">The <see cref="List{T}"/> of <see cref="MatlabWorkspaceRowViewModel"/> data</param>
+        public void Map(List<MatlabWorkspaceRowViewModel> dstVariables)
+        {
+            if (this.mappingEngine.Map(dstVariables) is List<ElementBase> elements && elements.Any())
+            {
+                this.DstMapResult.AddRange(elements);
             }
         }
     }

@@ -29,6 +29,7 @@ namespace DEHPMatlab.ViewModel.Row
 
     using CDP4Common.EngineeringModelData;
     using CDP4Common.SiteDirectoryData;
+    using CDP4Common.Validation;
 
     using ReactiveUI;
 
@@ -81,6 +82,11 @@ namespace DEHPMatlab.ViewModel.Row
         /// Backing field for <see cref="SelectedScale"/>
         /// </summary>
         private MeasurementScale selectedScale;
+
+        /// <summary>
+        /// Backing field for <see cref="IsVariableMappingValid"/>
+        /// </summary>
+        private bool? isVariableMappingValid;
 
         /// <summary>
         /// Initializes a new <see cref="MatlabWorkspaceRowViewModel"/>
@@ -175,6 +181,15 @@ namespace DEHPMatlab.ViewModel.Row
         }
 
         /// <summary>
+        /// Gets or sets a value indicating whether the mapping is valid or there is no mapping
+        /// </summary>
+        public bool? IsVariableMappingValid
+        {
+            get => this.isVariableMappingValid;
+            set => this.RaiseAndSetIfChanged(ref this.isVariableMappingValid, value);
+        }
+
+        /// <summary>
         /// Gets or sets the collection of selected <see cref="ElementUsage"/>s
         /// </summary>
         public ReactiveList<ElementUsage> SelectedElementUsages { get; set; } = new();
@@ -189,7 +204,7 @@ namespace DEHPMatlab.ViewModel.Row
 
             if (this.Value != null && this.Value.GetType().IsArray)
             {
-                var array = (Array)this.Value;
+                var array = (Array) this.Value;
 
                 for (var i = 0; i < array.GetLength(0); i++)
                 {
@@ -209,6 +224,37 @@ namespace DEHPMatlab.ViewModel.Row
             }
 
             return unwrappedArray;
+        }
+
+        /// <summary>
+        /// Verify whether this <see cref="MatlabWorkspaceRowViewModel"/> is ready to be mapped
+        /// And sets the <see cref="IsVariableMappingValid"/>
+        /// </summary>
+        /// <returns>An assert</returns>
+        public bool IsValid()
+        {
+            var result = (this.SelectedParameter != null || (this.SelectedParameterType != null && this.SelectedParameter is null))
+                         && (this.SelectedElementUsages.IsEmpty || (this.SelectedElementDefinition != null && this.SelectedParameter != null));
+
+            this.IsVariableMappingValid = result ? this.IsParameterTypeValid() : default(bool?);
+
+            return this.IsVariableMappingValid.HasValue && result && this.IsVariableMappingValid.Value;
+        }
+
+        /// <summary>
+        /// Verify if the <see cref="SelectedParameterType"/> is compatible with the current variable
+        /// </summary>
+        /// <returns>An assert whether the <see cref="SelectedParameterType"/> is compatible</returns>
+        public bool IsParameterTypeValid()
+        {
+            return this.SelectedParameterType switch
+            {
+                ScalarParameterType scalarParameterType =>
+                    this.SelectedParameterType.Validate(this.Value,
+                            this.SelectedScale ?? (scalarParameterType as QuantityKind)?.DefaultScale)
+                        .ResultKind == ValidationResultKind.Valid,
+                _ => false
+            };
         }
     }
 }
