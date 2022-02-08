@@ -127,6 +127,11 @@ namespace DEHPMatlab.ViewModel.Row
         }
 
         /// <summary>
+        /// Gets the index of the represented variable if it is part of an array
+        /// </summary>
+        public List<int> Index { get; } = new();
+
+        /// <summary>
         /// Gets or sets the selected <see cref="Parameter"/>
         /// </summary>
         public Parameter SelectedParameter
@@ -213,9 +218,9 @@ namespace DEHPMatlab.ViewModel.Row
                         var variable =
                             new MatlabWorkspaceRowViewModel($"{this.Name}[{i},{j}]", array.GetValue(i, j))
                             {
-                                ParentName = this.Name
+                                ParentName = this.Name,
                             };
-
+                        variable.Index.AddRange(new List<int>(){i, j});
                         unwrappedArray.AddRange(variable.UnwrapVariableRowViewModels());
                     }
                 }

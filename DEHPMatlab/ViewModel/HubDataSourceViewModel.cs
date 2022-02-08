@@ -25,15 +25,25 @@
 namespace DEHPMatlab.ViewModel
 {
     using System;
+    using System.Linq;
+    using System.Reactive.Linq;
     using System.Windows.Input;
 
+    using Autofac;
+
+    using DEHPCommon;
+    using DEHPCommon.Enumerators;
     using DEHPCommon.HubController.Interfaces;
     using DEHPCommon.Services.NavigationService;
     using DEHPCommon.UserInterfaces.ViewModels.Interfaces;
     using DEHPCommon.UserInterfaces.ViewModels.PublicationBrowser;
+    using DEHPCommon.UserInterfaces.ViewModels.Rows.ElementDefinitionTreeRows;
     using DEHPCommon.UserInterfaces.Views;
 
+    using DEHPMatlab.DstController;
+    using DEHPMatlab.ViewModel.Dialogs.Interfaces;
     using DEHPMatlab.ViewModel.Interfaces;
+    using DEHPMatlab.Views.Dialogs;
 
     using ReactiveUI;
 
@@ -54,6 +64,11 @@ namespace DEHPMatlab.ViewModel
         public IHubSessionControlViewModel SessionControl { get; }
 
         /// <summary>
+        /// The <see cref="IDstController"/>
+        /// </summary>
+        private readonly IDstController dstController;
+
+        /// <summary>
         /// Initializes a new <see cref="HubDataSourceViewModel"/>
         /// </summary>
         /// <param name="navigationService">The <see cref="INavigationService"/></param>
@@ -63,10 +78,11 @@ namespace DEHPMatlab.ViewModel
         /// <param name="publicationBrowser">The <see cref="IPublicationBrowserViewModel"/></param>
         /// <param name="objectBrowser">The <see cref="IObjectBrowserViewModel"/></param>
         /// <param name="statusBar">The <see cref="IStatusBarControlViewModel"/></param>
-        public HubDataSourceViewModel(INavigationService navigationService, 
-            IHubController hubController, IHubSessionControlViewModel sessionControl, 
+        /// <param name="dstController">The <see cref="IDstController"/></param>
+        public HubDataSourceViewModel(INavigationService navigationService,
+            IHubController hubController, IHubSessionControlViewModel sessionControl,
             IHubBrowserHeaderViewModel hubBrowserHeader, IPublicationBrowserViewModel publicationBrowser,
-            IObjectBrowserViewModel objectBrowser, IStatusBarControlViewModel statusBar) : base(navigationService)
+            IObjectBrowserViewModel objectBrowser, IStatusBarControlViewModel statusBar, IDstController dstController) : base(navigationService)
         {
             this.hubController = hubController;
             this.SessionControl = sessionControl;
@@ -75,6 +91,7 @@ namespace DEHPMatlab.ViewModel
             this.ObjectBrowser = objectBrowser;
             this.StatusBar = statusBar;
             this.DataSourceName = "the Hub";
+            this.dstController = dstController;
             this.InitializeCommands();
         }
 
@@ -92,6 +109,33 @@ namespace DEHPMatlab.ViewModel
                     x => x.hubController.IsSessionOpen,
                     (i, o) => i.Value != null && o.Value)
                 .Subscribe(this.UpdateConnectButtonText);
+
+            var canMap = this.ObjectBrowser.CanMap.Merge(this.WhenAny(x => x.dstController.MappingDirection,
+                x => x.dstController.IsSessionOpen,
+                (m, s)
+                    => m.Value is MappingDirection.FromHubToDst && s.Value));
+
+            this.ObjectBrowser.MapCommand = ReactiveCommand.Create(canMap);
+            this.ObjectBrowser.MapCommand.Subscribe(_ => this.MapCommandExecute());
+        }
+
+        /// <summary>
+        /// Executes the <see cref="IObjectBrowserViewModel.MapCommand"/>
+        /// </summary>
+        private void MapCommandExecute()
+        {
+            var viewModel = AppContainer.Container.Resolve<IHubMappingConfigurationDialogViewModel>();
+
+            viewModel.Elements.AddRange(this.ObjectBrowser.SelectedThings
+                .OfType<ElementDefinitionRowViewModel>()
+                .Select(x =>
+                {
+                    x.Thing.Clone(true);
+                    return x;
+                }));
+
+            this.NavigationService.ShowDialog<HubMappingConfigurationDialog, IHubMappingConfigurationDialogViewModel>(viewModel);
+            this.ObjectBrowser.SelectedThings.Clear();
         }
 
         /// <summary>

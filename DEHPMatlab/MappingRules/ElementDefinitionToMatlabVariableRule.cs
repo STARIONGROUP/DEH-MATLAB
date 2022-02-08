@@ -35,25 +35,29 @@ namespace DEHPMatlab.MappingRules
     /// <summary>
     /// The <see cref="ElementDefinitionToMatlabVariableRule"/> is a <see cref="IMappingRule"/> for the <see cref="MappingEngine"/>
     /// That takes a <see cref="List{T}"/> of <see cref="ParameterToMatlabVariableMappingRowViewModel"/>
-    /// as input and outputs a collection of <see cref="MatlabWorkspaceRowViewModel"/>
+    /// as input and outputs a collection of <see cref="ParameterToMatlabVariableMappingRowViewModel"/> with a clone of the
+    /// <see cref="ParameterToMatlabVariableMappingRowViewModel.SelectedMatlabVariable"/>
     /// </summary>
-    public class ElementDefinitionToMatlabVariableRule : MappingRule<List<ParameterToMatlabVariableMappingRowViewModel>, List<MatlabWorkspaceRowViewModel>>
+    public class ElementDefinitionToMatlabVariableRule : MappingRule<List<ParameterToMatlabVariableMappingRowViewModel>, 
+        List<ParameterToMatlabVariableMappingRowViewModel>>
     {
         /// <summary>
-        /// Transform a <see cref="List{T}"/> of <see cref="ParameterToMatlabVariableMappingRowViewModel"/> into an <see cref="MatlabWorkspaceRowViewModel"/>
+        /// Transform a <see cref="List{T}"/> of <see cref="ParameterToMatlabVariableMappingRowViewModel"/>
+        /// into an <see cref="ParameterToMatlabVariableMappingRowViewModel"/> with a cloned <see cref="MatlabWorkspaceRowViewModel"/>
         /// </summary>
         /// <param name="input">The <see cref="List{T}"/> of <see cref="ParameterToMatlabVariableMappingRowViewModel"/></param>
-        /// <returns>A collection of <see cref="MatlabWorkspaceRowViewModel"/></returns>
-        public override List<MatlabWorkspaceRowViewModel> Transform(List<ParameterToMatlabVariableMappingRowViewModel> input)
+        /// <returns>A collection of <see cref="ParameterToMatlabVariableMappingRowViewModel"/></returns>
+        public override List<ParameterToMatlabVariableMappingRowViewModel> Transform(List<ParameterToMatlabVariableMappingRowViewModel> input)
         {
             return input.Select(x =>
-                new MatlabWorkspaceRowViewModel(x.SelectedMatlabVariable.Name, x.Value)
+            {
+                x.SelectedMatlabVariable = new MatlabWorkspaceRowViewModel(x.SelectedMatlabVariable.Name, x.SelectedValue.Value)
                 {
                     ParentName = x.SelectedMatlabVariable.ParentName,
-                    SelectedActualFiniteState = x.SelectedState,
-                    SelectedOption = x.SelectedOption,
-                    SelectedParameter = x.SelectedParameter
-                }).ToList();
+                };
+
+                return x;
+            }).ToList();
         }
     }
 }

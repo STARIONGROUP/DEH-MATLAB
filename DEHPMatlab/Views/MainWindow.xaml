@@ -9,8 +9,13 @@
         xmlns:publicationBrowser="clr-namespace:DEHPCommon.UserInterfaces.Views.PublicationBrowser;assembly=DEHPCommon"
         xmlns:objectBrowser="clr-namespace:DEHPCommon.UserInterfaces.Views.ObjectBrowser;assembly=DEHPCommon"
         xmlns:views="clr-namespace:DEHPMatlab.Views"
+        xmlns:dxmvvm="http://schemas.devexpress.com/winfx/2008/xaml/mvvm"
+        xmlns:behaviors="clr-namespace:DEHPCommon.UserInterfaces.Behaviors;assembly=DEHPCommon"
         Title="DEHP Matlab Adapter" WindowState="Normal" WindowStartupLocation="CenterScreen"
         MinWidth="850" MinHeight="600" mc:Ignorable="d" Width="1500" Height="950">
+    <dxmvvm:Interaction.Behaviors>
+        <behaviors:SwitchLayoutPanelOrderBehavior/>
+    </dxmvvm:Interaction.Behaviors>
     <DockPanel>
         <Grid>
             <Grid.RowDefinitions>
@@ -48,6 +53,23 @@
                             </Grid>
                         </dxdo:LayoutPanel>
                         <dxdo:LayoutPanel Name="ImpactPanel" Caption="Impact">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"></RowDefinition>
+                                    <RowDefinition></RowDefinition>
+                                </Grid.RowDefinitions>
+                                <Grid Margin="10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition></ColumnDefinition>
+                                        <ColumnDefinition Width="Auto"></ColumnDefinition>
+                                        <ColumnDefinition></ColumnDefinition>
+                                    </Grid.ColumnDefinitions>
+
+                                    <Path Stretch="Fill" Fill="DarkGray" Data="M 0,110 110,110 110,90 120,120 110,150 110,130 0,130 Z" HorizontalAlignment="Left" Margin="-10,5,10,5" MaxHeight="30" RenderTransformOrigin=".5,.5"/>
+                                    <Button ToolTip="Change Transfer Direction" Grid.Column="1" Height="40" HorizontalAlignment="Center" Content="Change Transfer Direction" Command="{Binding ChangeMappingDirection}"/>
+                                    <Path Grid.Column="2" Stretch="Fill" Fill="DarkGray" Data="M 0,110 110,110 110,90 120,120 110,150 110,130 0,130 Z" HorizontalAlignment="Left" Margin="10,5,-10,5" MaxHeight="30" RenderTransformOrigin=".5,.5"/>
+                                </Grid>
+                            </Grid>
                         </dxdo:LayoutPanel>
                         <dxdo:LayoutPanel Name="HubPanel" Caption="Hub Data Source">
                             <Grid>

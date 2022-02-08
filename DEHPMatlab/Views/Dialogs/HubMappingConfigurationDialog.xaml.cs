@@ -1,7 +1,7 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="IMainWindowViewModel.cs" company="RHEA System S.A.">
+// <copyright file="HubMappingConfigurationDialog.xaml.cs" company="RHEA System S.A.">
 // Copyright (c) 2020-2022 RHEA System S.A.
-//  
+// 
 // Author: Sam Gerené, Alex Vorobiev, Alexander van Delft, Nathanael Smiechowski, Antoine Théate.
 // 
 // This file is part of DEHPMatlab
@@ -22,20 +22,22 @@
 // </copyright>
 // --------------------------------------------------------------------------------------------------------------------
 
-namespace DEHPMatlab.ViewModel.Interfaces
+namespace DEHPMatlab.Views.Dialogs
 {
-    using DEHPCommon.UserInterfaces.ViewModels.Interfaces;
-
-    using ReactiveUI;
+    using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
-    /// Interface definitions of methods and properties of <see cref="MainWindowViewModel"/>
+    /// Interaction logic for HubMappingConfigurationDialog.xaml
     /// </summary>
-    public interface IMainWindowViewModel : ISwitchLayoutPanelOrderViewModel
+    public partial class HubMappingConfigurationDialog
     {
         /// <summary>
-        /// Gets or sets the <see cref="ReactiveCommand"/> that will change the mapping direction
+        /// Initializes a new <see cref=" HubMappingConfigurationDialog"/>
         /// </summary>
-        ReactiveCommand<object> ChangeMappingDirection { get; }
+        [ExcludeFromCodeCoverage]
+        public HubMappingConfigurationDialog()
+        {
+            this.InitializeComponent();
+        }
     }
 }

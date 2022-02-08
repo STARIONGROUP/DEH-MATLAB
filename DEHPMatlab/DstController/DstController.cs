@@ -181,9 +181,9 @@ namespace DEHPMatlab.DstController
         public ReactiveList<ElementBase> DstMapResult { get; } = new();
 
         /// <summary>
-        /// Gets the collection of mapped <see cref="MatlabWorkspaceRowViewModel"/>s
+        /// Gets the collection of mapped <see cref="ParameterToMatlabVariableMappingRowViewModel"/>s
         /// </summary>
-        public ReactiveList<MatlabWorkspaceRowViewModel> HubMapResult { get; } = new();
+        public ReactiveList<ParameterToMatlabVariableMappingRowViewModel> HubMapResult { get; } = new();
 
         /// <summary>
         /// Initializes all <see cref="DstController"/> observables
@@ -404,7 +404,7 @@ namespace DEHPMatlab.DstController
         /// <param name="hubElementDefitions">The <see cref="List{T}"/> of see <see cref="ParameterToMatlabVariableMappingRowViewModel"/></param>
         public void Map(List<ParameterToMatlabVariableMappingRowViewModel> hubElementDefitions)
         {
-            if (this.mappingEngine.Map(hubElementDefitions) is List<MatlabWorkspaceRowViewModel> variables && variables.Any())
+            if (this.mappingEngine.Map(hubElementDefitions) is List<ParameterToMatlabVariableMappingRowViewModel> variables && variables.Any())
             {
                 this.HubMapResult.AddRange(variables);
             }

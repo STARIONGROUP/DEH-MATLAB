@@ -26,10 +26,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="ViewModel\Dialogs\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Reference Include="matlabcom">
       <HintPath>..\lib\matlabcom.dll</HintPath>
     </Reference>

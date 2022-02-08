@@ -71,7 +71,8 @@ namespace DEHPMatlab.Tests.MappingRules
                                 ValueSwitch = ParameterSwitchKind.COMPUTED
                             }
                         }
-                    }
+                    },
+                    SelectedValue = new ValueSetValueRowViewModel(new ParameterValueSet(), "5", null)
                 },
                 new ParameterToMatlabVariableMappingRowViewModel()
                 {
@@ -100,7 +101,8 @@ namespace DEHPMatlab.Tests.MappingRules
                                 ActualOption = this.option1
                             }
                         }
-                    }
+                    },
+                    SelectedValue = new ValueSetValueRowViewModel(new ParameterValueSet(), "15", null)
                 },
                 new ParameterToMatlabVariableMappingRowViewModel()
                 {
@@ -131,7 +133,8 @@ namespace DEHPMatlab.Tests.MappingRules
                                 ActualOption = this.option1
                             }
                         }
-                    }
+                    },
+                    SelectedValue = new ValueSetValueRowViewModel(new ParameterValueSet(), "15", null)
                 }
             };
         }
@@ -140,17 +143,24 @@ namespace DEHPMatlab.Tests.MappingRules
         public void VerifyTransform()
         {
             Assert.IsFalse(this.elements.TrueForAll(x => x.IsValid));
+            var initialMatlabVariables = this.elements.Select(x => x.SelectedMatlabVariable).ToList();
             var variables = this.rule.Transform(this.elements);
             var firstVariable = variables.First();
             var lastVariable = variables.Last();
             Assert.AreEqual(3, variables.Count);
-            Assert.AreEqual("5", firstVariable.Value);
-            Assert.AreEqual(0.5d, this.elements.First().SelectedMatlabVariable.Value);
-            Assert.AreEqual("15", lastVariable.Value);
+            Assert.AreEqual("5", firstVariable.SelectedValue.Value);
+            Assert.AreEqual(0.5d, initialMatlabVariables.First().Value);
+            Assert.AreEqual("15", lastVariable.SelectedValue.Value);
             Assert.AreEqual(this.option1, lastVariable.SelectedOption);
-            Assert.AreEqual(this.state2, lastVariable.SelectedActualFiniteState); 
+            Assert.AreEqual(this.state2, lastVariable.SelectedState);
             Assert.AreNotEqual(this.option1, this.elements.First().SelectedMatlabVariable.SelectedOption);
             Assert.AreNotEqual(this.state2, this.elements.First().SelectedMatlabVariable.SelectedActualFiniteState);
+            var valueSet = this.elements.First().SelectedValue;
+            Assert.IsNull(valueSet.Option);
+            Assert.IsNull(valueSet.ActualState);
+            Assert.IsNull(valueSet.Scale);
+            Assert.IsNotNull(valueSet.Representation);
+            Assert.IsNotNull(valueSet.Container);
         }
     }
 }
