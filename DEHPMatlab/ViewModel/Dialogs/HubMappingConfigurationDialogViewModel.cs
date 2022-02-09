@@ -86,7 +86,6 @@ namespace DEHPMatlab.ViewModel.Dialogs
         /// </summary>
         private ActualFiniteState selectedState;
 
-
         /// <summary>
         /// Initializes a new <see cref="HubMappingConfigurationDialogViewModel"/>
         /// </summary>
