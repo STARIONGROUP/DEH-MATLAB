@@ -30,8 +30,6 @@ namespace DEHPMatlab.ViewModel.Row
 
     using System;
 
-    using NLog;
-
     /// <summary>
     /// Represents an association between an <see cref="ElementBase"/> and a <see cref="MatlabWorkspaceRowViewModel"/> for
     /// update the <see cref="MatlabWorkspaceRowViewModel"/> value
@@ -39,14 +37,9 @@ namespace DEHPMatlab.ViewModel.Row
     public class ParameterToMatlabVariableMappingRowViewModel : ReactiveObject
     {
         /// <summary>
-        /// The <see cref="NLog"/> logger
-        /// </summary>
-        private readonly Logger logger = LogManager.GetCurrentClassLogger();
-
-        /// <summary>
         /// Backing field for <see cref="SelectedParameter"/>
         /// </summary>
-        private Parameter selectedParameter;
+        private ParameterOrOverrideBase selectedParameter;
 
         /// <summary>
         /// Backing field for <see cref="SelectedOption"/>
@@ -69,9 +62,9 @@ namespace DEHPMatlab.ViewModel.Row
         private bool isValid;
 
         /// <summary>
-        /// Backing field for <see cref="Value"/>
+        /// Backing field for <see cref="SelectedValue"/>
         /// </summary>
-        private object value;
+        private ValueSetValueRowViewModel selectedValue;
 
         /// <summary>
         /// Initializes a new <see cref="ParameterToMatlabVariableMappingRowViewModel"/>
@@ -85,9 +78,9 @@ namespace DEHPMatlab.ViewModel.Row
         }
 
         /// <summary>
-        /// Gets or sets the selected <see cref="Parameter"/> of this view model
+        /// Gets or sets the selected <see cref="ParameterOrOverrideBase"/> of this view model
         /// </summary>
-        public Parameter SelectedParameter
+        public ParameterOrOverrideBase SelectedParameter
         {
             get => this.selectedParameter;
             set => this.RaiseAndSetIfChanged(ref this.selectedParameter, value);
@@ -132,27 +125,18 @@ namespace DEHPMatlab.ViewModel.Row
         /// <summary>
         /// The value of the parameter for the selected <see cref="Option"/> and the selected <see cref="ActualFiniteState"/>
         /// </summary>
-        public object Value
+        public ValueSetValueRowViewModel SelectedValue
         {
-            get => this.value;
-            set => this.RaiseAndSetIfChanged(ref this.value, value);
+            get => this.selectedValue;
+            set => this.RaiseAndSetIfChanged(ref this.selectedValue, value);
         }
 
         /// <summary>
         /// Verify the validity of this <see cref="ParameterToMatlabVariableMappingRowViewModel"/>
         /// </summary>
-        private void VerifyValidity()
+        public void VerifyValidity()
         {
-            try
-            {
-                this.Value = this.SelectedParameter?.QueryParameterBaseValueSet(this.SelectedOption, this.SelectedState).ActualValue[0];
-                this.IsValid = this.Value != null && this.Value.ToString() != "-" && this.SelectedMatlabVariable != null;
-            }
-            catch (Exception ex)
-            {
-                this.logger.Error(ex);
-                this.IsValid = false;
-            }
+            this.IsValid = this.SelectedValue != null && this.SelectedValue.Value != "-" && this.SelectedMatlabVariable != null;
         }
     }
 }

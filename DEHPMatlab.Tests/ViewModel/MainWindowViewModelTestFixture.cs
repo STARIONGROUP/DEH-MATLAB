@@ -24,9 +24,11 @@
 
 namespace DEHPMatlab.Tests.ViewModel
 {
+    using DEHPCommon.Enumerators;
     using DEHPCommon.UserInterfaces.Behaviors;
     using DEHPCommon.UserInterfaces.ViewModels.Interfaces;
 
+    using DEHPMatlab.DstController;
     using DEHPMatlab.ViewModel;
     using DEHPMatlab.ViewModel.Interfaces;
 
@@ -41,6 +43,7 @@ namespace DEHPMatlab.Tests.ViewModel
         private Mock<IHubDataSourceViewModel> hubDataSourceViewModel;
         private Mock<IStatusBarControlViewModel> statusBarControlViewModel;
         private Mock<IDstDataSourceViewModel> dstDataSourceViewModel;
+        private Mock<IDstController> dstController;
 
         [SetUp]
         public void Setup()
@@ -48,21 +51,32 @@ namespace DEHPMatlab.Tests.ViewModel
             this.hubDataSourceViewModel = new Mock<IHubDataSourceViewModel>();
             this.statusBarControlViewModel = new Mock<IStatusBarControlViewModel>();
             this.dstDataSourceViewModel = new Mock<IDstDataSourceViewModel>();
+            this.dstController = new Mock<IDstController>();
 
             this.viewModel = new MainWindowViewModel(this.hubDataSourceViewModel.Object,
-                this.statusBarControlViewModel.Object, this.dstDataSourceViewModel.Object);
+                this.statusBarControlViewModel.Object, this.dstDataSourceViewModel.Object, this.dstController.Object);
         }
 
         [Test]
         public void VerifyProperties()
         {
-            Mock<ISwitchLayoutPanelOrderBehavior> switchPanel = new Mock<ISwitchLayoutPanelOrderBehavior>();
             Assert.IsNull(this.viewModel.SwitchPanelBehavior);
-            this.viewModel.SwitchPanelBehavior = switchPanel.Object;
-            Assert.IsNotNull(this.viewModel.SwitchPanelBehavior);
             Assert.IsNotNull(this.viewModel.HubDataSourceViewModel);
             Assert.IsNotNull(this.viewModel.StatusBarControlViewModel);
             Assert.IsNotNull(this.viewModel.DstDataSourceViewModel);
+            Assert.IsNotNull(this.viewModel.ChangeMappingDirection);
+        }
+
+        [Test]
+        public void VerifyChangeMappingDirection()
+        {
+            this.viewModel.ChangeMappingDirection.Execute(null);
+            Assert.AreEqual(MappingDirection.FromDstToHub, this.dstController.Object.MappingDirection);
+            Mock<ISwitchLayoutPanelOrderBehavior> switchPanel = new Mock<ISwitchLayoutPanelOrderBehavior>();
+            switchPanel.Setup(x => x.Switch());
+            switchPanel.Setup(x => x.MappingDirection).Returns(MappingDirection.FromHubToDst);
+            this.viewModel.SwitchPanelBehavior = switchPanel.Object;
+            this.viewModel.ChangeMappingDirection.Execute(null);
         }
     }
 }

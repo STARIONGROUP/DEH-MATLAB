@@ -99,6 +99,7 @@ namespace DEHPMatlab
             containerBuilder.RegisterType<DstVariablesControlViewModel>().As<IDstVariablesControlViewModel>();
             containerBuilder.RegisterType<DstConnectViewModel>().As<IDstConnectViewModel>();
             containerBuilder.RegisterType<DstMappingConfigurationDialogViewModel>().As<IDstMappingConfigurationDialogViewModel>();
+            containerBuilder.RegisterType<HubMappingConfigurationDialogViewModel>().As<IHubMappingConfigurationDialogViewModel>();
         }
 
         /// <summary>

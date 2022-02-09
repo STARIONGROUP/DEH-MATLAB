@@ -28,6 +28,8 @@ namespace DEHPMatlab.Tests.ViewModel
     using System.Collections.Generic;
     using System.Reactive.Concurrency;
 
+    using Autofac;
+
     using CDP4Common.CommonData;
     using CDP4Common.EngineeringModelData;
     using CDP4Common.SiteDirectoryData;
@@ -35,14 +37,19 @@ namespace DEHPMatlab.Tests.ViewModel
     using CDP4Dal;
     using CDP4Dal.Permission;
 
+    using DEHPCommon;
     using DEHPCommon.HubController.Interfaces;
     using DEHPCommon.Services.NavigationService;
     using DEHPCommon.UserInterfaces.ViewModels;
     using DEHPCommon.UserInterfaces.ViewModels.Interfaces;
     using DEHPCommon.UserInterfaces.ViewModels.PublicationBrowser;
+    using DEHPCommon.UserInterfaces.ViewModels.Rows.ElementDefinitionTreeRows;
     using DEHPCommon.UserInterfaces.Views;
 
+    using DEHPMatlab.DstController;
     using DEHPMatlab.ViewModel;
+    using DEHPMatlab.ViewModel.Dialogs.Interfaces;
+    using DEHPMatlab.Views.Dialogs;
 
     using Moq;
 
@@ -62,6 +69,7 @@ namespace DEHPMatlab.Tests.ViewModel
         private Mock<IObjectBrowserViewModel> objectBrowser;
         private Mock<IStatusBarControlViewModel> statusBar;
         private Mock<ISession> session;
+        private Mock<IDstController> dstController;
         private DomainOfExpertise domain;
         private Person person;
         private Participant participant;
@@ -84,6 +92,9 @@ namespace DEHPMatlab.Tests.ViewModel
             permissionService.Setup(x => x.Session).Returns(this.session.Object);
             permissionService.Setup(x => x.CanRead(It.IsAny<Thing>())).Returns(true);
             permissionService.Setup(x => x.CanWrite(It.IsAny<Thing>())).Returns(true);
+
+            this.dstController = new Mock<IDstController>();
+
             this.session.Setup(x => x.PermissionService).Returns(permissionService.Object);
 
             this.domain = new DomainOfExpertise(Guid.NewGuid(), null, null)
@@ -142,8 +153,9 @@ namespace DEHPMatlab.Tests.ViewModel
             this.sessionControl = new Mock<IHubSessionControlViewModel>();
             this.statusBar = new Mock<IStatusBarControlViewModel>();
 
-            this.viewModel = new HubDataSourceViewModel(this.navigationService.Object, this.hubController.Object,  this.sessionControl.Object, this.hubBrowserHeader.Object,
-                this.publicationBrowser.Object, this.objectBrowser.Object, this.statusBar.Object);
+            this.viewModel = new HubDataSourceViewModel(this.navigationService.Object, this.hubController.Object,
+                this.sessionControl.Object, this.hubBrowserHeader.Object, this.publicationBrowser.Object,
+                this.objectBrowser.Object, this.statusBar.Object, this.dstController.Object);
         }
 
         [Test]
@@ -169,6 +181,50 @@ namespace DEHPMatlab.Tests.ViewModel
             this.viewModel.ConnectCommand.Execute(null);
             this.hubController.Verify(x => x.Close(), Times.Once);
             this.navigationService.Verify(x => x.ShowDialog<Login>(), Times.Once);
+        }
+
+        [Test]
+        public void TestMapCommandExecute()
+        {
+            var dialog = new Mock<IHubMappingConfigurationDialogViewModel>();
+
+            dialog.Setup(x => x.Elements)
+                .Returns(new ReactiveList<ElementDefinitionRowViewModel>());
+
+            var container = new ContainerBuilder();
+            container.RegisterInstance(dialog.Object).As<IHubMappingConfigurationDialogViewModel>();
+
+            AppContainer.Container = container.Build();
+
+            this.objectBrowser.Setup(x => x.SelectedThings)
+                .Returns(new ReactiveList<object>());
+
+            var elementDefinition = new ElementDefinition(Guid.NewGuid(), null, new Uri("t://s.t"))
+            {
+                Parameter =
+                {
+                    new Parameter(Guid.NewGuid(), null, new Uri("t://s.t"))
+                    {
+                        ParameterType = new DateTimeParameterType(Guid.NewGuid(), null, new Uri("t://s.t")),
+                        ValueSet = { new ParameterValueSet(Guid.NewGuid(), null, new Uri("t://s.t")) }
+                    }
+                }
+            };
+
+            this.iteration.Element.Add(elementDefinition);
+
+            var elementRow = new ElementDefinitionRowViewModel(elementDefinition,
+                new DomainOfExpertise(), this.session.Object, null);
+
+            this.viewModel.ObjectBrowser.SelectedThings.Add(
+                elementRow);
+
+            Assert.IsTrue(this.viewModel.ObjectBrowser.MapCommand.CanExecute(null));
+            Assert.DoesNotThrow(() => this.viewModel.ObjectBrowser.MapCommand.Execute(null));
+
+            this.navigationService.Verify(x =>
+                    x.ShowDialog<HubMappingConfigurationDialog, IHubMappingConfigurationDialogViewModel>(It.IsAny<IHubMappingConfigurationDialogViewModel>()),
+                Times.Once);
         }
     }
 }

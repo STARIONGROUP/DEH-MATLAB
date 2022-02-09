@@ -44,6 +44,8 @@
                                       TreeDerivationMode="Selfreference"
                                       TreeLineStyle="Solid"
                                       VerticalScrollbarVisibility="Auto"
+                                      KeyFieldName="Name"
+                                      ParentFieldName="ParentName"
                                       ToolTip="Input variables detected inside the script. Those variables are editable">
                     </dxg:TreeListView>
                 </dxg:TreeListControl.View>

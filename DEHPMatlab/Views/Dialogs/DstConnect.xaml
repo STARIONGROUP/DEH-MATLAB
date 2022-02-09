@@ -27,16 +27,13 @@
                     <RowDefinition Height="50"/>
                 </Grid.RowDefinitions>
                 <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center" Text="Matlab Version :" Margin="5" />
-                <dxe:ComboBoxEdit Grid.Row="0" Grid.Column="2" Height="25" 
+                <dxe:ComboBoxEdit Grid.Row="0" Grid.Column="2" Height="25" Width="200"
                               ItemsSource="{Binding MatlabVersionDictionary}"
                               DisplayMember="Value"
                               ValueMember="Key" 
                               IsTextEditable="False"
                               SelectedItem="{Binding SelectedMatlabVersion}" 
                               ToolTip="Choose the wanted Matlab Version to run (must be installed)" >
-                    <dxe:ComboBoxEdit.StyleSettings>
-                        <dxe:RadioComboBoxStyleSettings/>
-                    </dxe:ComboBoxEdit.StyleSettings>
                 </dxe:ComboBoxEdit>
                 <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Text="{Binding ErrorMessageText}" Margin="0 0 5 0"/>
                 <Button Grid.Row="1" Grid.Column="2" Width="120" Height="30" HorizontalAlignment="Right" Command="{Binding ConnectCommand}" 

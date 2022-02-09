@@ -83,9 +83,9 @@ namespace DEHPMatlab.DstController
         ReactiveList<ElementBase> DstMapResult { get; }
 
         /// <summary>
-        /// Gets the collection of mapped <see cref="MatlabWorkspaceRowViewModel"/>s
+        /// Gets the collection of mapped <see cref="ParameterToMatlabVariableMappingRowViewModel"/>s
         /// </summary>
-        ReactiveList<MatlabWorkspaceRowViewModel> HubMapResult { get; }
+        ReactiveList<ParameterToMatlabVariableMappingRowViewModel> HubMapResult { get; }
 
         /// <summary>
         /// Connects the adapter to a Matlab Instance

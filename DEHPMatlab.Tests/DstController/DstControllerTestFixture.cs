@@ -159,9 +159,9 @@ namespace DEHPMatlab.Tests.DstController
         public void VerifyMappingFromHubToDst()
         {
             this.mappingEngine.Setup(x => x.Map(It.IsAny<object>()))
-                .Returns(new List<MatlabWorkspaceRowViewModel>()
-                {
-                    new MatlabWorkspaceRowViewModel("a", "b")
+                .Returns(new List<ParameterToMatlabVariableMappingRowViewModel>()
+                { 
+                    new ParameterToMatlabVariableMappingRowViewModel()
                 });
             
             this.dstController.Map(new List<ParameterToMatlabVariableMappingRowViewModel>()
