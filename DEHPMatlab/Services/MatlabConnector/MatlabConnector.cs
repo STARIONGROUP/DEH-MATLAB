@@ -103,7 +103,7 @@ namespace DEHPMatlab.Services.MatlabConnector
             catch (Exception e)
             {
                 this.MatlabConnectorStatus = MatlabConnectorStatus.Disconnected;
-                this.statusBarControl.Append($"{e.Message}");
+                this.statusBarControl.Append($"An error occured during the connection", StatusBarMessageSeverity.Error);
                 this.logger.Error($"Exception: {e.Message}");
             }
         }

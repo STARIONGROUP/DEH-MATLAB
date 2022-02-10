@@ -24,33 +24,63 @@
 
 namespace DEHPMatlab.ViewModel
 {
+    using System;
+
+    using DEHPCommon.Enumerators;
+    using DEHPCommon.Services.NavigationService;
     using DEHPCommon.UserInterfaces.Behaviors;
     using DEHPCommon.UserInterfaces.ViewModels.Interfaces;
+    using DEHPCommon.UserInterfaces.Views.ExchangeHistory;
 
+    using DEHPMatlab.DstController;
     using DEHPMatlab.ViewModel.Interfaces;
 
     using ReactiveUI;
 
-    using System;
-
-    using DEHPCommon.Enumerators;
-
-    using DEHPMatlab.DstController;
-
     /// <summary>
-    /// Represents the view model for <see cref="Views.MainWindow"/>
+    /// Represents the view model for <see cref="Views.MainWindow" />
     /// </summary>
     public class MainWindowViewModel : IMainWindowViewModel
     {
         /// <summary>
-        /// The <see cref="IDstController"/>
+        /// The <see cref="IDstController" />
         /// </summary>
         private readonly IDstController dstController;
 
         /// <summary>
-        /// Gets or sets the <see cref="ISwitchLayoutPanelOrderBehavior"/>
+        /// The <see cref="INavigationService" />
         /// </summary>
-        public ISwitchLayoutPanelOrderBehavior SwitchPanelBehavior { get; set; }
+        private readonly INavigationService navigationService;
+
+        /// <summary>
+        /// Create a new instance of <see cref="MainWindowViewModel" />
+        /// </summary>
+        /// <param name="hubDataSourceViewModel">A <see cref="IHubDataSourceViewModel" /></param>
+        /// <param name="statusBarControlViewModel">The <see cref="IStatusBarControlViewModel" /></param>
+        /// <param name="dstDataSourceViewModel">The <see cref="IDstDataSourceViewModel" /></param>
+        /// <param name="dstController">The <see cref="IDstController" /></param>
+        /// <param name="transferControlView">The <see cref="ITransferControlViewModel" /></param>
+        /// <param name="navigationService">The <see cref="INavigationService" /></param>
+        /// <param name="mappingViewModel">The <see cref="IMappingViewModel" /></param>
+        public MainWindowViewModel(IHubDataSourceViewModel hubDataSourceViewModel, IStatusBarControlViewModel statusBarControlViewModel,
+            IDstDataSourceViewModel dstDataSourceViewModel, IDstController dstController, ITransferControlViewModel transferControlView,
+            INavigationService navigationService, IMappingViewModel mappingViewModel)
+        {
+            this.HubDataSourceViewModel = hubDataSourceViewModel;
+            this.StatusBarControlViewModel = statusBarControlViewModel;
+            this.DstDataSourceViewModel = dstDataSourceViewModel;
+            this.dstController = dstController;
+            this.TransferControlViewModel = transferControlView;
+            this.navigationService = navigationService;
+            this.MappingViewModel = mappingViewModel;
+
+            this.InitializeCommands();
+        }
+
+        /// <summary>
+        /// The <see cref="IMappingViewModel" />
+        /// </summary>
+        public IMappingViewModel MappingViewModel { get; }
 
         /// <summary>
         /// Gets the view model that represents the 10-25 data source
@@ -68,37 +98,45 @@ namespace DEHPMatlab.ViewModel
         public IDstDataSourceViewModel DstDataSourceViewModel { get; }
 
         /// <summary>
-        /// Create a new instance of <see cref="MainWindowViewModel"/>
+        /// Gets the <see cref="ITransferControlViewModel" />
         /// </summary>
-        /// <param name="hubDataSourceViewModel">A <see cref="IHubDataSourceViewModel"/></param>
-        /// <param name="statusBarControlViewModel">The <see cref="IStatusBarControlViewModel"/></param>
-        /// <param name="dstDataSourceViewModel">The <see cref="IDstDataSourceViewModel"/></param>
-        /// <param name="dstController">The <see cref="IDstController"/></param>
-        public MainWindowViewModel(IHubDataSourceViewModel hubDataSourceViewModel, IStatusBarControlViewModel statusBarControlViewModel,
-            IDstDataSourceViewModel dstDataSourceViewModel, IDstController dstController)
-        {
-            this.HubDataSourceViewModel = hubDataSourceViewModel;
-            this.StatusBarControlViewModel = statusBarControlViewModel;
-            this.DstDataSourceViewModel = dstDataSourceViewModel;
-            this.dstController = dstController;
-
-            this.ChangeMappingDirection = ReactiveCommand.Create();
-            this.ChangeMappingDirection.Subscribe(_ => this.ChangeMappingDirectionExecute());
-        }
+        public ITransferControlViewModel TransferControlViewModel { get; }
 
         /// <summary>
-        /// Gets or sets the <see cref="ReactiveCommand"/> that will change the mapping direction
+        /// Gets the <see cref="ReactiveCommand" /> to open the
         /// </summary>
-        public ReactiveCommand<object> ChangeMappingDirection { get; }
+        public ReactiveCommand<object> OpenExchangeHistory { get; private set; }
 
         /// <summary>
-        /// Executes the <see cref="ChangeMappingDirection"/> command
+        /// Gets or sets the <see cref="ISwitchLayoutPanelOrderBehavior" />
+        /// </summary>
+        public ISwitchLayoutPanelOrderBehavior SwitchPanelBehavior { get; set; }
+
+        /// <summary>
+        /// Gets the <see cref="ReactiveCommand" /> that will change the mapping direction
+        /// </summary>
+        public ReactiveCommand<object> ChangeMappingDirection { get; private set; }
+
+        /// <summary>
+        /// Executes the <see cref="ChangeMappingDirection" /> command
         /// </summary>
         private void ChangeMappingDirectionExecute()
         {
             this.SwitchPanelBehavior?.Switch();
 
             this.dstController.MappingDirection = this.SwitchPanelBehavior?.MappingDirection ?? MappingDirection.FromDstToHub;
+        }
+
+        /// <summary>
+        /// Initiliaze all <see cref="ReactiveCommand{T}" /> of this viewmodel
+        /// </summary>
+        private void InitializeCommands()
+        {
+            this.ChangeMappingDirection = ReactiveCommand.Create();
+            this.ChangeMappingDirection.Subscribe(_ => this.ChangeMappingDirectionExecute());
+
+            this.OpenExchangeHistory = ReactiveCommand.Create();
+            this.OpenExchangeHistory.Subscribe(_ => this.navigationService.ShowDialog<ExchangeHistory>());
         }
     }
 }

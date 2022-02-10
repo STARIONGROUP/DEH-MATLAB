@@ -25,8 +25,10 @@
 namespace DEHPMatlab.Tests.ViewModel
 {
     using DEHPCommon.Enumerators;
+    using DEHPCommon.Services.NavigationService;
     using DEHPCommon.UserInterfaces.Behaviors;
     using DEHPCommon.UserInterfaces.ViewModels.Interfaces;
+    using DEHPCommon.UserInterfaces.Views.ExchangeHistory;
 
     using DEHPMatlab.DstController;
     using DEHPMatlab.ViewModel;
@@ -44,6 +46,9 @@ namespace DEHPMatlab.Tests.ViewModel
         private Mock<IStatusBarControlViewModel> statusBarControlViewModel;
         private Mock<IDstDataSourceViewModel> dstDataSourceViewModel;
         private Mock<IDstController> dstController;
+        private Mock<ITransferControlViewModel> transferControl;
+        private Mock<INavigationService> navigationService;
+        private Mock<IMappingViewModel> mappingViewModel;
 
         [SetUp]
         public void Setup()
@@ -52,9 +57,13 @@ namespace DEHPMatlab.Tests.ViewModel
             this.statusBarControlViewModel = new Mock<IStatusBarControlViewModel>();
             this.dstDataSourceViewModel = new Mock<IDstDataSourceViewModel>();
             this.dstController = new Mock<IDstController>();
+            this.transferControl = new Mock<ITransferControlViewModel>();
+            this.navigationService = new Mock<INavigationService>();
+            this.mappingViewModel = new Mock<IMappingViewModel>();
 
             this.viewModel = new MainWindowViewModel(this.hubDataSourceViewModel.Object,
-                this.statusBarControlViewModel.Object, this.dstDataSourceViewModel.Object, this.dstController.Object);
+                this.statusBarControlViewModel.Object, this.dstDataSourceViewModel.Object, this.dstController.Object, this.transferControl.Object,
+                this.navigationService.Object, this.mappingViewModel.Object);
         }
 
         [Test]
@@ -65,6 +74,7 @@ namespace DEHPMatlab.Tests.ViewModel
             Assert.IsNotNull(this.viewModel.StatusBarControlViewModel);
             Assert.IsNotNull(this.viewModel.DstDataSourceViewModel);
             Assert.IsNotNull(this.viewModel.ChangeMappingDirection);
+            Assert.IsNotNull(this.viewModel.MappingViewModel);
         }
 
         [Test]
@@ -72,11 +82,19 @@ namespace DEHPMatlab.Tests.ViewModel
         {
             this.viewModel.ChangeMappingDirection.Execute(null);
             Assert.AreEqual(MappingDirection.FromDstToHub, this.dstController.Object.MappingDirection);
-            Mock<ISwitchLayoutPanelOrderBehavior> switchPanel = new Mock<ISwitchLayoutPanelOrderBehavior>();
+            Mock<ISwitchLayoutPanelOrderBehavior> switchPanel = new();
             switchPanel.Setup(x => x.Switch());
             switchPanel.Setup(x => x.MappingDirection).Returns(MappingDirection.FromHubToDst);
             this.viewModel.SwitchPanelBehavior = switchPanel.Object;
             this.viewModel.ChangeMappingDirection.Execute(null);
+        }
+
+        [Test]
+        public void VerifyOpenExchangeHistory()
+        {
+            Assert.IsTrue(this.viewModel.OpenExchangeHistory.CanExecute(null));
+            Assert.DoesNotThrow(() => this.viewModel.OpenExchangeHistory.Execute(null));
+            this.navigationService.Verify(x => x.ShowDialog<ExchangeHistory>(), Times.Once);
         }
     }
 }

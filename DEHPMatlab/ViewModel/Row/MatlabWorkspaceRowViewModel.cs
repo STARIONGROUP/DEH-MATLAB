@@ -34,62 +34,62 @@ namespace DEHPMatlab.ViewModel.Row
     using ReactiveUI;
 
     /// <summary>
-    /// The <see cref="MatlabWorkspaceRowViewModel"/> stores the value of variable from the Matlab Workspace
+    /// The <see cref="MatlabWorkspaceRowViewModel" /> stores the value of variable from the Matlab Workspace
     /// </summary>
     public class MatlabWorkspaceRowViewModel : ReactiveObject
     {
         /// <summary>
-        /// Backing field for <see cref="Name"/>
-        /// </summary>
-        private string name;
-
-        /// <summary>
-        /// Backing field for <see cref="Value"/>
-        /// </summary>
-        private object value;
-
-        /// <summary>
-        /// Backing field for <see cref="ParentName"/>
-        /// </summary>
-        private string parentName;
-
-        /// <summary>
-        /// Backing field for <see cref="SelectedParameter"/>
-        /// </summary>
-        private Parameter selectedParameter;
-
-        /// <summary>
-        /// Backing field for <see cref="SelectedOption"/>
-        /// </summary>
-        private Option selectedOption;
-
-        /// <summary>
-        /// Backing field for <see cref="SelectedActualFiniteState"/>
-        /// </summary>
-        private ActualFiniteState selectedActualFiniteState;
-
-        /// <summary>
-        /// Backing field for <see cref="SelectedElementDefinition"/>
-        /// </summary>
-        private ElementDefinition selectedElementDefinition;
-
-        /// <summary>
-        /// Backing field for <see cref="SelectedParameterType"/>
-        /// </summary>
-        private ParameterType selectedParameterType;
-
-        /// <summary>
-        /// Backing field for <see cref="SelectedScale"/>
-        /// </summary>
-        private MeasurementScale selectedScale;
-
-        /// <summary>
-        /// Backing field for <see cref="IsVariableMappingValid"/>
+        /// Backing field for <see cref="IsVariableMappingValid" />
         /// </summary>
         private bool? isVariableMappingValid;
 
         /// <summary>
-        /// Initializes a new <see cref="MatlabWorkspaceRowViewModel"/>
+        /// Backing field for <see cref="Name" />
+        /// </summary>
+        private string name;
+
+        /// <summary>
+        /// Backing field for <see cref="ParentName" />
+        /// </summary>
+        private string parentName;
+
+        /// <summary>
+        /// Backing field for <see cref="SelectedActualFiniteState" />
+        /// </summary>
+        private ActualFiniteState selectedActualFiniteState;
+
+        /// <summary>
+        /// Backing field for <see cref="SelectedElementDefinition" />
+        /// </summary>
+        private ElementDefinition selectedElementDefinition;
+
+        /// <summary>
+        /// Backing field for <see cref="SelectedOption" />
+        /// </summary>
+        private Option selectedOption;
+
+        /// <summary>
+        /// Backing field for <see cref="SelectedParameter" />
+        /// </summary>
+        private Parameter selectedParameter;
+
+        /// <summary>
+        /// Backing field for <see cref="SelectedParameterType" />
+        /// </summary>
+        private ParameterType selectedParameterType;
+
+        /// <summary>
+        /// Backing field for <see cref="SelectedScale" />
+        /// </summary>
+        private MeasurementScale selectedScale;
+
+        /// <summary>
+        /// Backing field for <see cref="Value" />
+        /// </summary>
+        private object value;
+
+        /// <summary>
+        /// Initializes a new <see cref="MatlabWorkspaceRowViewModel" />
         /// </summary>
         /// <param name="name">The name of the variable</param>
         /// <param name="value">The value of the variable</param>
@@ -118,7 +118,7 @@ namespace DEHPMatlab.ViewModel.Row
         }
 
         /// <summary>
-        /// The name of the parent of the <see cref="MatlabWorkspaceRowViewModel"/> (used in case of Array)
+        /// The name of the parent of the <see cref="MatlabWorkspaceRowViewModel" /> (used in case of Array)
         /// </summary>
         public string ParentName
         {
@@ -132,7 +132,7 @@ namespace DEHPMatlab.ViewModel.Row
         public List<int> Index { get; } = new();
 
         /// <summary>
-        /// Gets or sets the selected <see cref="Parameter"/>
+        /// Gets or sets the selected <see cref="Parameter" />
         /// </summary>
         public Parameter SelectedParameter
         {
@@ -141,7 +141,7 @@ namespace DEHPMatlab.ViewModel.Row
         }
 
         /// <summary>
-        /// Gets or sets the selected <see cref="Option"/>
+        /// Gets or sets the selected <see cref="Option" />
         /// </summary>
         public Option SelectedOption
         {
@@ -150,7 +150,7 @@ namespace DEHPMatlab.ViewModel.Row
         }
 
         /// <summary>
-        /// Gets or sets the selected <see cref="ActualFiniteState"/>
+        /// Gets or sets the selected <see cref="ActualFiniteState" />
         /// </summary>
         public ActualFiniteState SelectedActualFiniteState
         {
@@ -159,7 +159,7 @@ namespace DEHPMatlab.ViewModel.Row
         }
 
         /// <summary>
-        /// Gets or sets the selected <see cref="ElementDefinition"/>
+        /// Gets or sets the selected <see cref="ElementDefinition" />
         /// </summary>
         public ElementDefinition SelectedElementDefinition
         {
@@ -168,7 +168,7 @@ namespace DEHPMatlab.ViewModel.Row
         }
 
         /// <summary>
-        /// Gets or sets the selected <see cref="Parameter"/>
+        /// Gets or sets the selected <see cref="Parameter" />
         /// </summary>
         public ParameterType SelectedParameterType
         {
@@ -177,7 +177,7 @@ namespace DEHPMatlab.ViewModel.Row
         }
 
         /// <summary>
-        /// Gets or sets the selected <see cref="ActualFiniteState"/>
+        /// Gets or sets the selected <see cref="ActualFiniteState" />
         /// </summary>
         public MeasurementScale SelectedScale
         {
@@ -195,14 +195,45 @@ namespace DEHPMatlab.ViewModel.Row
         }
 
         /// <summary>
-        /// Gets or sets the collection of selected <see cref="ElementUsage"/>s
+        /// Gets or sets the collection of selected <see cref="ElementUsage" />s
         /// </summary>
         public ReactiveList<ElementUsage> SelectedElementUsages { get; set; } = new();
 
         /// <summary>
-        /// If the <see cref="Value"/> is an Array, unwraps all neested <see cref="MatlabWorkspaceRowViewModel"/>
+        /// Verify whether this <see cref="MatlabWorkspaceRowViewModel" /> is ready to be mapped
+        /// And sets the <see cref="IsVariableMappingValid" />
         /// </summary>
-        /// <returns>A list of all nested <see cref="MatlabWorkspaceRowViewModel"/> including itself</returns>
+        /// <returns>An assert</returns>
+        public bool IsValid()
+        {
+            var result = (this.SelectedParameter != null || this.SelectedParameterType != null && this.SelectedParameter is null)
+                         && (this.SelectedElementUsages.IsEmpty || this.SelectedElementDefinition != null && this.SelectedParameter != null);
+
+            this.IsVariableMappingValid = result ? this.IsParameterTypeValid() : default(bool?);
+
+            return this.IsVariableMappingValid.HasValue && result && this.IsVariableMappingValid.Value;
+        }
+
+        /// <summary>
+        /// Verify if the <see cref="SelectedParameterType" /> is compatible with the current variable
+        /// </summary>
+        /// <returns>An assert whether the <see cref="SelectedParameterType" /> is compatible</returns>
+        public bool IsParameterTypeValid()
+        {
+            return this.SelectedParameterType switch
+            {
+                ScalarParameterType scalarParameterType =>
+                    this.SelectedParameterType.Validate(this.Value,
+                            this.SelectedScale ?? (scalarParameterType as QuantityKind)?.DefaultScale)
+                        .ResultKind == ValidationResultKind.Valid,
+                _ => false
+            };
+        }
+
+        /// <summary>
+        /// If the <see cref="Value" /> is an Array, unwraps all neested <see cref="MatlabWorkspaceRowViewModel" />
+        /// </summary>
+        /// <returns>A list of all nested <see cref="MatlabWorkspaceRowViewModel" /> including itself</returns>
         public List<MatlabWorkspaceRowViewModel> UnwrapVariableRowViewModels()
         {
             List<MatlabWorkspaceRowViewModel> unwrappedArray = new() { this };
@@ -218,9 +249,10 @@ namespace DEHPMatlab.ViewModel.Row
                         var variable =
                             new MatlabWorkspaceRowViewModel($"{this.Name}[{i},{j}]", array.GetValue(i, j))
                             {
-                                ParentName = this.Name,
+                                ParentName = this.Name
                             };
-                        variable.Index.AddRange(new List<int>(){i, j});
+
+                        variable.Index.AddRange(new List<int> { i, j });
                         unwrappedArray.AddRange(variable.UnwrapVariableRowViewModels());
                     }
                 }
@@ -229,37 +261,6 @@ namespace DEHPMatlab.ViewModel.Row
             }
 
             return unwrappedArray;
-        }
-
-        /// <summary>
-        /// Verify whether this <see cref="MatlabWorkspaceRowViewModel"/> is ready to be mapped
-        /// And sets the <see cref="IsVariableMappingValid"/>
-        /// </summary>
-        /// <returns>An assert</returns>
-        public bool IsValid()
-        {
-            var result = (this.SelectedParameter != null || (this.SelectedParameterType != null && this.SelectedParameter is null))
-                         && (this.SelectedElementUsages.IsEmpty || (this.SelectedElementDefinition != null && this.SelectedParameter != null));
-
-            this.IsVariableMappingValid = result ? this.IsParameterTypeValid() : default(bool?);
-
-            return this.IsVariableMappingValid.HasValue && result && this.IsVariableMappingValid.Value;
-        }
-
-        /// <summary>
-        /// Verify if the <see cref="SelectedParameterType"/> is compatible with the current variable
-        /// </summary>
-        /// <returns>An assert whether the <see cref="SelectedParameterType"/> is compatible</returns>
-        public bool IsParameterTypeValid()
-        {
-            return this.SelectedParameterType switch
-            {
-                ScalarParameterType scalarParameterType =>
-                    this.SelectedParameterType.Validate(this.Value,
-                            this.SelectedScale ?? (scalarParameterType as QuantityKind)?.DefaultScale)
-                        .ResultKind == ValidationResultKind.Valid,
-                _ => false
-            };
         }
     }
 }

@@ -56,10 +56,10 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
             Assert.IsNotNull(this.viewModel.MatlabVersionDictionary);
             Assert.IsNotNull(this.viewModel.ConnectCommand);
             Assert.IsFalse(this.viewModel.IsBusy);
-            Assert.AreEqual("latest", this.viewModel.SelectedMatlabVersion.Key);
+            Assert.AreEqual("Matlab.Autoserver", this.viewModel.SelectedMatlabVersion.Key);
             Assert.IsTrue(string.IsNullOrEmpty(this.viewModel.ErrorMessageText));
-            Assert.AreEqual("Matlab R2014b", this.viewModel.MatlabVersionDictionary["8.4"]);
-            Assert.AreEqual("Matlab R2021b", this.viewModel.MatlabVersionDictionary["9.11"]);
+            Assert.AreEqual("Matlab R2014b", this.viewModel.MatlabVersionDictionary["Matlab.Application.8.4"]);
+            Assert.AreEqual("Matlab R2021b", this.viewModel.MatlabVersionDictionary["Matlab.Application.9.11"]);
         }
 
         [Test]
@@ -71,7 +71,7 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
             Assert.IsFalse(string.IsNullOrEmpty(this.viewModel.ErrorMessageText));
             this.dstController.Setup(x => x.IsSessionOpen).Returns(true);
             Assert.DoesNotThrowAsync(async () => await this.viewModel.ConnectCommand.ExecuteAsyncTask());
-            this.dstController.Verify(x => x.Connect("Matlab.Application"), Times.Exactly(2));
+            this.dstController.Verify(x => x.Connect("Matlab.Autoserver"), Times.Exactly(2));
         }
     }
 }

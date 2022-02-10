@@ -11,8 +11,17 @@
         xmlns:views="clr-namespace:DEHPMatlab.Views"
         xmlns:dxmvvm="http://schemas.devexpress.com/winfx/2008/xaml/mvvm"
         xmlns:behaviors="clr-namespace:DEHPCommon.UserInterfaces.Behaviors;assembly=DEHPCommon"
+        xmlns:dxg="http://schemas.devexpress.com/winfx/2008/xaml/grid"
+        xmlns:rows="clr-namespace:DEHPMatlab.Views.Rows"
         Title="DEHP Matlab Adapter" WindowState="Normal" WindowStartupLocation="CenterScreen"
         MinWidth="850" MinHeight="600" mc:Ignorable="d" Width="1500" Height="950">
+    <Window.Resources>
+        <ResourceDictionary>
+            <DataTemplate x:Key="MappedThingRowDataTemplate">
+                <rows:MappingRow />
+            </DataTemplate>
+        </ResourceDictionary>
+    </Window.Resources>
     <dxmvvm:Interaction.Behaviors>
         <behaviors:SwitchLayoutPanelOrderBehavior/>
     </dxmvvm:Interaction.Behaviors>
@@ -113,8 +122,55 @@
                             </Grid>
                         </dxdo:LayoutPanel>
                     </dxdo:LayoutGroup>
+                    <dxdo:LayoutGroup ItemHeight="3*" Orientation="Horizontal">
+                        <dxdo:LayoutPanel HorizontalAlignment="Stretch" AllowClose="False" Caption="Mapping" Padding="10" dxdo:AutoHideGroup.AutoHideType="Left" AllowDrag="False" AllowFloat="False" AllowMove="False" >
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="55*" />
+                                    <ColumnDefinition Width="1267*"/>
+                                    <ColumnDefinition Width="146*" />
+                                </Grid.ColumnDefinitions>
+                                <dx:DXTabControl Grid.ColumnSpan="3" Margin="0,0,146,-0.2">
+                                    <dx:DXTabItem>
+                                        <dx:DXTabItem.Header>
+                                            <TextBlock Text="Mapping" />
+                                        </dx:DXTabItem.Header>
+                                        <ListView x:Name="Mapping" SelectionMode="Extended" ItemsSource="{Binding MappingViewModel.MappingRows}" Grid.Column="0" HorizontalContentAlignment="Stretch" 
+                                              ItemTemplate="{StaticResource MappedThingRowDataTemplate}" />
+                                    </dx:DXTabItem>
+                                    <dx:DXTabItem>
+                                        <dx:DXTabItem.Header>
+                                            <TextBlock Text="Value Diff" />
+                                        </dx:DXTabItem.Header>
+                                        <dxg:GridControl ToolTip="Select some values" Grid.Row="1" HorizontalAlignment="Left" VerticalAlignment="Stretch" AllowUpdateTwoWayBoundPropertiesOnSynchronization="False" AutoGenerateColumns="None"
+                                                         EnableSmartColumnsGeneration="False"
+                                                         ItemsSource="{Binding DifferenceViewModel.Parameters}"
+                                                         SelectedItems="{Binding SelectedThing.SelectedValues, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                         SelectionMode="Row">
+                                            <dxg:GridControl.View>
+                                                <dxg:TableView HorizontalAlignment="Stretch" VerticalAlignment="Stretch" AllowColumnMoving="True" AllowEditing="False" AllowGrouping="True" AutoWidth="true"
+                                                               IsDetailButtonVisibleBinding="{x:Null}"
+                                                               RetainSelectionOnClickOutsideCheckBoxSelector="True" ShowCheckBoxSelectorColumn="false" ShowFilterPanelMode="Never" ShowGroupPanel="False" VerticalScrollbarVisibility="Auto" />
+                                            </dxg:GridControl.View>
+                                            <dxg:GridControl.Columns>
+                                                <dxg:GridColumn FieldName="Name" />
+                                                <dxg:GridColumn FieldName="OldValue" />
+                                                <dxg:GridColumn FieldName="NewValue" />
+                                                <dxg:GridColumn FieldName="Difference" />
+                                                <dxg:GridColumn FieldName="PercentDiff" />
+                                            </dxg:GridControl.Columns>
+                                        </dxg:GridControl>
+                                    </dx:DXTabItem>
+                                </dx:DXTabControl>
+                                <Button ToolTip="Open the history of transfer dialog" Command="{Binding OpenExchangeHistory}" Grid.Column="2" Margin="10.4,25,10,-0.2" Background="Transparent" BorderBrush="Transparent">
+                                    <TextBlock FontSize="18" Text="Transfer History" TextWrapping="Wrap" TextAlignment="Center"/>
+                                </Button>
+                            </Grid>
+                        </dxdo:LayoutPanel>
+                    </dxdo:LayoutGroup>
                 </dxdo:LayoutGroup>
             </dxdo:DockLayoutManager>
+            <common:TransferControl Grid.Row="1" DataContext="{Binding TransferControlViewModel}"></common:TransferControl>
             <common:StatusBarControl DataContext="{Binding StatusBarControlViewModel}" Grid.Row="2" />
         </Grid>
     </DockPanel>
