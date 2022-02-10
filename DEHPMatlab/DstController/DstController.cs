@@ -231,7 +231,8 @@ namespace DEHPMatlab.DstController
         public ReactiveList<ParameterToMatlabVariableMappingRowViewModel> HubMapResult { get; } = new();
 
         /// <summary>
-        /// Gets a <see cref="Dictionary{TKey, TValue}"/> of all mapped parameter and the associate <see cref="MatlabWorkspaceRowViewModel"/>
+        /// Gets a <see cref="Dictionary{TKey, TValue}" /> of all mapped parameter and the associate
+        /// <see cref="MatlabWorkspaceRowViewModel" />
         /// </summary>
         public Dictionary<ParameterOrOverrideBase, MatlabWorkspaceRowViewModel> ParameterVariable { get; } = new();
 
@@ -326,7 +327,7 @@ namespace DEHPMatlab.DstController
         {
             if (this.mappingEngine.Map(dstVariables) is (Dictionary<ParameterOrOverrideBase, MatlabWorkspaceRowViewModel> parameterNodeIds, List<ElementBase> elements) && elements.Any())
             {
-                foreach (var keyValue in parameterNodeIds)
+                foreach (KeyValuePair<ParameterOrOverrideBase, MatlabWorkspaceRowViewModel> keyValue in parameterNodeIds)
                 {
                     this.ParameterVariable[keyValue.Key] = keyValue.Value;
                 }
@@ -477,22 +478,7 @@ namespace DEHPMatlab.DstController
 
                     if (nameAlreadyPresent != null)
                     {
-                        List<MatlabWorkspaceRowViewModel> unwrapped = matlabVariable.UnwrapVariableRowViewModels();
-
-                        foreach (var matlabWorkspaceBaseRowViewModel in unwrapped)
-                        {
-                            var variableAlreadyPresent = this.MatlabAllWorkspaceRowViewModels
-                                .FirstOrDefault(x => x.Name == matlabWorkspaceBaseRowViewModel.Name);
-
-                            if (variableAlreadyPresent != null)
-                            {
-                                variablesToModify.Add(matlabWorkspaceBaseRowViewModel);
-                            }
-                            else
-                            {
-                                variablesToAdd.Add(matlabWorkspaceBaseRowViewModel);
-                            }
-                        }
+                        this.UnwrapVariableAndCheckIfPresent(variablesToAdd, variablesToModify, matlabVariable);
                     }
                     else
                     {
@@ -504,7 +490,7 @@ namespace DEHPMatlab.DstController
 
             foreach (var workspaceVariable in this.MatlabAllWorkspaceRowViewModels)
             {
-                var newVariable = variablesToModify.Where(x => x.Name == workspaceVariable.Name).FirstOrDefault();
+                var newVariable = variablesToModify.FirstOrDefault(x => x.Name == workspaceVariable.Name);
 
                 if (newVariable != null)
                 {
@@ -514,6 +500,33 @@ namespace DEHPMatlab.DstController
             }
 
             this.MatlabAllWorkspaceRowViewModels.AddRange(variablesToAdd);
+        }
+
+        /// <summary>
+        /// Unwrap a <see cref="MatlabWorkspaceRowViewModel"/> and check if any of the unwrapped variables is already present inside the workspace
+        /// </summary>
+        /// <param name="variablesToAdd">The collection containing non-present <see cref="MatlabWorkspaceInputRowViewModels" /> inside the workspace</param>
+        /// <param name="variablesToModify">The collection containing present <see cref="MatlabWorkspaceInputRowViewModels" /> inside the workspace</param>
+        /// <param name="matlabVariable">The <see cref="MatlabWorkspaceRowViewModel"/></param>
+        private void UnwrapVariableAndCheckIfPresent(ICollection<MatlabWorkspaceRowViewModel> variablesToAdd, ICollection<MatlabWorkspaceRowViewModel> variablesToModify,
+            MatlabWorkspaceRowViewModel matlabVariable)
+        {
+            List<MatlabWorkspaceRowViewModel> unwrapped = matlabVariable.UnwrapVariableRowViewModels();
+
+            foreach (var matlabWorkspaceBaseRowViewModel in unwrapped)
+            {
+                var variableAlreadyPresent = this.MatlabAllWorkspaceRowViewModels
+                    .FirstOrDefault(x => x.Name == matlabWorkspaceBaseRowViewModel.Name);
+
+                if (variableAlreadyPresent != null)
+                {
+                    variablesToModify.Add(matlabWorkspaceBaseRowViewModel);
+                }
+                else
+                {
+                    variablesToAdd.Add(matlabWorkspaceBaseRowViewModel);
+                }
+            }
         }
 
         /// <summary>
