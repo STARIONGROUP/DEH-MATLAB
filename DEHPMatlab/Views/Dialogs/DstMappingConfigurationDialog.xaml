@@ -11,7 +11,7 @@
         xmlns:dxe="http://schemas.devexpress.com/winfx/2008/xaml/editors"
         Title="Mapping Configuration Dialog" MinWidth="800"
         WindowStartupLocation="CenterScreen"
-        MinHeight="600" mc:Ignorable="d">
+        MinHeight="600" mc:Ignorable="d" Topmost="True">
     <Window.Resources>
         <ResourceDictionary>
             <converters:ListToElementUsageConverter x:Key="ListToElementUsageConverter" />

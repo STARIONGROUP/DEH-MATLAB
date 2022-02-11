@@ -46,10 +46,10 @@ namespace DEHPMatlab.MappingRules
     using NLog;
 
     /// <summary>
-    /// The <see cref="MatlabVariableToElementDefinitionRule"/> is a <see cref="IMappingRule"/> for the <see cref="MappingEngine"/>
+    /// The <see cref="MatlabWorkspaceRowViewModel"/> is a <see cref="IMappingRule"/> for the <see cref="MappingEngine"/>
     /// That takes a <see cref="List{T}"/> of <see cref="MatlabWorkspaceRowViewModel"/> as input and outputs a E-TM-10-25 <see cref="ElementDefinition"/>
     /// </summary>
-    public class MatlabVariableToElementDefinitionRule : MappingRule<List<MatlabWorkspaceRowViewModel>, List<ElementBase>>
+    public class MatlabVariableToElementDefinitionRule : MappingRule<List<MatlabWorkspaceRowViewModel>, (Dictionary<ParameterOrOverrideBase, MatlabWorkspaceRowViewModel> parameterVariable, List<ElementBase> elements)>
     {
         /// <summary>
         /// The current class logger
@@ -62,6 +62,11 @@ namespace DEHPMatlab.MappingRules
         private readonly IHubController hubController = AppContainer.Container.Resolve<IHubController>();
 
         /// <summary>
+        /// Holds a <see cref="Dictionary{TKey,TValue}"/> of <see cref="ParameterOrOverrideBase"/> and <see cref="MatlabWorkspaceRowViewModel"/>
+        /// </summary>
+        private readonly Dictionary<ParameterOrOverrideBase, MatlabWorkspaceRowViewModel> parameterNodeIdIdentifier = new();
+
+        /// <summary>
         /// The current <see cref="DomainOfExpertise"/>
         /// </summary>
         private DomainOfExpertise owner;
@@ -70,8 +75,8 @@ namespace DEHPMatlab.MappingRules
         /// Transform a <see cref="List{T}"/> of <see cref="MatlabWorkspaceRowViewModel"/> into an <see cref="ElementBase"/>
         /// </summary>
         /// <param name="input">The <see cref="List{T}"/> of <see cref="MatlabWorkspaceRowViewModel"/></param>
-        /// <returns>A collection of <see cref="ElementBase"/></returns>
-        public override List<ElementBase> Transform(List<MatlabWorkspaceRowViewModel> input)
+        /// <returns>A (<see cref="Dictionary{TKey,TValue}"/>, <see cref="List{T}"/>)</returns>
+        public override (Dictionary<ParameterOrOverrideBase, MatlabWorkspaceRowViewModel> parameterVariable, List<ElementBase> elements) Transform(List<MatlabWorkspaceRowViewModel> input)
         {
             try
             {
@@ -97,8 +102,10 @@ namespace DEHPMatlab.MappingRules
                     }
                 }
 
-                return input.Select(x => (ElementBase)x.SelectedElementDefinition)
+                var result = input.Select(x => (ElementBase)x.SelectedElementDefinition)
                     .Union(input.SelectMany(x => x.SelectedElementUsages.Cast<ElementBase>())).ToList();
+
+                return (this.parameterNodeIdIdentifier, result);
             }
             catch (Exception exception)
             {
@@ -145,6 +152,7 @@ namespace DEHPMatlab.MappingRules
             }
 
             this.UpdateValueSet(matlabVariable, matlabVariable.SelectedParameter);
+            this.parameterNodeIdIdentifier[matlabVariable.SelectedParameter] = matlabVariable;
         }
 
         /// <summary>
@@ -179,6 +187,7 @@ namespace DEHPMatlab.MappingRules
                     && elementUsage.ParameterOverride.First(x => x.Parameter.Iid == parameter.Iid) is { } parameterOverride)
                 {
                     this.UpdateValueSet(matlabVariable, parameterOverride);
+                    this.parameterNodeIdIdentifier[parameterOverride] = matlabVariable;
                 }
             }
         }

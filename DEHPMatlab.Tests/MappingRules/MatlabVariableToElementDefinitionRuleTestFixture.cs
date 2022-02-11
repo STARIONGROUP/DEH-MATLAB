@@ -194,7 +194,7 @@ namespace DEHPMatlab.Tests.MappingRules
 
             Assert.Throws<IncompleteModelException>(() => this.rule.Transform(this.variables));
             parameter.ValueSet.Add(new ParameterValueSet(Guid.NewGuid(), null, null));
-            var elements = this.rule.Transform(this.variables).OfType<ElementDefinition>().ToList();
+            var elements = this.rule.Transform(this.variables).elements.OfType<ElementDefinition>().ToList();
             Assert.AreEqual(2, elements.Count);
             Assert.AreEqual(1, elements.First().Parameter.Count);
             var firstParameter = elements.First().Parameter.First();
@@ -274,7 +274,7 @@ namespace DEHPMatlab.Tests.MappingRules
                 });
 
             this.variables.Last().SelectedElementUsages = new ReactiveList<ElementUsage>(){ elementUsage };
-            var elements = this.rule.Transform(this.variables).OfType<ElementDefinition>();
+            var elements = this.rule.Transform(this.variables).elements.OfType<ElementDefinition>();
             var definiton = elements.Last();
             var firstContainedElement = definiton.ContainedElement.First();
             var parameterOverride = firstContainedElement.ParameterOverride.Last();

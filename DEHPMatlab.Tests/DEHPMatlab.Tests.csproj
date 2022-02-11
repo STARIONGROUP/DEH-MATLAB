@@ -4,6 +4,7 @@
 	  <TargetFramework>net472</TargetFramework>
 	  <RootNamespace>DEHPMatlab.Tests</RootNamespace>
 	  <IsPackable>false</IsPackable>
+	  <LangVersion>latest</LangVersion>
 	  <Configurations>Debug;Release</Configurations>
 	  <Platforms>AnyCPU;x64;x86</Platforms>
   </PropertyGroup>

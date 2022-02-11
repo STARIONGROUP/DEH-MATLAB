@@ -77,7 +77,7 @@ namespace DEHPMatlab.ViewModel.Dialogs
             this.dstController = dstController;
             this.MatlabVersionDictionary = new Dictionary<string, string>();
             this.PopulateDictionary();
-            this.ConnectCommand = ReactiveCommand.CreateAsyncTask(async _ => await this.ConnectCommandExecute());
+            this.ConnectCommand = ReactiveCommand.CreateAsyncTask(async _ => await this.ConnectCommandExecute(), RxApp.MainThreadScheduler);
         }
 
         /// <summary>
@@ -87,9 +87,9 @@ namespace DEHPMatlab.ViewModel.Dialogs
         {
             this.GenerateMatlabVersions(2014,4,6,8,false);
             this.GenerateMatlabVersions(2016,0,11,9,true);
-            this.MatlabVersionDictionary["latest"] = "Lastest Installed Version";
+            this.MatlabVersionDictionary["Matlab.Autoserver"] = "Lastest Installed Version";
             this.MatlabVersionDictionary = this.MatlabVersionDictionary.Reverse().ToDictionary(x => x.Key, x => x.Value);
-            this.SelectedMatlabVersion = this.MatlabVersionDictionary.SingleOrDefault(p => p.Key == "latest");
+            this.SelectedMatlabVersion = this.MatlabVersionDictionary.SingleOrDefault(p => p.Key == "Matlab.Autoserver");
         }
 
         /// <summary>
@@ -108,7 +108,7 @@ namespace DEHPMatlab.ViewModel.Dialogs
             {
                 var isVersionA = versionAIsEvenNumber ? i % 2 == 0 : i % 2 == 1;
 
-                this.MatlabVersionDictionary[$"{majorVersion}.{i}"] = $"Matlab R{currentYear}" + (isVersionA ? "a" : "b");
+                this.MatlabVersionDictionary[$"{BaseMatlabKey}.{majorVersion}.{i}"] = $"Matlab R{currentYear}" + (isVersionA ? "a" : "b");
 
                 if (!isVersionA)
                 {
@@ -125,8 +125,8 @@ namespace DEHPMatlab.ViewModel.Dialogs
         {
             this.IsBusy = true;
 
-            var correctVersion = this.SelectedMatlabVersion.Key == "latest" ? BaseMatlabKey : $"{BaseMatlabKey}.{this.SelectedMatlabVersion.Key}";
-            await this.dstController.Connect(correctVersion);
+            await this.dstController.Connect(this.SelectedMatlabVersion.Key);
+
             this.IsBusy = false;
 
             if (!this.dstController.IsSessionOpen)

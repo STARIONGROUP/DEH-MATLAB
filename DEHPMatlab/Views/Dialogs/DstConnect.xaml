@@ -10,12 +10,24 @@
                     mc:Ignorable="d"
                     Title="Connect to Matlab" 
                     WindowStartupLocation="CenterScreen"
-                    Height="150" Width="400">
+                    Height="150" Width="400" Topmost="True">
     <dxmvvm:Interaction.Behaviors>
         <behaviors:CloseWindowBehavior/>
     </dxmvvm:Interaction.Behaviors>
     <Border BorderThickness="5">
         <dx:LoadingDecorator BorderEffect="Default" BorderEffectColor="Blue" IsSplashScreenShown="{Binding IsBusy}" OwnerLock="LoadingContent">
+            <dx:LoadingDecorator.SplashScreenWindowStyle>
+                <Style TargetType="Window">
+                    <Setter Property="Topmost" Value="True"/>
+                    <Setter Property="AllowsTransparency" Value="True"/>
+                    <Setter Property="Background" Value="Transparent" />
+                    <Setter Property="WindowStyle" Value="None"/>
+                    <Setter Property="Focusable" Value="False"/>
+                    <Setter Property="ShowInTaskbar" Value="False"/>
+                    <Setter Property="ShowActivated" Value="False"/>
+                    <Setter Property="SizeToContent" Value="WidthAndHeight"/>
+                </Style>
+            </dx:LoadingDecorator.SplashScreenWindowStyle>
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
@@ -35,7 +47,7 @@
                               SelectedItem="{Binding SelectedMatlabVersion}" 
                               ToolTip="Choose the wanted Matlab Version to run (must be installed)" >
                 </dxe:ComboBoxEdit>
-                <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Text="{Binding ErrorMessageText}" Margin="0 0 5 0"/>
+                <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Text="{Binding ErrorMessageText}" TextWrapping="Wrap" VerticalAlignment="Center" Foreground="OrangeRed" Margin="0 0 5 0"/>
                 <Button Grid.Row="1" Grid.Column="2" Width="120" Height="30" HorizontalAlignment="Right" Command="{Binding ConnectCommand}" 
                     ToolTip="Connect to an instance of Matlab with the selected Matlab Version">
                     <StackPanel Orientation="Horizontal">

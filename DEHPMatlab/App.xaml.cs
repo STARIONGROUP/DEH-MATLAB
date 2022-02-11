@@ -21,6 +21,7 @@
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 // </copyright>
 // --------------------------------------------------------------------------------------------------------------------
+
 namespace DEHPMatlab
 {
     using System;
@@ -74,7 +75,7 @@ namespace DEHPMatlab
 
             var splashScreenViewModel = new DXSplashScreenViewModel()
             {
-                Title = "DEHP-Matlab Adapter", 
+                Title = "DEHP-Matlab Adapter",
                 Logo = new Uri($"pack://application:,,,/Resources/logo.png")
             };
 
@@ -100,6 +101,8 @@ namespace DEHPMatlab
             containerBuilder.RegisterType<DstConnectViewModel>().As<IDstConnectViewModel>();
             containerBuilder.RegisterType<DstMappingConfigurationDialogViewModel>().As<IDstMappingConfigurationDialogViewModel>();
             containerBuilder.RegisterType<HubMappingConfigurationDialogViewModel>().As<IHubMappingConfigurationDialogViewModel>();
+            containerBuilder.RegisterType<MatlabTransferControlViewModel>().As<ITransferControlViewModel>().SingleInstance();
+            containerBuilder.RegisterType<MappingViewModel>().As<IMappingViewModel>().SingleInstance();
         }
 
         /// <summary>
@@ -142,7 +145,7 @@ namespace DEHPMatlab
         /// <param name="e">The <see cref="StartupEventArgs"/></param>
         protected override void OnStartup(StartupEventArgs e)
         {
-            using(var scope = AppContainer.Container.BeginLifetimeScope())
+            using (var scope = AppContainer.Container.BeginLifetimeScope())
             {
                 scope.Resolve<INavigationService>().Show<MainWindow>();
             }
