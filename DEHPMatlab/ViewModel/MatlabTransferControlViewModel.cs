@@ -30,8 +30,6 @@ namespace DEHPMatlab.ViewModel
     using System.Reactive.Linq;
     using System.Threading.Tasks;
 
-    using CDP4Common.EngineeringModelData;
-
     using CDP4Dal;
 
     using DEHPCommon.Enumerators;
@@ -120,12 +118,9 @@ namespace DEHPMatlab.ViewModel
         /// </summary>
         public void UpdateNumberOfThingsToTransfer()
         {
-            this.NumberOfThing = this.dstController.MappingDirection switch
-            {
-                MappingDirection.FromDstToHub => this.dstController.SelectedDstMapResultToTransfer.OfType<ElementDefinition>().SelectMany(x => x.Parameter).Count()
-                                                 + this.dstController.SelectedDstMapResultToTransfer.OfType<ElementUsage>().SelectMany(x => x.ParameterOverride).Count(),
-                _ => 0
-            };
+            this.NumberOfThing = this.dstController.MappingDirection == MappingDirection.FromDstToHub
+                ? this.dstController.SelectedDstMapResultToTransfer.Count
+                : this.dstController.SelectedHubMapResultToTransfer.Count;
 
             this.CanTransfer = this.NumberOfThing > 0;
         }
@@ -137,6 +132,8 @@ namespace DEHPMatlab.ViewModel
         private async Task CancelTransfer()
         {
             this.dstController.DstMapResult.Clear();
+            this.dstController.HubMapResult.Clear();
+            this.dstController.ParameterVariable.Clear();
             this.exchangeHistoryService.ClearPending();
             await Task.Delay(1);
             this.TransferInProgress = false;
@@ -151,6 +148,8 @@ namespace DEHPMatlab.ViewModel
         private void InitializesCommandsAndObservables()
         {
             this.dstController.SelectedDstMapResultToTransfer.CountChanged.Subscribe(_ => this.UpdateNumberOfThingsToTransfer());
+            
+            this.dstController.SelectedHubMapResultToTransfer.CountChanged.Subscribe(_ => this.UpdateNumberOfThingsToTransfer());
 
             this.WhenAnyValue(x => x.dstController.MappingDirection)
                 .Subscribe(_ => this.UpdateNumberOfThingsToTransfer());
@@ -188,6 +187,10 @@ namespace DEHPMatlab.ViewModel
             if (this.dstController.MappingDirection is MappingDirection.FromDstToHub)
             {
                 await this.dstController.TransferMappedThingsToHub();
+            }
+            else
+            {
+                await this.dstController.TransferMappedThingsToDst();
             }
 
             await this.exchangeHistoryService.Write();

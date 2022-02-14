@@ -51,7 +51,7 @@ namespace DEHPMatlab.MappingRules
         {
             return input.Select(x =>
             {
-                x.SelectedMatlabVariable = new MatlabWorkspaceRowViewModel(x.SelectedMatlabVariable.Name, x.SelectedValue.Value)
+                x.SelectedMatlabVariable = new MatlabWorkspaceRowViewModel(x.SelectedMatlabVariable.Name, x.SelectedMatlabVariable.Value)
                 {
                     ParentName = x.SelectedMatlabVariable.ParentName,
                 };

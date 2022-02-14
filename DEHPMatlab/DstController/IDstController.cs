@@ -93,9 +93,19 @@ namespace DEHPMatlab.DstController
         Dictionary<ParameterOrOverrideBase, MatlabWorkspaceRowViewModel> ParameterVariable { get; }
 
         /// <summary>
-        /// Gets the colection of <see cref="ElementBase"/> that are selected to be transfered
+        /// Gets the collection of <see cref="ElementBase"/> that are selected to be transfered
         /// </summary>
         ReactiveList<ElementBase> SelectedDstMapResultToTransfer { get; }
+
+        /// <summary>
+        /// Gets the collection of <see cref="ParameterToMatlabVariableMappingRowViewModel"/> that are selected to be transfered
+        /// </summary>
+        ReactiveList<ParameterToMatlabVariableMappingRowViewModel> SelectedHubMapResultToTransfer { get; }
+
+        /// <summary>
+        /// Clears all collections containing mapped elements for any direction
+        /// </summary>
+        void ClearMappingCollections();
 
         /// <summary>
         /// Connects the adapter to a Matlab Instance
@@ -146,5 +156,11 @@ namespace DEHPMatlab.DstController
         /// </summary>
         /// <returns>A <see cref="Task"/></returns>
         Task TransferMappedThingsToHub();
+
+        /// <summary>
+        /// Transfers the mapped <see cref="ElementBase"/> to the Dst data source
+        /// </summary>
+        /// <returns>A <see cref="Task"/></returns>
+        Task TransferMappedThingsToDst();
     }
 }

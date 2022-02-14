@@ -374,5 +374,36 @@ namespace DEHPMatlab.Tests.DstController
             this.exchangeHistory.Verify(x =>
                 x.Append(It.IsAny<ParameterValueSetBase>(), It.IsAny<IValueSet>()), Times.Exactly(2));
         }
+
+        [Test]
+        public void VerifyTransferFromHubToDst()
+        {
+            Assert.DoesNotThrowAsync(async () => await this.dstController.TransferMappedThingsToHub());
+
+            this.dstController.SelectedHubMapResultToTransfer.Add(new ParameterToMatlabVariableMappingRowViewModel());
+            Assert.DoesNotThrowAsync(async () => await this.dstController.TransferMappedThingsToHub());
+
+            var parameter0 = new Parameter() { ParameterType = new SimpleQuantityKind() { Name = "test" } };
+            var variable = new MatlabWorkspaceRowViewModel("a", 0);
+
+            _ = new ElementDefinition() { Parameter = { parameter0 } };
+
+            var mappedElement = new ParameterToMatlabVariableMappingRowViewModel()
+            {
+                SelectedMatlabVariable = variable, 
+                SelectedParameter = parameter0,
+                SelectedValue = new ValueSetValueRowViewModel(new ParameterValueSet(), "35", new RatioScale())
+            };
+
+            this.dstController.SelectedHubMapResultToTransfer.Clear();
+            this.dstController.SelectedHubMapResultToTransfer.Add(mappedElement);
+            Assert.DoesNotThrowAsync(async () => await this.dstController.TransferMappedThingsToDst());
+            Assert.IsEmpty(this.dstController.SelectedHubMapResultToTransfer);
+
+            this.dstController.SelectedHubMapResultToTransfer.Add(mappedElement);
+            this.dstController.MatlabWorkspaceInputRowViewModels.Add(mappedElement.SelectedMatlabVariable);
+            Assert.DoesNotThrowAsync(async () => await this.dstController.TransferMappedThingsToDst());
+            Assert.AreEqual("35", this.dstController.MatlabWorkspaceInputRowViewModels.First(x => x.Name == mappedElement.SelectedMatlabVariable.Name).Value);
+        }
     }
 }

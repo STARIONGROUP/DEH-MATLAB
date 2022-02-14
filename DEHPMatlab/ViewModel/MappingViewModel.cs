@@ -64,12 +64,26 @@ namespace DEHPMatlab.ViewModel
         {
             this.dstController = dstController;
             this.hubController = hubController;
+            
+            this.InitializesObservables();
+        }
 
+        /// <summary>
+        /// Initialize all <see cref="Observable"/> of this view model
+        /// </summary>
+        private void InitializesObservables()
+        {
             this.dstController.DstMapResult.ItemsAdded.Subscribe(this.UpdateMappedThings);
 
             this.dstController.DstMapResult.IsEmptyChanged.Where(x => x).Subscribe(_ =>
                 this.MappingRows.RemoveAll(this.MappingRows
                     .Where(x => x.Direction == MappingDirection.FromDstToHub).ToList()));
+
+            this.dstController.HubMapResult.ItemsAdded.Subscribe(this.UpdateMappedThings);
+
+            this.dstController.HubMapResult.IsEmptyChanged.Where(x => x).Subscribe(_ =>
+                this.MappingRows.RemoveAll(this.MappingRows
+                    .Where(x => x.Direction == MappingDirection.FromHubToDst).ToList()));
 
             this.WhenAnyValue(x => x.dstController.MappingDirection)
                 .Subscribe(this.UpdateMappingRowsDirection);
@@ -159,7 +173,7 @@ namespace DEHPMatlab.ViewModel
         /// <param name="element">The <see cref="ElementBase" /></param>
         private void UpdateMappedThings(ElementBase element)
         {
-            List<(ParameterOrOverrideBase parameter, MatlabWorkspaceRowViewModel variable)> parameters = element switch
+            var parameters = element switch
             {
                 ElementDefinition elementDefinition => this.GetParameters(elementDefinition),
                 ElementUsage elementUsage => this.GetParameters(elementUsage),
@@ -171,6 +185,20 @@ namespace DEHPMatlab.ViewModel
                 this.MappingRows.RemoveAll(this.MappingRows.Where(m => m.DstThing.Name == parameterVariable.variable.Name).ToList());
                 this.MappingRows.Add(new MappingRowViewModel(this.dstController.MappingDirection, parameterVariable));
             }
+        }
+
+        /// <summary>
+        /// Updates the <see cref="MappingRows" />
+        /// </summary>
+        /// <param name="mappedElement">The <see cref="ParameterToMatlabVariableMappingRowViewModel" /></param>
+        private void UpdateMappedThings(ParameterToMatlabVariableMappingRowViewModel mappedElement)
+        {
+            this.MappingRows.RemoveAll(this.MappingRows
+                .Where(m => m.HubThing.Name == mappedElement.SelectedParameter.ModelCode()
+                            && m.DstThing.Name == mappedElement.SelectedMatlabVariable.Name
+                            && m.Direction == MappingDirection.FromHubToDst).ToList());
+
+            this.MappingRows.Add(new MappingRowViewModel(this.dstController.MappingDirection, mappedElement));
         }
     }
 }

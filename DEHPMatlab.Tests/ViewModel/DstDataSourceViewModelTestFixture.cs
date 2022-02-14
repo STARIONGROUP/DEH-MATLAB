@@ -26,6 +26,8 @@ namespace DEHPMatlab.Tests.ViewModel
 {
     using System.Reactive.Concurrency;
 
+    using CDP4Common.EngineeringModelData;
+
     using DEHPCommon.HubController.Interfaces;
     using DEHPCommon.Services.NavigationService;
     using DEHPCommon.UserInterfaces.ViewModels.Interfaces;
@@ -33,6 +35,8 @@ namespace DEHPMatlab.Tests.ViewModel
     using DEHPMatlab.DstController;
     using DEHPMatlab.ViewModel;
     using DEHPMatlab.ViewModel.Interfaces;
+    using DEHPMatlab.ViewModel.Row;
+    using DEHPMatlab.Views.Dialogs;
 
     using Moq;
 
@@ -50,14 +54,22 @@ namespace DEHPMatlab.Tests.ViewModel
         private Mock<IStatusBarControlViewModel> statusBar;
         private Mock<IDstBrowserHeaderViewModel> dstBrowserHeader;
         private Mock<IDstVariablesControlViewModel> dstVariablesControl;
+        private ReactiveList<ElementBase> dstMapResult;
+        private ReactiveList<ParameterToMatlabVariableMappingRowViewModel> hubMapResult;
 
         [SetUp]
         public void Setup()
         {
+            RxApp.MainThreadScheduler = Scheduler.CurrentThread;
             this.navigationService = new Mock<INavigationService>();
+
+            this.dstMapResult = new ReactiveList<ElementBase>();
+            this.hubMapResult = new ReactiveList<ParameterToMatlabVariableMappingRowViewModel>();
 
             this.dstController = new Mock<IDstController>();
             this.dstController.Setup(x => x.IsSessionOpen).Returns(true);
+            this.dstController.Setup(x => x.DstMapResult).Returns(this.dstMapResult);
+            this.dstController.Setup(x => x.HubMapResult).Returns(this.hubMapResult);
 
             this.hubController = new Mock<IHubController>();
             this.statusBar = new Mock<IStatusBarControlViewModel>();
@@ -83,9 +95,29 @@ namespace DEHPMatlab.Tests.ViewModel
         {
             Assert.IsTrue(this.viewModel.ConnectCommand.CanExecute(null));
             Assert.AreEqual("Disconnect", this.viewModel.ConnectButtonText);
+            
             Assert.DoesNotThrow(() => this.viewModel.ConnectCommand.Execute(null));
+
+            this.dstMapResult.Add(new ElementDefinition());
+            this.navigationService.Setup(x => x.ShowDxDialog<LogoutConfirmDialog>()).Returns(false);
+            Assert.DoesNotThrow(() => this.viewModel.ConnectCommand.Execute(null));
+
+            this.navigationService.Setup(x => x.ShowDxDialog<LogoutConfirmDialog>()).Returns(true);
+            Assert.DoesNotThrow(() => this.viewModel.ConnectCommand.Execute(null));
+
+            this.dstMapResult.Clear();
+            this.hubMapResult.Add(new ParameterToMatlabVariableMappingRowViewModel());
+            Assert.DoesNotThrow(() => this.viewModel.ConnectCommand.Execute(null));
+
+            this.navigationService.Setup(x => x.ShowDxDialog<LogoutConfirmDialog>()).Returns(false);
+            Assert.DoesNotThrow(() => this.viewModel.ConnectCommand.Execute(null));
+
+            this.navigationService.Setup(x => x.ShowDxDialog<LogoutConfirmDialog>()).Returns(true);
+            Assert.DoesNotThrow(() => this.viewModel.ConnectCommand.Execute(null));
+
             this.dstController.Setup(x => x.IsSessionOpen).Returns(false);
             Assert.DoesNotThrow(() => this.viewModel.ConnectCommand.Execute(null));
+            this.dstController.Verify(x => x.Disconnect(), Times.Exactly(4));
         }
     }
 }

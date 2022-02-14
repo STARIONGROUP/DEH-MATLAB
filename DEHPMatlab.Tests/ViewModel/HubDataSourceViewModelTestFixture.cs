@@ -33,11 +33,13 @@ namespace DEHPMatlab.Tests.ViewModel
     using CDP4Common.CommonData;
     using CDP4Common.EngineeringModelData;
     using CDP4Common.SiteDirectoryData;
+    using CDP4Common.Types;
 
     using CDP4Dal;
     using CDP4Dal.Permission;
 
     using DEHPCommon;
+    using DEHPCommon.Enumerators;
     using DEHPCommon.HubController.Interfaces;
     using DEHPCommon.Services.NavigationService;
     using DEHPCommon.UserInterfaces.ViewModels;
@@ -49,6 +51,7 @@ namespace DEHPMatlab.Tests.ViewModel
     using DEHPMatlab.DstController;
     using DEHPMatlab.ViewModel;
     using DEHPMatlab.ViewModel.Dialogs.Interfaces;
+    using DEHPMatlab.ViewModel.Row;
     using DEHPMatlab.Views.Dialogs;
 
     using Moq;
@@ -74,11 +77,17 @@ namespace DEHPMatlab.Tests.ViewModel
         private Person person;
         private Participant participant;
         private Iteration iteration;
+        private ReactiveList<ElementBase> dstMapResult;
+        private ReactiveList<ParameterToMatlabVariableMappingRowViewModel> hubMapResult;
 
         [SetUp]
         public void Setup()
         {
             RxApp.MainThreadScheduler = Scheduler.CurrentThread;
+
+            this.dstMapResult = new ReactiveList<ElementBase>();
+            this.hubMapResult = new ReactiveList<ParameterToMatlabVariableMappingRowViewModel>();
+
             this.navigationService = new Mock<INavigationService>();
             this.navigationService.Setup(x => x.ShowDialog<Login>());
 
@@ -148,6 +157,10 @@ namespace DEHPMatlab.Tests.ViewModel
             this.objectBrowser.Setup(x => x.Things).Returns(new ReactiveList<BrowserViewModelBase>());
             this.objectBrowser.Setup(x => x.SelectedThings).Returns(new ReactiveList<object>());
 
+            this.dstController.Setup(x => x.DstMapResult).Returns(this.dstMapResult);
+            this.dstController.Setup(x => x.HubMapResult).Returns(this.hubMapResult);
+            this.dstController.Setup(x => x.ClearMappingCollections());
+
             this.publicationBrowser = new Mock<IPublicationBrowserViewModel>();
             this.hubBrowserHeader = new Mock<IHubBrowserHeaderViewModel>();
             this.sessionControl = new Mock<IHubSessionControlViewModel>();
@@ -176,10 +189,27 @@ namespace DEHPMatlab.Tests.ViewModel
             Assert.IsTrue(this.viewModel.ConnectCommand.CanExecute(null));
             this.hubController.Setup(x => x.IsSessionOpen).Returns(true);
             this.viewModel.ConnectCommand.Execute(null);
+
+            this.dstMapResult.Add(new ElementDefinition());
+            this.navigationService.Setup(x => x.ShowDxDialog<LogoutConfirmDialog>()).Returns(false);
+            this.viewModel.ConnectCommand.Execute(null);
+
+            this.navigationService.Setup(x => x.ShowDxDialog<LogoutConfirmDialog>()).Returns(true);
+            this.viewModel.ConnectCommand.Execute(null);
+
+            this.viewModel.UpdateStatusBar(true);
+
+            this.statusBar.Verify(x => x.Append(It.IsAny<string>(),
+                StatusBarMessageSeverity.Info), Times.Once);
+
+            this.dstMapResult.Clear();
+            this.hubMapResult.Add(new ParameterToMatlabVariableMappingRowViewModel());
+            this.viewModel.ConnectCommand.Execute(null);
+
             this.hubController.Setup(x => x.IsSessionOpen).Returns(false);
             this.hubController.Setup(x => x.OpenIteration).Returns((Iteration)null);
             this.viewModel.ConnectCommand.Execute(null);
-            this.hubController.Verify(x => x.Close(), Times.Once);
+            this.hubController.Verify(x => x.Close(), Times.Exactly(3));
             this.navigationService.Verify(x => x.ShowDialog<Login>(), Times.Once);
         }
 
@@ -199,16 +229,18 @@ namespace DEHPMatlab.Tests.ViewModel
             this.objectBrowser.Setup(x => x.SelectedThings)
                 .Returns(new ReactiveList<object>());
 
+            var parameter = new Parameter(Guid.NewGuid(), null, new Uri("t://s.t"))
+            {
+                ParameterType = new DateTimeParameterType(Guid.NewGuid(), null, new Uri("t://s.t")),
+                ValueSet = { new ParameterValueSet(Guid.NewGuid(), null, new Uri("t://s.t")) }
+            };
+
             var elementDefinition = new ElementDefinition(Guid.NewGuid(), null, new Uri("t://s.t"))
             {
-                Parameter =
+                Parameter = 
                 {
-                    new Parameter(Guid.NewGuid(), null, new Uri("t://s.t"))
-                    {
-                        ParameterType = new DateTimeParameterType(Guid.NewGuid(), null, new Uri("t://s.t")),
-                        ValueSet = { new ParameterValueSet(Guid.NewGuid(), null, new Uri("t://s.t")) }
-                    }
-                }
+                    parameter
+                } 
             };
 
             this.iteration.Element.Add(elementDefinition);
@@ -216,8 +248,15 @@ namespace DEHPMatlab.Tests.ViewModel
             var elementRow = new ElementDefinitionRowViewModel(elementDefinition,
                 new DomainOfExpertise(), this.session.Object, null);
 
+            var parameterRow = new ParameterRowViewModel(parameter, this.session.Object, elementRow);
+            var parameterRow2 = new ParameterRowViewModel(parameter, this.session.Object, null);
+
             this.viewModel.ObjectBrowser.SelectedThings.Add(
                 elementRow);
+
+            this.viewModel.ObjectBrowser.SelectedThing = parameter;
+            this.viewModel.ObjectBrowser.SelectedThings.Add(parameterRow);
+            this.viewModel.ObjectBrowser.SelectedThings.Add(parameterRow2);
 
             Assert.IsTrue(this.viewModel.ObjectBrowser.MapCommand.CanExecute(null));
             Assert.DoesNotThrow(() => this.viewModel.ObjectBrowser.MapCommand.Execute(null));

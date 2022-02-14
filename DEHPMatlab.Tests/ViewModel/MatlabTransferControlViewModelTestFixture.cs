@@ -25,6 +25,7 @@
 namespace DEHPMatlab.Tests.ViewModel
 {
     using System;
+    using System.Collections.Generic;
 
     using CDP4Common.EngineeringModelData;
 
@@ -34,6 +35,7 @@ namespace DEHPMatlab.Tests.ViewModel
 
     using DEHPMatlab.DstController;
     using DEHPMatlab.ViewModel;
+    using DEHPMatlab.ViewModel.Row;
 
     using Moq;
 
@@ -48,6 +50,8 @@ namespace DEHPMatlab.Tests.ViewModel
         private Mock<IDstController> dstController;
         private Mock<IStatusBarControlViewModel> statusBar;
         private Mock<IExchangeHistoryService> exchangeHistory;
+        private ReactiveList<ElementBase> selectedDstMapResult;
+        private ReactiveList<ParameterToMatlabVariableMappingRowViewModel> selectedHubMapResult;
 
         [SetUp]
         public void Setup()
@@ -56,7 +60,11 @@ namespace DEHPMatlab.Tests.ViewModel
             this.statusBar = new Mock<IStatusBarControlViewModel>();
             this.exchangeHistory = new Mock<IExchangeHistoryService>();
 
-            this.dstController.Setup(x => x.SelectedDstMapResultToTransfer).Returns(new ReactiveList<ElementBase>());
+            this.selectedDstMapResult = new ReactiveList<ElementBase>();
+            this.selectedHubMapResult = new ReactiveList<ParameterToMatlabVariableMappingRowViewModel>();
+
+            this.dstController.Setup(x => x.SelectedDstMapResultToTransfer).Returns(this.selectedDstMapResult);
+            this.dstController.Setup(x => x.SelectedHubMapResultToTransfer).Returns(this.selectedHubMapResult);
 
             this.viewModel = new MatlabTransferControlViewModel(this.dstController.Object, this.statusBar.Object, this.exchangeHistory.Object);
         }
@@ -67,6 +75,11 @@ namespace DEHPMatlab.Tests.ViewModel
             this.dstController.Setup(x => x.DstMapResult).Returns(new ReactiveList<ElementBase>
             {
                 new ElementDefinition()
+            });
+
+            this.dstController.Setup(x => x.HubMapResult).Returns(new ReactiveList<ParameterToMatlabVariableMappingRowViewModel>()
+            {
+                new()
             });
 
             Assert.IsFalse(this.viewModel.CancelCommand.CanExecute(null));
@@ -90,7 +103,7 @@ namespace DEHPMatlab.Tests.ViewModel
         [Test]
         public void VerifyTransferCommand()
         {
-            this.dstController.Setup(x => x.SelectedDstMapResultToTransfer).Returns(new ReactiveList<ElementBase>
+            this.selectedDstMapResult.AddRange(new List<ElementBase>()
             {
                 new ElementDefinition
                 {
@@ -101,11 +114,14 @@ namespace DEHPMatlab.Tests.ViewModel
                     ParameterOverride = { new ParameterOverride() }
                 }
             });
+            
+            this.selectedHubMapResult.Add(new ParameterToMatlabVariableMappingRowViewModel());
 
             this.dstController.Setup(x => x.MappingDirection).Returns(MappingDirection.FromHubToDst);
             this.viewModel.UpdateNumberOfThingsToTransfer();
-            Assert.IsFalse(this.viewModel.TransferCommand.CanExecute(null));
-            Assert.AreEqual(0, this.viewModel.NumberOfThing);
+
+            Assert.IsTrue(this.viewModel.TransferCommand.CanExecute(null));
+            Assert.AreEqual(1, this.viewModel.NumberOfThing);
 
             this.dstController.Setup(x => x.MappingDirection).Returns(MappingDirection.FromDstToHub);
             this.viewModel.UpdateNumberOfThingsToTransfer();

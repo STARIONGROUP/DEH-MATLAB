@@ -139,7 +139,7 @@
                                             </dxg:ColumnBase.EditTemplate>
                                         </dxg:TreeListColumn>
                                         <dxg:TreeListColumn Width="45" FieldName="OwnerShortName" Header="Owner" />
-                                        <dxg:TreeListColumn FieldName="Published" Header="Published SelectedValue" />
+                                        <dxg:TreeListColumn FieldName="Published" Header="Published Value" />
                                         <dxg:TreeListColumn FieldName="ScaleShortName" Header="Scale" />
                                         <dxg:TreeListColumn AllowEditing="True" FieldName="Switch">
                                             <dxg:ColumnBase.CellTemplate>
@@ -249,7 +249,7 @@
                                                     </Grid.RowDefinitions>
                                                     <TextBlock Height="Auto" Margin="3" FontSize="10" FontWeight="Normal" Text="Name: " />
                                                     <TextBlock Grid.Row="0" Grid.Column="1" Height="Auto" Margin="3" FontSize="10" Text="{Binding SelectedMatlabVariable.Name}" TextTrimming="CharacterEllipsis" />
-                                                    <TextBlock Grid.Column="0" Grid.Row="1"  Height="Auto" Margin="3" FontSize="10" FontWeight="Bold" Text="SelectedValue to replace: " />
+                                                    <TextBlock Grid.Column="0" Grid.Row="1"  Height="Auto" Margin="3" FontSize="10" FontWeight="Bold" Text="Value to replace: " />
                                                     <TextBlock Grid.Row="1" Grid.Column="1" Height="Auto" Margin="3" FontSize="10" Text="{Binding SelectedMatlabVariable.Value}" TextTrimming="CharacterEllipsis" />
                                                 </Grid>
                                                 <Button ToolTip="Delete this mapping row" Command="{Binding ElementName=Mapping, Path=DataContext.DeleteMappedRowCommand}" CommandParameter="{Binding SelectedParameter.Iid}" 

@@ -52,6 +52,7 @@ namespace DEHPMatlab.Tests.ViewModel
         private Mock<IDstController> dstController;
         private Mock<IHubController> hubController;
         private ReactiveList<ElementBase> dstMapResult;
+        private ReactiveList<ParameterToMatlabVariableMappingRowViewModel> hubMapResult;
         private ElementDefinition element0;
         private Parameter parameter0;
         private Parameter parameter1;
@@ -140,9 +141,12 @@ namespace DEHPMatlab.Tests.ViewModel
             this.hubController.Setup(x => x.OpenIteration).Returns(this.iteration);
 
             this.dstMapResult = new ReactiveList<ElementBase>();
+            this.hubMapResult = new ReactiveList<ParameterToMatlabVariableMappingRowViewModel>();
+
             this.dstController = new Mock<IDstController>();
             this.dstController.Setup(x => x.MappingDirection).Returns(MappingDirection.FromDstToHub);
             this.dstController.Setup(x => x.DstMapResult).Returns(this.dstMapResult);
+            this.dstController.Setup(x => x.HubMapResult).Returns(this.hubMapResult);
 
             this.dstController.Setup(x => x.ParameterVariable).Returns(new Dictionary<ParameterOrOverrideBase, MatlabWorkspaceRowViewModel>()
             {
@@ -167,15 +171,48 @@ namespace DEHPMatlab.Tests.ViewModel
             
             this.dstMapResult.Add(this.elementUsage);
             Assert.AreEqual(1, this.viewModel.MappingRows.Count);
+            Assert.IsNotNull(this.viewModel.MappingRows.First().DstThing.Value);
 
             this.viewModel.UpdateMappingRowsDirection(MappingDirection.FromHubToDst);
             Assert.AreEqual(180, this.viewModel.MappingRows.First().ArrowDirection);
+            Assert.AreEqual(2, this.viewModel.MappingRows.First().DstThing.GridColumnIndex);
+            Assert.AreEqual(0, this.viewModel.MappingRows.First().HubThing.GridColumnIndex);
 
             this.viewModel.UpdateMappingRowsDirection(MappingDirection.FromDstToHub);
             Assert.AreEqual(0, this.viewModel.MappingRows.First().ArrowDirection);
+            Assert.AreEqual(0, this.viewModel.MappingRows.First().DstThing.GridColumnIndex);
+            Assert.AreEqual(2, this.viewModel.MappingRows.First().HubThing.GridColumnIndex);
 
             this.dstMapResult.Clear();
             Assert.AreEqual(0, this.viewModel.MappingRows.Count);
+
+            var toAdd = new ParameterToMatlabVariableMappingRowViewModel()
+            {
+                SelectedParameter = this.parameter0,
+                SelectedMatlabVariable = new MatlabWorkspaceRowViewModel("a", 0),
+                SelectedValue = new ValueSetValueRowViewModel(this.parameter0.QueryParameterBaseValueSet(null, null), "8", null)
+            };
+
+            this.hubMapResult.Add(toAdd);
+
+            Assert.AreEqual(1, this.viewModel.MappingRows.Count);
+
+            this.viewModel.UpdateMappingRowsDirection(MappingDirection.FromHubToDst);
+            Assert.AreEqual(0, this.viewModel.MappingRows.First().ArrowDirection);
+            Assert.AreEqual(2, this.viewModel.MappingRows.First().DstThing.GridColumnIndex);
+            Assert.AreEqual(0, this.viewModel.MappingRows.First().HubThing.GridColumnIndex);
+
+            this.viewModel.UpdateMappingRowsDirection(MappingDirection.FromDstToHub);
+            Assert.AreEqual(180, this.viewModel.MappingRows.First().ArrowDirection);
+            Assert.AreEqual(0, this.viewModel.MappingRows.First().DstThing.GridColumnIndex);
+            Assert.AreEqual(2, this.viewModel.MappingRows.First().HubThing.GridColumnIndex);
+
+            this.hubMapResult.Add(toAdd);
+
+            this.hubMapResult.Clear();
+            this.dstMapResult.Clear();
+
+            Assert.IsEmpty(this.viewModel.MappingRows);
         }
     }
 }

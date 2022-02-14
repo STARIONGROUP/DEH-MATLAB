@@ -1,0 +1,25 @@
+﻿<dx:DXDialogWindow x:Class="DEHPMatlab.Views.Dialogs.LogoutConfirmDialog"
+                   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" 
+                   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                   xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                   xmlns:dx="http://schemas.devexpress.com/winfx/2008/xaml/core"
+                   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                   mc:Ignorable="d"
+                   Title="Logout confirmation" Height="200" Width="250" ResizeMode="NoResize" WindowStartupLocation="CenterScreen" Topmost="True">
+    <Grid>
+        <Image Source="{dx:DXImage 'SvgImages/XAF/State_Validation_Warning.svg'}" VerticalAlignment="Top" Height="50"></Image>
+        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Run Text="Warning!"/>
+            <LineBreak/>
+            <LineBreak/>
+            <Run Text="You have pending transfers."/>
+            <LineBreak></LineBreak>
+            <Run Text="By continuing, these transfers will be lost."/>
+        </TextBlock>
+    </Grid>
+
+    <dx:DXDialogWindow.FooterButtons>
+        <dx:DialogButton ToolTip="Proceed with logout and cancel pending transfers" Content="OK" MinWidth="65" DialogResult="OK"/>
+        <dx:DialogButton ToolTip="Cancel logout" IsDefault="True" Content="Cancel" IsCancel="True" MinWidth="65" DialogResult="Cancel"/>
+    </dx:DXDialogWindow.FooterButtons>
+</dx:DXDialogWindow>
