@@ -81,6 +81,7 @@ namespace DEHPMatlab.MappingRules
             try
             {
                 this.owner = this.hubController.CurrentDomainOfExpertise;
+                this.parameterNodeIdIdentifier.Clear();
 
                 foreach (var matlabVariable in input)
                 {

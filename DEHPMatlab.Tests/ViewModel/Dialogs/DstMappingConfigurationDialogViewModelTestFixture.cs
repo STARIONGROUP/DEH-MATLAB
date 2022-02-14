@@ -29,8 +29,13 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
     using System.Linq;
     using System.Reactive.Concurrency;
 
+    using CDP4Common.CommonData;
     using CDP4Common.EngineeringModelData;
     using CDP4Common.SiteDirectoryData;
+    using CDP4Common.Types;
+
+    using CDP4Dal;
+    using CDP4Dal.Permission;
 
     using DEHPCommon.HubController.Interfaces;
     using DEHPCommon.Services.NavigationService;
@@ -316,6 +321,88 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
             this.iteration.Option.Add(new Option());
             Assert.DoesNotThrow(() => this.viewModel.UpdateAvailableOptions());
             Assert.AreEqual(1, this.viewModel.AvailableOptions.Count);
+        }
+
+        [Test]
+        public void VerifyElementUsage()
+        {
+            var variable = new MatlabWorkspaceRowViewModel("a", 0);
+
+            var parameter0 = new Parameter(Guid.NewGuid(), null, null)
+            {
+                ParameterType = new TextParameterType() { Name = "parameterType0" },
+                ValueSet =
+                {
+                    new ParameterValueSet()
+                    {
+                        Computed = new ValueArray<string>(new []{"8"}),
+                        Manual = new ValueArray<string>(new []{"5"}),
+                        Reference = new ValueArray<string>(new []{"3"})
+                    }
+                }
+            };
+
+            var parameter1 = new Parameter(Guid.NewGuid(), null, null)
+            {
+                ParameterType = new TextParameterType() { Name = "parameterType1" },
+                ValueSet =
+                {
+                    new ParameterValueSet()
+                    {
+                        Computed = new ValueArray<string>(new []{"1"}),
+                        Manual = new ValueArray<string>(new []{"2"}),
+                        Reference = new ValueArray<string>(new []{"3"})
+                    }
+                }
+            };
+
+            var element0 = new ElementDefinition(Guid.NewGuid(), null, null)
+            {
+                Name = "element",
+                Parameter =
+                {
+                    parameter0, parameter1,
+                    new Parameter(Guid.NewGuid(), null, null),
+                }
+            };
+
+            var elementUsage = new ElementUsage(Guid.NewGuid(), null, null)
+            {
+                ElementDefinition = element0,
+                ParameterOverride =
+                {
+                    new ParameterOverride(Guid.NewGuid(), null, null)
+                    {
+                        Parameter = parameter1,
+                        ValueSet =
+                        {
+                            new ParameterOverrideValueSet()
+                            {
+                                Computed = new ValueArray<string>(new []{"-"}),
+                                Manual = new ValueArray<string>(new []{"-"}),
+                                Reference = new ValueArray<string>(new []{"-"}),
+                                Published = new ValueArray<string>(new []{"-"})
+                            }
+                        }
+                    }
+                }
+            };
+
+            element0.ContainedElement.Add(elementUsage);
+            this.iteration.Element.Add(element0);
+
+            variable.SelectedElementDefinition = element0;
+            variable.SelectedParameter = parameter0;
+
+            var session = new Mock<ISession>();
+            var permissionService = new Mock<IPermissionService>();
+            permissionService.Setup(x => x.CanWrite(It.IsAny<Thing>())).Returns(true);
+
+            session.Setup(x => x.PermissionService).Returns(permissionService.Object);
+            this.hubController.Setup(x => x.Session).Returns(session.Object);
+
+            this.viewModel.SelectedThing = variable;
+            Assert.DoesNotThrow(() => this.viewModel.UpdateAvailableElementsUsages());
         }
     }
 }

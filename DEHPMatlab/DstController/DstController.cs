@@ -221,7 +221,7 @@ namespace DEHPMatlab.DstController
         public ReactiveList<MatlabWorkspaceRowViewModel> MatlabAllWorkspaceRowViewModels { get; } = new();
 
         /// <summary>
-        /// Gets the colection of mapped <see cref="Parameter" />s And <see cref="ParameterOverride" />s through their container
+        /// Gets the collection of mapped <see cref="Parameter" />s And <see cref="ParameterOverride" />s through their container
         /// </summary>
         public ReactiveList<ElementBase> DstMapResult { get; } = new();
 
@@ -242,6 +242,11 @@ namespace DEHPMatlab.DstController
         public ReactiveList<ElementBase> SelectedDstMapResultToTransfer { get; } = new();
 
         /// <summary>
+        /// Gets the collection of <see cref="ParameterToMatlabVariableMappingRowViewModel"/> that are selected to be transfered
+        /// </summary>
+        public ReactiveList<ParameterToMatlabVariableMappingRowViewModel> SelectedHubMapResultToTransfer { get; } = new();
+
+        /// <summary>
         /// Connects to the Matlab Instance
         /// </summary>
         /// <param name="matlabVersion">The wanted version of Matlab to launch</param>
@@ -251,10 +256,20 @@ namespace DEHPMatlab.DstController
             this.matlabConnector.Connect(matlabVersion);
             this.MatlabWorkspaceInputRowViewModels.Clear();
             this.MatlabAllWorkspaceRowViewModels.Clear();
+            this.ClearMappingCollections();
+            await this.LoadMatlabWorkspace();
+        }
+
+        /// <summary>
+        /// Clears all collections containing  mapped element for any direction
+        /// </summary>
+        public void ClearMappingCollections()
+        {
             this.DstMapResult.Clear();
+            this.ParameterVariable.Clear();
             this.HubMapResult.Clear();
             this.SelectedDstMapResultToTransfer.Clear();
-            await this.LoadMatlabWorkspace();
+            this.SelectedHubMapResultToTransfer.Clear();
         }
 
         /// <summary>
@@ -350,6 +365,7 @@ namespace DEHPMatlab.DstController
             if (this.mappingEngine.Map(hubElementDefitions) is List<ParameterToMatlabVariableMappingRowViewModel> variables && variables.Any())
             {
                 this.HubMapResult.AddRange(variables);
+                this.SelectedHubMapResultToTransfer.AddRange(variables);
             }
         }
 
@@ -368,7 +384,7 @@ namespace DEHPMatlab.DstController
                     return;
                 }
 
-                foreach (var element in this.SelectedDstMapResultToTransfer)
+                foreach (var element in this.SelectedDstMapResultToTransfer.ToList())
                 {
                     switch (element)
                     {
@@ -423,6 +439,36 @@ namespace DEHPMatlab.DstController
                 this.logger.Error(e);
                 throw;
             }
+        }
+
+        /// <summary>
+        /// Transfers the mapped <see cref="ElementBase"/> to the Dst data source
+        /// </summary>
+        /// <returns>A <see cref="Task"/></returns>
+        public async Task TransferMappedThingsToDst()
+        {
+            foreach (var mappedElement in this.SelectedHubMapResultToTransfer.ToList())
+            {
+                var variable = this.MatlabWorkspaceInputRowViewModels
+                    .FirstOrDefault(x => x.Name == mappedElement.SelectedMatlabVariable.Name);
+
+                if (variable != null)
+                {
+                    variable.Value = mappedElement.SelectedValue.Value;
+                }
+
+                this.SelectedHubMapResultToTransfer.Remove(mappedElement);
+                this.HubMapResult.Remove(mappedElement);
+
+                this.exchangeHistory.Append($"Value [{mappedElement.SelectedValue.Representation}] from {mappedElement.SelectedParameter.ModelCode()} " +
+                                            $"has been transfered to {mappedElement.SelectedMatlabVariable.Name}");
+            }
+
+            var (iteration, transaction) = this.GetIterationTransaction();
+            transaction.CreateOrUpdate(iteration);
+            
+            await this.hubController.Write(transaction);
+            await this.hubController.Refresh();
         }
 
         /// <summary>

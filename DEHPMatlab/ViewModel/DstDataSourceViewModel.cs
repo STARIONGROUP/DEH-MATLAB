@@ -33,6 +33,7 @@ namespace DEHPMatlab.ViewModel
     using ReactiveUI;
 
     using System;
+    using System.Linq;
     using System.Reactive.Linq;
 
     using DEHPCommon.UserInterfaces.ViewModels.Interfaces;
@@ -117,7 +118,13 @@ namespace DEHPMatlab.ViewModel
 
             if (this.dstController.IsSessionOpen)
             {
-                this.dstController.Disconnect();
+                if (((this.dstController.DstMapResult.Any() || this.dstController.HubMapResult.Any())
+                     && this.NavigationService.ShowDxDialog<LogoutConfirmDialog>() is true)
+                    || (!this.dstController.DstMapResult.Any() && !this.dstController.HubMapResult.Any()))
+                {
+                    this.dstController.ClearMappingCollections();
+                    this.dstController.Disconnect();
+                }
             }
             else
             {

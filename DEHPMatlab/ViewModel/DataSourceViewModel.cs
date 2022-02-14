@@ -138,7 +138,7 @@ namespace DEHPMatlab.ViewModel
         /// Append the connection status to the status bar
         /// </summary>
         /// <param name="isSessionOpen">Assert whether the status bar should update as connected or disconnected</param>
-        protected void UpdateStatusBar(bool isSessionOpen)
+        public void UpdateStatusBar(bool isSessionOpen)
         {
             if (!this.canLogToStatusBar)
             {

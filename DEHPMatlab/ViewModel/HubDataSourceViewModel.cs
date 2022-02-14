@@ -25,6 +25,7 @@
 namespace DEHPMatlab.ViewModel
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Reactive.Linq;
     using System.Windows.Input;
@@ -126,13 +127,33 @@ namespace DEHPMatlab.ViewModel
         {
             var viewModel = AppContainer.Container.Resolve<IHubMappingConfigurationDialogViewModel>();
 
-            viewModel.Elements.AddRange(this.ObjectBrowser.SelectedThings
-                .OfType<ElementDefinitionRowViewModel>()
+            HashSet<ElementDefinitionRowViewModel> rows = new HashSet<ElementDefinitionRowViewModel>();
+
+            foreach (var selectedThing in this.ObjectBrowser.SelectedThings)
+            {
+                switch (selectedThing)
+                {
+                    case ElementDefinitionRowViewModel elementDefinition:
+                        rows.Add(elementDefinition);
+                        break;
+                    case ParameterOrOverrideBaseRowViewModel parameterOrOverride:
+                        if (parameterOrOverride.ContainerViewModel is ElementDefinitionRowViewModel elementDefinitionParent)
+                        {
+                            rows.Add(elementDefinitionParent);
+                        }
+
+                        break;
+                }
+            }
+
+            viewModel.Elements.AddRange(rows.ToList()
                 .Select(x =>
                 {
                     x.Thing.Clone(true);
                     return x;
                 }));
+
+            viewModel.SelectedThing = this.ObjectBrowser.SelectedThing;
 
             this.NavigationService.ShowDialog<HubMappingConfigurationDialog, IHubMappingConfigurationDialogViewModel>(viewModel);
             this.ObjectBrowser.SelectedThings.Clear();
@@ -145,8 +166,14 @@ namespace DEHPMatlab.ViewModel
         {
             if (this.hubController.IsSessionOpen)
             {
-                this.ObjectBrowser.Things.Clear();
-                this.hubController.Close();
+                if (((this.dstController.DstMapResult.Any() || this.dstController.HubMapResult.Any())
+                     && this.NavigationService.ShowDxDialog<LogoutConfirmDialog>() is true)
+                    || (!this.dstController.DstMapResult.Any() && !this.dstController.HubMapResult.Any()))
+                {
+                    this.dstController.ClearMappingCollections();
+                    this.ObjectBrowser.Things.Clear();
+                    this.hubController.Close();
+                }
             }
             else
             {

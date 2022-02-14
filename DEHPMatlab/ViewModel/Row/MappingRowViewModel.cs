@@ -47,6 +47,30 @@ namespace DEHPMatlab.ViewModel.Row
         private MappingDirection direction;
 
         /// <summary>
+        /// Initializes a new <see cref="MappingRowViewModel"/> from a <see cref="ParameterToMatlabVariableMappingRowViewModel"/>
+        /// </summary>
+        /// <param name="currentMappingDirection">The current <see cref="MappingDirection"/></param>
+        /// <param name="mappedElement">The <see cref="ParameterToMatlabVariableMappingRowViewModel"/></param>
+        public MappingRowViewModel(MappingDirection currentMappingDirection, ParameterToMatlabVariableMappingRowViewModel mappedElement)
+        {
+            this.Direction = MappingDirection.FromHubToDst;
+
+            this.DstThing = new MappedThing()
+            {
+                Name = mappedElement.SelectedMatlabVariable.Name,
+                Value = mappedElement.SelectedMatlabVariable.Value
+            };
+
+            this.HubThing = new MappedThing()
+            {
+                Name = mappedElement.SelectedParameter.ModelCode(),
+                Value = mappedElement.SelectedValue.Representation
+            };
+
+            this.UpdateDirection(currentMappingDirection);
+        }
+
+        /// <summary>
         /// Initializes a new <see cref="MappingRowViewModel" /> from a mapped <see cref="ParameterOrOverrideBase" /> and
         /// <see cref="MatlabWorkspaceRowViewModel" />
         /// </summary>
@@ -132,6 +156,16 @@ namespace DEHPMatlab.ViewModel.Row
                 case MappingDirection.FromDstToHub when actualMappingDirection is MappingDirection.FromHubToDst:
                     this.HubThing.GridColumnIndex = 0;
                     this.DstThing.GridColumnIndex = 2;
+                    this.ArrowDirection = 180;
+                    break;
+                case MappingDirection.FromHubToDst when actualMappingDirection is MappingDirection.FromHubToDst:
+                    this.HubThing.GridColumnIndex = 0;
+                    this.DstThing.GridColumnIndex = 2;
+                    this.ArrowDirection = 0;
+                    break;
+                case MappingDirection.FromHubToDst when actualMappingDirection is MappingDirection.FromDstToHub:
+                    this.HubThing.GridColumnIndex = 2;
+                    this.DstThing.GridColumnIndex = 0;
                     this.ArrowDirection = 180;
                     break;
             }

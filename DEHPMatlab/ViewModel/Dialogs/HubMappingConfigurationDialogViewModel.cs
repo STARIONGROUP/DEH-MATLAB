@@ -95,8 +95,8 @@ namespace DEHPMatlab.ViewModel.Dialogs
         public HubMappingConfigurationDialogViewModel(IHubController hubController, IDstController dstController,
             IStatusBarControlViewModel statusBar) : base(hubController, dstController, statusBar)
         {
-            this.UpdateProperties();
             this.InitializesCommandsAndObservables();
+            this.UpdateProperties();
         }
 
         /// <summary>
