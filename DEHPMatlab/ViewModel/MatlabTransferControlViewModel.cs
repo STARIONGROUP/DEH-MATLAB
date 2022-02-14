@@ -119,7 +119,7 @@ namespace DEHPMatlab.ViewModel
         public void UpdateNumberOfThingsToTransfer()
         {
             this.NumberOfThing = this.dstController.MappingDirection == MappingDirection.FromDstToHub
-                ? this.dstController.SelectedDstMapResultToTransfer.Count()
+                ? this.dstController.SelectedDstMapResultToTransfer.Count
                 : this.dstController.SelectedHubMapResultToTransfer.Count;
 
             this.CanTransfer = this.NumberOfThing > 0;

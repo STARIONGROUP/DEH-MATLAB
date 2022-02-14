@@ -146,7 +146,7 @@ namespace DEHPMatlab.ViewModel
                 }
             }
 
-            viewModel.Elements.AddRange(rows.ToList()
+            viewModel.Elements.AddRange(rows
                 .Select(x =>
                 {
                     x.Thing.Clone(true);

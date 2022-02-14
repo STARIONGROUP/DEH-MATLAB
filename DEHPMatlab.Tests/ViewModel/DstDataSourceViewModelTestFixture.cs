@@ -109,9 +109,15 @@ namespace DEHPMatlab.Tests.ViewModel
             this.hubMapResult.Add(new ParameterToMatlabVariableMappingRowViewModel());
             Assert.DoesNotThrow(() => this.viewModel.ConnectCommand.Execute(null));
 
+            this.navigationService.Setup(x => x.ShowDxDialog<LogoutConfirmDialog>()).Returns(false);
+            Assert.DoesNotThrow(() => this.viewModel.ConnectCommand.Execute(null));
+
+            this.navigationService.Setup(x => x.ShowDxDialog<LogoutConfirmDialog>()).Returns(true);
+            Assert.DoesNotThrow(() => this.viewModel.ConnectCommand.Execute(null));
+
             this.dstController.Setup(x => x.IsSessionOpen).Returns(false);
             Assert.DoesNotThrow(() => this.viewModel.ConnectCommand.Execute(null));
-            this.dstController.Verify(x => x.Disconnect(), Times.Exactly(3));
+            this.dstController.Verify(x => x.Disconnect(), Times.Exactly(4));
         }
     }
 }

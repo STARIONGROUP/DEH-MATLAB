@@ -249,12 +249,14 @@ namespace DEHPMatlab.Tests.ViewModel
                 new DomainOfExpertise(), this.session.Object, null);
 
             var parameterRow = new ParameterRowViewModel(parameter, this.session.Object, elementRow);
+            var parameterRow2 = new ParameterRowViewModel(parameter, this.session.Object, null);
 
             this.viewModel.ObjectBrowser.SelectedThings.Add(
                 elementRow);
 
             this.viewModel.ObjectBrowser.SelectedThing = parameter;
             this.viewModel.ObjectBrowser.SelectedThings.Add(parameterRow);
+            this.viewModel.ObjectBrowser.SelectedThings.Add(parameterRow2);
 
             Assert.IsTrue(this.viewModel.ObjectBrowser.MapCommand.CanExecute(null));
             Assert.DoesNotThrow(() => this.viewModel.ObjectBrowser.MapCommand.Execute(null));

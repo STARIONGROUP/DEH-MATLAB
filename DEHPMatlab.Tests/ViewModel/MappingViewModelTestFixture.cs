@@ -186,12 +186,14 @@ namespace DEHPMatlab.Tests.ViewModel
             this.dstMapResult.Clear();
             Assert.AreEqual(0, this.viewModel.MappingRows.Count);
 
-            this.hubMapResult.Add(new ParameterToMatlabVariableMappingRowViewModel()
+            var toAdd = new ParameterToMatlabVariableMappingRowViewModel()
             {
                 SelectedParameter = this.parameter0,
                 SelectedMatlabVariable = new MatlabWorkspaceRowViewModel("a", 0),
-                SelectedValue = new ValueSetValueRowViewModel(this.parameter0.QueryParameterBaseValueSet(null,null), "8", null)
-            });
+                SelectedValue = new ValueSetValueRowViewModel(this.parameter0.QueryParameterBaseValueSet(null, null), "8", null)
+            };
+
+            this.hubMapResult.Add(toAdd);
 
             Assert.AreEqual(1, this.viewModel.MappingRows.Count);
 
@@ -204,6 +206,8 @@ namespace DEHPMatlab.Tests.ViewModel
             Assert.AreEqual(180, this.viewModel.MappingRows.First().ArrowDirection);
             Assert.AreEqual(0, this.viewModel.MappingRows.First().DstThing.GridColumnIndex);
             Assert.AreEqual(2, this.viewModel.MappingRows.First().HubThing.GridColumnIndex);
+
+            this.hubMapResult.Add(toAdd);
 
             this.hubMapResult.Clear();
             this.dstMapResult.Clear();
