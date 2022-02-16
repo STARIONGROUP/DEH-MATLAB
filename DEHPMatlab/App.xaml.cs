@@ -44,6 +44,8 @@ namespace DEHPMatlab
     using DEHPMatlab.ViewModel.Dialogs;
     using DEHPMatlab.ViewModel.Dialogs.Interfaces;
     using DEHPMatlab.ViewModel.Interfaces;
+    using DEHPMatlab.ViewModel.NetChangePreview;
+    using DEHPMatlab.ViewModel.NetChangePreview.Interfaces;
     using DEHPMatlab.Views;
 
     using DevExpress.Xpf.Core;
@@ -103,6 +105,9 @@ namespace DEHPMatlab
             containerBuilder.RegisterType<HubMappingConfigurationDialogViewModel>().As<IHubMappingConfigurationDialogViewModel>();
             containerBuilder.RegisterType<MatlabTransferControlViewModel>().As<ITransferControlViewModel>().SingleInstance();
             containerBuilder.RegisterType<MappingViewModel>().As<IMappingViewModel>().SingleInstance();
+            containerBuilder.RegisterType<DstNetChangePreviewViewModel>().As<IDstNetChangePreviewViewModel>().SingleInstance();
+            containerBuilder.RegisterType<HubNetChangePreviewViewModel>().As<IHubNetChangePreviewViewModel>().SingleInstance();
+            containerBuilder.RegisterType<DifferenceViewModel>().As<IDifferenceViewModel>().SingleInstance();
         }
 
         /// <summary>

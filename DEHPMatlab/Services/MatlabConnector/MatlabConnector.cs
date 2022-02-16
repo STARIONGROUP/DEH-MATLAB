@@ -139,7 +139,7 @@ namespace DEHPMatlab.Services.MatlabConnector
 
             try
             {
-                matlabVariable.Value = this.MatlabApp.GetVariable(matlabVariable.Name, WorkspaceName);
+                matlabVariable.ActualValue = this.MatlabApp.GetVariable(matlabVariable.Name, WorkspaceName);
             }
             catch (COMException ex)
             {
@@ -158,7 +158,7 @@ namespace DEHPMatlab.Services.MatlabConnector
         {
             try
             {
-                this.MatlabApp.PutWorkspaceData(matlabWorkspaceRowViewModel.Name, WorkspaceName, matlabWorkspaceRowViewModel.Value);
+                this.MatlabApp.PutWorkspaceData(matlabWorkspaceRowViewModel.Name, WorkspaceName, matlabWorkspaceRowViewModel.ActualValue);
             }
             catch (COMException ex)
             {

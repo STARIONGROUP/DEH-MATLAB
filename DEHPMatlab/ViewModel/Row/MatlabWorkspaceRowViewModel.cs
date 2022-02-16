@@ -26,10 +26,15 @@ namespace DEHPMatlab.ViewModel.Row
 {
     using System;
     using System.Collections.Generic;
+    using System.Reactive.Linq;
 
     using CDP4Common.EngineeringModelData;
     using CDP4Common.SiteDirectoryData;
     using CDP4Common.Validation;
+
+    using CDP4Dal;
+
+    using DEHPMatlab.Events;
 
     using ReactiveUI;
 
@@ -38,6 +43,16 @@ namespace DEHPMatlab.ViewModel.Row
     /// </summary>
     public class MatlabWorkspaceRowViewModel : ReactiveObject
     {
+        /// <summary>
+        /// Backing field for <see cref="IsHighlighted" />
+        /// </summary>
+        private bool isHighlighted;
+
+        /// <summary>
+        /// Backing field for <see cref="IsSelectedForTransfer" />
+        /// </summary>
+        private bool isSelectedForTransfer;
+
         /// <summary>
         /// Backing field for <see cref="IsVariableMappingValid" />
         /// </summary>
@@ -84,19 +99,53 @@ namespace DEHPMatlab.ViewModel.Row
         private MeasurementScale selectedScale;
 
         /// <summary>
-        /// Backing field for <see cref="Value" />
+        /// Backing field for <see cref="ActualValue" />
         /// </summary>
-        private object value;
+        private object actualValue;
+
+        /// <summary>
+        /// Backing field for <see cref="Identifier"/>
+        /// </summary>
+        private string identifier;
+
+        /// <summary>
+        /// Backing field for <see cref="InitialValue"/>
+        /// </summary>
+        private object initialValue;
 
         /// <summary>
         /// Initializes a new <see cref="MatlabWorkspaceRowViewModel" />
         /// </summary>
         /// <param name="name">The name of the variable</param>
-        /// <param name="value">The value of the variable</param>
-        public MatlabWorkspaceRowViewModel(string name, object value)
+        /// <param name="actualValue">The value of the variable</param>
+        public MatlabWorkspaceRowViewModel(string name, object actualValue)
         {
             this.Name = name;
-            this.Value = value;
+            this.ActualValue = actualValue;
+            this.InitialValue = actualValue;
+
+            _ = CDPMessageBus.Current.Listen<DstHighlightEvent>()
+                .Where(x => x.TargetThingId.ToString() == this.Identifier)
+                .ObserveOn(RxApp.MainThreadScheduler)
+                .Subscribe(x => this.IsHighlighted = x.ShouldHighlight);
+        }
+
+        /// <summary>
+        /// The Unique identifier based on the name of the varible and the script name
+        /// </summary>
+        public string Identifier
+        {
+            get => this.identifier;
+            set => this.RaiseAndSetIfChanged(ref this.identifier, value);
+        }
+
+        /// <summary>
+        /// The initial value of this variable
+        /// </summary>
+        public object InitialValue
+        {
+            get => this.initialValue;
+            set => this.RaiseAndSetIfChanged(ref this.initialValue, value);
         }
 
         /// <summary>
@@ -111,10 +160,10 @@ namespace DEHPMatlab.ViewModel.Row
         /// <summary>
         /// The value of the variable
         /// </summary>
-        public object Value
+        public object ActualValue
         {
-            get => this.value;
-            set => this.RaiseAndSetIfChanged(ref this.value, value);
+            get => this.actualValue;
+            set => this.RaiseAndSetIfChanged(ref this.actualValue, value);
         }
 
         /// <summary>
@@ -195,9 +244,43 @@ namespace DEHPMatlab.ViewModel.Row
         }
 
         /// <summary>
+        /// Gets or set a value indicating if the row should be highlighted or not
+        /// </summary>
+        public bool IsHighlighted
+        {
+            get => this.isHighlighted;
+            set => this.RaiseAndSetIfChanged(ref this.isHighlighted, value);
+        }
+
+        /// <summary>
+        /// Asserts if this <see cref="MatlabTransferControlViewModel" /> is selected or not for transfer
+        /// </summary>
+        public bool IsSelectedForTransfer
+        {
+            get => this.isSelectedForTransfer;
+            set => this.RaiseAndSetIfChanged(ref this.isSelectedForTransfer, value);
+        }
+
+        /// <summary>
         /// Gets or sets the collection of selected <see cref="ElementUsage" />s
         /// </summary>
         public ReactiveList<ElementUsage> SelectedElementUsages { get; set; } = new();
+
+        /// <summary>
+        /// Verify if the <see cref="SelectedParameterType" /> is compatible with the current variable
+        /// </summary>
+        /// <returns>An assert whether the <see cref="SelectedParameterType" /> is compatible</returns>
+        public bool IsParameterTypeValid()
+        {
+            return this.SelectedParameterType switch
+            {
+                ScalarParameterType scalarParameterType =>
+                    this.SelectedParameterType.Validate(this.ActualValue,
+                            this.SelectedScale ?? (scalarParameterType as QuantityKind)?.DefaultScale)
+                        .ResultKind == ValidationResultKind.Valid,
+                _ => false
+            };
+        }
 
         /// <summary>
         /// Verify whether this <see cref="MatlabWorkspaceRowViewModel" /> is ready to be mapped
@@ -215,32 +298,16 @@ namespace DEHPMatlab.ViewModel.Row
         }
 
         /// <summary>
-        /// Verify if the <see cref="SelectedParameterType" /> is compatible with the current variable
-        /// </summary>
-        /// <returns>An assert whether the <see cref="SelectedParameterType" /> is compatible</returns>
-        public bool IsParameterTypeValid()
-        {
-            return this.SelectedParameterType switch
-            {
-                ScalarParameterType scalarParameterType =>
-                    this.SelectedParameterType.Validate(this.Value,
-                            this.SelectedScale ?? (scalarParameterType as QuantityKind)?.DefaultScale)
-                        .ResultKind == ValidationResultKind.Valid,
-                _ => false
-            };
-        }
-
-        /// <summary>
-        /// If the <see cref="Value" /> is an Array, unwraps all neested <see cref="MatlabWorkspaceRowViewModel" />
+        /// If the <see cref="ActualValue" /> is an Array, unwraps all neested <see cref="MatlabWorkspaceRowViewModel" />
         /// </summary>
         /// <returns>A list of all nested <see cref="MatlabWorkspaceRowViewModel" /> including itself</returns>
         public List<MatlabWorkspaceRowViewModel> UnwrapVariableRowViewModels()
         {
             List<MatlabWorkspaceRowViewModel> unwrappedArray = new() { this };
 
-            if (this.Value != null && this.Value.GetType().IsArray)
+            if (this.ActualValue != null && this.ActualValue.GetType().IsArray)
             {
-                var array = (Array) this.Value;
+                var array = (Array)this.ActualValue;
 
                 for (var i = 0; i < array.GetLength(0); i++)
                 {
@@ -257,7 +324,9 @@ namespace DEHPMatlab.ViewModel.Row
                     }
                 }
 
-                this.Value = null;
+                this.ActualValue = $"[{array.GetLength(0)}x{array.GetLength(1)}] matrices of {array.GetValue(0,0).GetType().Name}";
+
+                this.InitialValue ??= this.ActualValue;
             }
 
             return unwrappedArray;

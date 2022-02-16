@@ -33,6 +33,7 @@ namespace DEHPMatlab.Tests.ViewModel
     using DEHPMatlab.DstController;
     using DEHPMatlab.ViewModel;
     using DEHPMatlab.ViewModel.Interfaces;
+    using DEHPMatlab.ViewModel.NetChangePreview.Interfaces;
 
     using Moq;
 
@@ -49,6 +50,9 @@ namespace DEHPMatlab.Tests.ViewModel
         private Mock<ITransferControlViewModel> transferControl;
         private Mock<INavigationService> navigationService;
         private Mock<IMappingViewModel> mappingViewModel;
+        private Mock<IDstNetChangePreviewViewModel> dstNetChange;
+        private Mock<IHubNetChangePreviewViewModel> hubNetChange;
+        private Mock<IDifferenceViewModel> differenceView;
 
         [SetUp]
         public void Setup()
@@ -60,10 +64,13 @@ namespace DEHPMatlab.Tests.ViewModel
             this.transferControl = new Mock<ITransferControlViewModel>();
             this.navigationService = new Mock<INavigationService>();
             this.mappingViewModel = new Mock<IMappingViewModel>();
+            this.dstNetChange = new Mock<IDstNetChangePreviewViewModel>();
+            this.hubNetChange = new Mock<IHubNetChangePreviewViewModel>();
+            this.differenceView = new Mock<IDifferenceViewModel>();
 
             this.viewModel = new MainWindowViewModel(this.hubDataSourceViewModel.Object,
                 this.statusBarControlViewModel.Object, this.dstDataSourceViewModel.Object, this.dstController.Object, this.transferControl.Object,
-                this.navigationService.Object, this.mappingViewModel.Object);
+                this.navigationService.Object, this.mappingViewModel.Object, this.dstNetChange.Object, this.hubNetChange.Object, this.differenceView.Object);
         }
 
         [Test]
@@ -75,6 +82,9 @@ namespace DEHPMatlab.Tests.ViewModel
             Assert.IsNotNull(this.viewModel.DstDataSourceViewModel);
             Assert.IsNotNull(this.viewModel.ChangeMappingDirection);
             Assert.IsNotNull(this.viewModel.MappingViewModel);
+            Assert.IsNotNull(this.viewModel.DstNetChangePreviewViewModel);
+            Assert.IsNotNull(this.viewModel.HubNetChangePreviewViewModel);
+            Assert.IsNotNull(this.viewModel.DifferenceViewModel);
         }
 
         [Test]

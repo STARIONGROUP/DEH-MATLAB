@@ -26,7 +26,6 @@ namespace DEHPMatlab.ViewModel
 {
     using System;
     using System.Diagnostics;
-    using System.Linq;
     using System.Reactive.Linq;
     using System.Threading.Tasks;
 
@@ -39,6 +38,7 @@ namespace DEHPMatlab.ViewModel
     using DEHPCommon.UserInterfaces.ViewModels.Interfaces;
 
     using DEHPMatlab.DstController;
+    using DEHPMatlab.Events;
 
     using NLog;
 
@@ -136,6 +136,7 @@ namespace DEHPMatlab.ViewModel
             this.dstController.ParameterVariable.Clear();
             this.exchangeHistoryService.ClearPending();
             await Task.Delay(1);
+            CDPMessageBus.Current.SendMessage(new UpdateDstVariableTreeEvent(true));
             this.TransferInProgress = false;
             this.IsIndeterminate = false;
 

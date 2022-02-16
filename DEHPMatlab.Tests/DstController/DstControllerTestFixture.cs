@@ -151,7 +151,7 @@ namespace DEHPMatlab.Tests.DstController
             Assert.AreEqual(4, this.dstController.MatlabAllWorkspaceRowViewModels.Count);
 
             inputVariables.Add(new MatlabWorkspaceRowViewModel("c", 5));
-            inputVariables.First(x => x.Name == "b").Value = new double[,] { { 0 }, { 1 }, { 2 } };
+            inputVariables.First(x => x.Name == "b").ActualValue = new double[,] { { 0 }, { 1 }, { 2 } };
             Assert.DoesNotThrowAsync(async () => await this.dstController.ProcessRetrievedVariables(inputVariables));
             Assert.AreEqual(6, this.dstController.MatlabAllWorkspaceRowViewModels.Count);
         }
@@ -182,16 +182,16 @@ namespace DEHPMatlab.Tests.DstController
             Assert.AreEqual(6, this.dstController.MatlabWorkspaceInputRowViewModels.Count);
 
             Assert.AreEqual(6370, this.dstController.MatlabWorkspaceInputRowViewModels
-                .First(x => x.Name == "RE").Value);
+                .First(x => x.Name == "RE").ActualValue);
 
             this.dstController.MatlabAllWorkspaceRowViewModels.Add(new MatlabWorkspaceRowViewModel("a", 45));
             Assert.DoesNotThrowAsync(() => this.dstController.RunMatlabScript());
 
             Assert.AreEqual(45, this.dstController.MatlabAllWorkspaceRowViewModels
-                .First(x => x.Name == "a").Value);
+                .First(x => x.Name == "a").ActualValue);
 
             this.dstController.MatlabAllWorkspaceRowViewModels.Add(this.dstController.MatlabWorkspaceInputRowViewModels[1]);
-            this.dstController.MatlabWorkspaceInputRowViewModels[1].Value = 0;
+            this.dstController.MatlabWorkspaceInputRowViewModels[1].ActualValue = 0;
             Assert.IsTrue(string.IsNullOrEmpty(this.dstController.MatlabWorkspaceInputRowViewModels[1].ParentName));
             this.matlabConnector.Verify(x => x.ExecuteFunction(It.IsAny<string>()), Times.Exactly(3));
 
@@ -384,7 +384,11 @@ namespace DEHPMatlab.Tests.DstController
             Assert.DoesNotThrowAsync(async () => await this.dstController.TransferMappedThingsToHub());
 
             var parameter0 = new Parameter() { ParameterType = new SimpleQuantityKind() { Name = "test" } };
-            var variable = new MatlabWorkspaceRowViewModel("a", 0);
+            
+            var variable = new MatlabWorkspaceRowViewModel("a", 0)
+            {
+                Identifier = "a-a"
+            };
 
             _ = new ElementDefinition() { Parameter = { parameter0 } };
 
@@ -403,7 +407,7 @@ namespace DEHPMatlab.Tests.DstController
             this.dstController.SelectedHubMapResultToTransfer.Add(mappedElement);
             this.dstController.MatlabWorkspaceInputRowViewModels.Add(mappedElement.SelectedMatlabVariable);
             Assert.DoesNotThrowAsync(async () => await this.dstController.TransferMappedThingsToDst());
-            Assert.AreEqual("35", this.dstController.MatlabWorkspaceInputRowViewModels.First(x => x.Name == mappedElement.SelectedMatlabVariable.Name).Value);
+            Assert.AreEqual("35", this.dstController.MatlabWorkspaceInputRowViewModels.First(x => x.Name == mappedElement.SelectedMatlabVariable.Name).ActualValue);
         }
     }
 }

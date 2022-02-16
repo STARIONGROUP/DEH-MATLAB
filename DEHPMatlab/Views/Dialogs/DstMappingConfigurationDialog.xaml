@@ -75,7 +75,8 @@
                             </dxg:TreeListColumn.DisplayTemplate>
                         </dxg:TreeListColumn>
                         <dxg:TreeListColumn AllowEditing="False" FieldName="Name" Fixed="Left" />
-                        <dxg:TreeListColumn AllowEditing="False" FieldName="Value" />
+                        <dxg:TreeListColumn AllowEditing="False" FieldName="ActualValue" />
+                        <dxg:TreeListColumn AllowEditing="False" FieldName="InitialValue" />
                     </dxg:TreeListControl.Columns>
                 </dxg:TreeListControl>
             </GroupBox>
