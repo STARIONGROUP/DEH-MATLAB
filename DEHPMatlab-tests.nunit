@@ -1,0 +1,9 @@
+<NUnitProject>
+  <Settings activeconfig="Debug" processModel="Default" domainUsage="Default" />
+  <Config name="Debug">
+    <assembly path="DEHPMatlab.Tests/bin/Debug/net472/DEHPMatlab.Tests.dll" />
+  </Config>
+  <Config name="Release">
+    <assembly path="DEHPMatlab.Tests/bin/Release/net472/DEHPMatlab.Tests.dll" />
+  </Config>
+</NUnitProject>

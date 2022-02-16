@@ -11,25 +11,25 @@ AppVeyor is used to build and test the DEHP MATLAB
 
 Branch | Build Status
 ------- | :------------
-Master |  [![Build Status](https://ci.appveyor.com/api/projects/status/h83f47e4g3xdxxsw/branch/master?svg=true)](https://ci.appveyor.com/api/projects/status/h83f47e4g3xdxxsw)
-Development |  [![Build Status](https://ci.appveyor.com/api/projects/status/h83f47e4g3xdxxsw/branch/development?svg=true)](https://ci.appveyor.com/api/projects/status/h83f47e4g3xdxxsw)
+Master |  [![Build status](https://ci.appveyor.com/api/projects/status/sn5n6i80qv33mn9m/branch/master?svg=true)](https://ci.appveyor.com/project/rheagroup/deh-matlab/branch/master)
+Development |  [![Build status](https://ci.appveyor.com/api/projects/status/sn5n6i80qv33mn9m/branch/development?svg=true)](https://ci.appveyor.com/project/rheagroup/deh-matlab/branch/development)
 
-[![Build history](https://buildstats.info/appveyor/chart/rheagroup/dehp-matlab)](https://ci.appveyor.com/project/rheagroup/dehp-matlab/history)
+[![Build history](https://buildstats.info/appveyor/chart/rheagroup/deh-matlab)](https://ci.appveyor.com/project/rheagroup/deh-matlab/history)
 
 ## SonarQube Status:
 
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=RHEAGROUP_DEHP-MATLAB&metric=alert_status)](https://sonarcloud.io/dashboard?id=RHEAGROUP_DEHP-MATLAB)
-[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=RHEAGROUP_DEHP-MATLAB&metric=sqale_rating)](https://sonarcloud.io/dashboard?id=RHEAGROUP_DEHP-MATLAB)
-[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=RHEAGROUP_DEHP-MATLAB&metric=reliability_rating)](https://sonarcloud.io/dashboard?id=RHEAGROUP_DEHP-MATLAB)
-[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=RHEAGROUP_DEHP-MATLAB&metric=security_rating)](https://sonarcloud.io/dashboard?id=RHEAGROUP_DEHP-MATLAB)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=RHEAGROUP_DEH-MATLAB&metric=alert_status)](https://sonarcloud.io/dashboard?id=RHEAGROUP_DEH-MATLAB)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=RHEAGROUP_DEH-MATLAB&metric=sqale_rating)](https://sonarcloud.io/dashboard?id=RHEAGROUP_DEH-MATLAB)
+[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=RHEAGROUP_DEH-MATLAB&metric=reliability_rating)](https://sonarcloud.io/dashboard?id=RHEAGROUP_DEH-MATLAB)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=RHEAGROUP_DEH-MATLAB&metric=security_rating)](https://sonarcloud.io/dashboard?id=RHEAGROUP_DEH-MATLAB)
 
-[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=RHEAGROUP_DEHP-MATLAB&metric=coverage)](https://sonarcloud.io/dashboard?id=RHEAGROUP_DEHP-MATLAB)
-[![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=RHEAGROUP_DEHP-MATLAB&metric=duplicated_lines_density)](https://sonarcloud.io/dashboard?id=RHEAGROUP_DEHP-MATLAB)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=RHEAGROUP_DEH-MATLAB&metric=coverage)](https://sonarcloud.io/dashboard?id=RHEAGROUP_DEH-MATLAB)
+[![Duplicated Lines (%)](https://sonarcloud.io/api/project_badges/measure?project=RHEAGROUP_DEH-MATLAB&metric=duplicated_lines_density)](https://sonarcloud.io/dashboard?id=RHEAGROUP_DEH-MATLAB)
 
-[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=RHEAGROUP_DEHP-MATLAB&metric=bugs)](https://sonarcloud.io/dashboard?id=RHEAGROUP_DEHP-MATLAB)
-[![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=RHEAGROUP_DEHP-MATLAB&metric=ncloc)](https://sonarcloud.io/dashboard?id=RHEAGROUP_DEHP-MATLAB)
-[![Technical Debt](https://sonarcloud.io/api/project_badges/measure?project=RHEAGROUP_DEHP-MATLAB&metric=sqale_index)](https://sonarcloud.io/dashboard?id=RHEAGROUP_DEHP-MATLAB)
-[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=RHEAGROUP_DEHP-MATLAB&metric=vulnerabilities)](https://sonarcloud.io/dashboard?id=RHEAGROUP_DEHP-MATLAB)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=RHEAGROUP_DEH-MATLAB&metric=bugs)](https://sonarcloud.io/dashboard?id=RHEAGROUP_DEH-MATLAB)
+[![Lines of Code](https://sonarcloud.io/api/project_badges/measure?project=RHEAGROUP_DEH-MATLAB&metric=ncloc)](https://sonarcloud.io/dashboard?id=RHEAGROUP_DEH-MATLAB)
+[![Technical Debt](https://sonarcloud.io/api/project_badges/measure?project=RHEAGROUP_DEH-MATLAB&metric=sqale_index)](https://sonarcloud.io/dashboard?id=RHEAGROUP_DEH-MATLAB)
+[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=RHEAGROUP_DEH-MATLAB&metric=vulnerabilities)](https://sonarcloud.io/dashboard?id=RHEAGROUP_DEH-MATLAB)
 # License
 
 The libraries contained in the DEHP MATLAB are provided to the community under the GNU Lesser General Public License. Because we make the software available with the LGPL, it can be used in both open source and proprietary software without being required to release the source code of your own components.
