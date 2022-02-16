@@ -138,49 +138,56 @@ namespace DEHPMatlab.ViewModel.Row
             {
                 foreach (var option in alloptions)
                 {
-                    foreach (var state in allstates)
-                    {
-                        this.PopulateListOfSets(option, state);
-                    }
+                    this.ComputeStates(allstates, option);
                 }
 
-                for (var i = 0; i < this.listofsetOfNewValues.Count; i++)
-                {
-                    this.ListOfParameters.Add(this.PopulateParameterDifferenceRowViewModel(i, true, true));
-                }
+                this.AddToListOfParameters(true, true);
             }
             else if (!isoptiondependant && statedependance != null)
             {
-                foreach (var state in allstates)
-                {
-                    this.PopulateListOfSets(null, state);
-                }
+                this.ComputeStates(allstates, null);
 
-                for (var i = 0; i < this.listofsetOfNewValues.Count; i++)
-                {
-                    this.ListOfParameters.Add(this.PopulateParameterDifferenceRowViewModel(i, false, true));
-                }
+                this.AddToListOfParameters(false, true);
             }
-            else if (isoptiondependant && statedependance == null)
+            else if (isoptiondependant)
             {
                 foreach (var option in alloptions)
                 {
                     this.PopulateListOfSets(option, null);
                 }
 
-                for (int i = 0; i < this.listofsetOfNewValues.Count; i++)
-                {
-                    this.ListOfParameters.Add(this.PopulateParameterDifferenceRowViewModel(i, true, false));
-                }
+                this.AddToListOfParameters(true, false);
             }
-            else if (!isoptiondependant && statedependance == null)
+            else
             {
                 this.PopulateListOfSets(null, null);
+                this.AddToListOfParameters(false, false);
+            }
+        }
 
-                for (int i = 0; i < this.listofsetOfNewValues.Count; i++)
-                {
-                    this.ListOfParameters.Add(this.PopulateParameterDifferenceRowViewModel(i, false, false));
-                }
+        /// <summary>
+        /// Add parameter to the collections
+        /// </summary>
+        /// <param name="isOption">Asserts if is Option dependent</param>
+        /// <param name="isState">Asserts if is State dependent</param>
+        private void AddToListOfParameters(bool isOption, bool isState)
+        {
+            for (var i = 0; i < this.listofsetOfNewValues.Count; i++)
+            {
+                this.ListOfParameters.Add(this.PopulateParameterDifferenceRowViewModel(i, isOption, isState));
+            }
+        }
+
+        /// <summary>
+        /// Loop through all <see cref="ActualFiniteState"/> with the given <see cref="Option"/> to populate sets
+        /// </summary>
+        /// <param name="allstates">The collections of <see cref="ActualFiniteState"/></param>
+        /// <param name="option">The <see cref="Option"/></param>
+        private void ComputeStates(List<ActualFiniteState> allstates, Option option)
+        {
+            foreach (var state in allstates)
+            {
+                this.PopulateListOfSets(option, state);
             }
         }
 
@@ -253,15 +260,15 @@ namespace DEHPMatlab.ViewModel.Row
             {
                 name = name + $"\\{this.listofsetOfNewValues[index].ActualOption.ShortName}\\{this.listofsetOfNewValues[index].ActualState.ShortName}";
             }
-            else if (isOptions && !isState)
+            else if (isOptions)
             {
                 name = name + $"\\{this.listofsetOfNewValues[index].ActualOption.ShortName}";
             }
-            else if (!isOptions && isState)
+            else if (isState)
             {
                 name = name + $"{this.listofsetOfNewValues[index].ActualState.ShortName}";
             }
-            else if (!isOptions && !isState)
+            else
             {
                 name = this.ModelCode();
             }
