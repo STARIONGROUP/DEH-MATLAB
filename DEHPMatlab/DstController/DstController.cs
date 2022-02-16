@@ -28,6 +28,7 @@ namespace DEHPMatlab.DstController
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Reactive.Linq;
     using System.Threading.Tasks;
 
     using CDP4Common;
@@ -49,6 +50,7 @@ namespace DEHPMatlab.DstController
     using DEHPCommon.UserInterfaces.Views;
 
     using DEHPMatlab.Enumerator;
+    using DEHPMatlab.Events;
     using DEHPMatlab.Services.MatlabConnector;
     using DEHPMatlab.Services.MatlabParser;
     using DEHPMatlab.ViewModel.Row;
@@ -302,6 +304,7 @@ namespace DEHPMatlab.DstController
 
                 foreach (var detectedInput in detectedInputs)
                 {
+                    detectedInput.Identifier = $"{this.LoadedScriptName}-{detectedInput.Name}";
                     this.MatlabWorkspaceInputRowViewModels.Add(detectedInput);
                     this.matlabVariableNames.Add(detectedInput.Name);
                 }
@@ -348,9 +351,9 @@ namespace DEHPMatlab.DstController
                 }
 
                 this.DstMapResult.AddRange(elements);
-
-                this.SelectedDstMapResultToTransfer.AddRange(elements);
             }
+
+            CDPMessageBus.Current.SendMessage(new UpdateObjectBrowserTreeEvent());
         }
 
         /// <summary>
@@ -365,8 +368,9 @@ namespace DEHPMatlab.DstController
             if (this.mappingEngine.Map(hubElementDefitions) is List<ParameterToMatlabVariableMappingRowViewModel> variables && variables.Any())
             {
                 this.HubMapResult.AddRange(variables);
-                this.SelectedHubMapResultToTransfer.AddRange(variables);
             }
+
+            CDPMessageBus.Current.SendMessage(new UpdateObjectBrowserTreeEvent());
         }
 
         /// <summary>
@@ -454,7 +458,8 @@ namespace DEHPMatlab.DstController
 
                 if (variable != null)
                 {
-                    variable.Value = mappedElement.SelectedValue.Value;
+                    variable.ActualValue = mappedElement.SelectedValue.Value;
+                    CDPMessageBus.Current.SendMessage(new DstHighlightEvent(variable.Identifier, false));
                 }
 
                 this.SelectedHubMapResultToTransfer.Remove(mappedElement);
@@ -469,6 +474,8 @@ namespace DEHPMatlab.DstController
             
             await this.hubController.Write(transaction);
             await this.hubController.Refresh();
+
+            CDPMessageBus.Current.SendMessage(new UpdateDstVariableTreeEvent(true));
         }
 
         /// <summary>
@@ -489,7 +496,7 @@ namespace DEHPMatlab.DstController
 
                 await Task.Run(() =>
                     {
-                        if (workspaceVariable.Value is object[,] allVariables)
+                        if (workspaceVariable.ActualValue is object[,] allVariables)
                         {
                             foreach (var variable in allVariables)
                             {
@@ -540,7 +547,7 @@ namespace DEHPMatlab.DstController
 
                 if (newVariable != null)
                 {
-                    workspaceVariable.Value = newVariable.Value;
+                    workspaceVariable.ActualValue = newVariable.ActualValue;
                     variablesToModify.Remove(newVariable);
                 }
             }
@@ -598,7 +605,7 @@ namespace DEHPMatlab.DstController
                 }
                 else
                 {
-                    variableInsideWorkspace.Value = matlabWorkspaceInputRowViewModel.Value;
+                    variableInsideWorkspace.ActualValue = matlabWorkspaceInputRowViewModel.ActualValue;
                 }
             }
 
@@ -658,7 +665,9 @@ namespace DEHPMatlab.DstController
             this.WhenAnyValue(x => x.MatlabWorkspaceInputRowViewModels.Count)
                 .Subscribe(_ => this.UploadMatlabInputs());
 
-            this.MatlabWorkspaceInputRowViewModels.ItemChanged.Subscribe(this.UpdateVariable);
+            this.MatlabWorkspaceInputRowViewModels.ItemChanged
+                .ObserveOn(RxApp.MainThreadScheduler)
+                .Subscribe(this.UpdateVariable);
         }
 
         /// <summary>
@@ -760,24 +769,27 @@ namespace DEHPMatlab.DstController
         }
 
         /// <summary>
-        /// Update a variable in the Matlab workspace when the variable is modified in the UI
+        /// Update a variable in the Matlab workspace when the variable is modified
         /// </summary>
         /// <param name="matlabWorkspaceRowViewModel">The <see cref="IReactivePropertyChangedEventArgs{TSender}" /></param>
         private void UpdateVariable(IReactivePropertyChangedEventArgs<MatlabWorkspaceRowViewModel> matlabWorkspaceRowViewModel)
         {
-            if (this.IsSessionOpen)
+            if (matlabWorkspaceRowViewModel.PropertyName != "ActualValue" || !this.isSessionOpen)
             {
-                this.IsBusy = true;
-                var sender = matlabWorkspaceRowViewModel.Sender;
-
-                if (sender.Value is not double && double.TryParse(sender.Value.ToString(), out var valueAsDouble))
-                {
-                    sender.Value = valueAsDouble;
-                }
-
-                this.matlabConnector.PutVariable(sender);
-                this.IsBusy = false;
+                return;
             }
+
+            this.IsBusy = true;
+            var sender = matlabWorkspaceRowViewModel.Sender;
+
+            if (sender.ActualValue is not double && double.TryParse(sender.ActualValue.ToString(), out var valueAsDouble))
+            {
+                sender.ActualValue = valueAsDouble;
+            }
+
+            this.matlabConnector.PutVariable(sender);
+
+            this.IsBusy = false;
         }
 
         /// <summary>

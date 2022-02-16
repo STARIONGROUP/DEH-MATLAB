@@ -201,7 +201,7 @@ namespace DEHPMatlab.MappingRules
         public void UpdateValueSet(MatlabWorkspaceRowViewModel matlabVariable, ParameterBase parameter)
         {
             var valueSet = (ParameterValueSetBase)parameter.QueryParameterBaseValueSet(matlabVariable.SelectedOption, matlabVariable.SelectedActualFiniteState);
-            valueSet.Computed = new ValueArray<string>(new[] { FormattableString.Invariant($"{matlabVariable.Value}") });
+            valueSet.Computed = new ValueArray<string>(new[] { FormattableString.Invariant($"{matlabVariable.ActualValue}") });
             valueSet.ValueSwitch = ParameterSwitchKind.COMPUTED;
         }
 

@@ -32,6 +32,8 @@ namespace DEHPMatlab.ViewModel
 
     using Autofac;
 
+    using CDP4Dal;
+
     using DEHPCommon;
     using DEHPCommon.Enumerators;
     using DEHPCommon.HubController.Interfaces;
@@ -42,6 +44,7 @@ namespace DEHPMatlab.ViewModel
     using DEHPCommon.UserInterfaces.Views;
 
     using DEHPMatlab.DstController;
+    using DEHPMatlab.Events;
     using DEHPMatlab.ViewModel.Dialogs.Interfaces;
     using DEHPMatlab.ViewModel.Interfaces;
     using DEHPMatlab.Views.Dialogs;
@@ -55,31 +58,26 @@ namespace DEHPMatlab.ViewModel
     public sealed class HubDataSourceViewModel : DataSourceViewModel, IHubDataSourceViewModel
     {
         /// <summary>
-        /// The <see cref="IHubController"/>
-        /// </summary>
-        private readonly IHubController hubController;
-
-        /// <summary>
-        /// Gets the <see cref="IHubSessionControlViewModel"/>
-        /// </summary>
-        public IHubSessionControlViewModel SessionControl { get; }
-
-        /// <summary>
-        /// The <see cref="IDstController"/>
+        /// The <see cref="IDstController" />
         /// </summary>
         private readonly IDstController dstController;
 
         /// <summary>
-        /// Initializes a new <see cref="HubDataSourceViewModel"/>
+        /// The <see cref="IHubController" />
         /// </summary>
-        /// <param name="navigationService">The <see cref="INavigationService"/></param>
-        /// <param name="hubController">The <see cref="IHubController"/></param>
-        /// <param name="sessionControl">The <see cref="IHubSessionControlViewModel"/></param>
-        /// <param name="hubBrowserHeader">The <see cref="IHubBrowserHeaderViewModel"/></param>
-        /// <param name="publicationBrowser">The <see cref="IPublicationBrowserViewModel"/></param>
-        /// <param name="objectBrowser">The <see cref="IObjectBrowserViewModel"/></param>
-        /// <param name="statusBar">The <see cref="IStatusBarControlViewModel"/></param>
-        /// <param name="dstController">The <see cref="IDstController"/></param>
+        private readonly IHubController hubController;
+
+        /// <summary>
+        /// Initializes a new <see cref="HubDataSourceViewModel" />
+        /// </summary>
+        /// <param name="navigationService">The <see cref="INavigationService" /></param>
+        /// <param name="hubController">The <see cref="IHubController" /></param>
+        /// <param name="sessionControl">The <see cref="IHubSessionControlViewModel" /></param>
+        /// <param name="hubBrowserHeader">The <see cref="IHubBrowserHeaderViewModel" /></param>
+        /// <param name="publicationBrowser">The <see cref="IPublicationBrowserViewModel" /></param>
+        /// <param name="objectBrowser">The <see cref="IObjectBrowserViewModel" /></param>
+        /// <param name="statusBar">The <see cref="IStatusBarControlViewModel" /></param>
+        /// <param name="dstController">The <see cref="IDstController" /></param>
         public HubDataSourceViewModel(INavigationService navigationService,
             IHubController hubController, IHubSessionControlViewModel sessionControl,
             IHubBrowserHeaderViewModel hubBrowserHeader, IPublicationBrowserViewModel publicationBrowser,
@@ -97,7 +95,39 @@ namespace DEHPMatlab.ViewModel
         }
 
         /// <summary>
-        /// Initializes all <see cref="ICommand"/> 
+        /// Gets the <see cref="IHubSessionControlViewModel" />
+        /// </summary>
+        public IHubSessionControlViewModel SessionControl { get; }
+
+        /// <summary>
+        /// Execute the <see cref="DataSourceViewModel.ConnectCommand" />
+        /// </summary>
+        protected override void ConnectCommandExecute()
+        {
+            if (this.hubController.IsSessionOpen)
+            {
+                if ((this.dstController.DstMapResult.Any() || this.dstController.HubMapResult.Any())
+                    && this.NavigationService.ShowDxDialog<LogoutConfirmDialog>() is true
+                    || !this.dstController.DstMapResult.Any() && !this.dstController.HubMapResult.Any())
+                {
+                    this.dstController.ClearMappingCollections();
+                    this.ObjectBrowser.Things.Clear();
+                    this.hubController.Close();
+                }
+            }
+            else
+            {
+                this.NavigationService.ShowDialog<Login>();
+
+                if (this.hubController.IsSessionOpen && this.hubController.OpenIteration == null)
+                {
+                    this.hubController.Close();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Initializes all <see cref="ICommand" />
         /// </summary>
         protected override void InitializeCommands()
         {
@@ -118,16 +148,18 @@ namespace DEHPMatlab.ViewModel
 
             this.ObjectBrowser.MapCommand = ReactiveCommand.Create(canMap);
             this.ObjectBrowser.MapCommand.Subscribe(_ => this.MapCommandExecute());
+
+            this.ObjectBrowser.SelectedThings.CountChanged.Subscribe(_ => this.UpdateNetChangePreviewBasedOnSelection());
         }
 
         /// <summary>
-        /// Executes the <see cref="IObjectBrowserViewModel.MapCommand"/>
+        /// Executes the <see cref="IObjectBrowserViewModel.MapCommand" />
         /// </summary>
         private void MapCommandExecute()
         {
             var viewModel = AppContainer.Container.Resolve<IHubMappingConfigurationDialogViewModel>();
 
-            HashSet<ElementDefinitionRowViewModel> rows = new HashSet<ElementDefinitionRowViewModel>();
+            HashSet<ElementDefinitionRowViewModel> rows = new();
 
             foreach (var selectedThing in this.ObjectBrowser.SelectedThings)
             {
@@ -160,30 +192,13 @@ namespace DEHPMatlab.ViewModel
         }
 
         /// <summary>
-        /// Execute the <see cref="DataSourceViewModel.ConnectCommand"/>
+        /// Sends an update event to the Dst net change preview based on the current
+        /// <see cref="IObjectBrowserViewModel.SelectedThings" />
         /// </summary>
-        protected override void ConnectCommandExecute()
+        private void UpdateNetChangePreviewBasedOnSelection()
         {
-            if (this.hubController.IsSessionOpen)
-            {
-                if (((this.dstController.DstMapResult.Any() || this.dstController.HubMapResult.Any())
-                     && this.NavigationService.ShowDxDialog<LogoutConfirmDialog>() is true)
-                    || (!this.dstController.DstMapResult.Any() && !this.dstController.HubMapResult.Any()))
-                {
-                    this.dstController.ClearMappingCollections();
-                    this.ObjectBrowser.Things.Clear();
-                    this.hubController.Close();
-                }
-            }
-            else
-            {
-                this.NavigationService.ShowDialog<Login>();
-
-                if (this.hubController.IsSessionOpen && this.hubController.OpenIteration == null)
-                {
-                    this.hubController.Close();
-                }
-            }
+            CDPMessageBus.Current.SendMessage(new UpdateDstPreviewBasedOnSelectionEvent(
+                this.ObjectBrowser.SelectedThings.OfType<ElementDefinitionRowViewModel>(), null, false));
         }
     }
 }

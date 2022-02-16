@@ -58,7 +58,7 @@ namespace DEHPMatlab.ViewModel.Row
             this.DstThing = new MappedThing()
             {
                 Name = mappedElement.SelectedMatlabVariable.Name,
-                Value = mappedElement.SelectedMatlabVariable.Value
+                Value = mappedElement.SelectedMatlabVariable.ActualValue
             };
 
             this.HubThing = new MappedThing()
@@ -85,7 +85,7 @@ namespace DEHPMatlab.ViewModel.Row
             this.DstThing = new MappedThing
             {
                 Name = variable.Name,
-                Value = variable.Value
+                Value = variable.ActualValue
             };
 
             object value;

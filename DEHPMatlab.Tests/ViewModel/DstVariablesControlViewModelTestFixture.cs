@@ -63,13 +63,13 @@ namespace DEHPMatlab.Tests.ViewModel
             this.dstController.Setup(x => x.MatlabWorkspaceInputRowViewModels).Returns(
                 new ReactiveList<MatlabWorkspaceRowViewModel>()
                 {
-                    new MatlabWorkspaceRowViewModel("a",5)
+                    new("a",5)
                 });
 
             this.dstController.Setup(x => x.MatlabAllWorkspaceRowViewModels).Returns(
                 new ReactiveList<MatlabWorkspaceRowViewModel>()
                 {
-                    new MatlabWorkspaceRowViewModel("b", 0)
+                    new("b", 0)
                 });
 
             this.hubController = new Mock<IHubController>();

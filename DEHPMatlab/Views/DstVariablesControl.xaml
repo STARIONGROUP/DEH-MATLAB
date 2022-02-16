@@ -47,11 +47,26 @@
                                       KeyFieldName="Name"
                                       ParentFieldName="ParentName"
                                       ToolTip="Input variables detected inside the script. Those variables are editable">
+                        <dxg:TreeListView.RowStyle>
+                            <Style TargetType="{x:Type dxg:RowControl}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Row.IsHighlighted}" Value="True">
+                                        <Setter Property="Background" Value="Yellow"/>
+                                        <Setter Property="FontWeight" Value="Bold" />
+                                        <Setter Property="Foreground" Value="Blue" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding Row.IsSelectedForTransfer}" Value="True">
+                                        <Setter Property="Background" Value="LightGreen"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </dxg:TreeListView.RowStyle>
                     </dxg:TreeListView>
                 </dxg:TreeListControl.View>
                 <dxg:TreeListControl.Columns>
                     <dxg:TreeListColumn FieldName="Name" Fixed="Left" AllowEditing="False"/>
-                    <dxg:TreeListColumn FieldName="Value" AllowEditing="True"/>
+                    <dxg:TreeListColumn FieldName="ActualValue" AllowEditing="True"/>
+                    <dxg:TreeListColumn FieldName="InitialValue" AllowEditing="False"/>
                 </dxg:TreeListControl.Columns>
             </dxg:TreeListControl>
             <TextBlock Grid.Row="2" FontSize="12" FontWeight="Black" Text="Workspace" Margin="4"/>
@@ -90,7 +105,8 @@
                 </dxg:TreeListControl.View>
                 <dxg:TreeListControl.Columns>
                     <dxg:TreeListColumn FieldName="Name" Fixed="Left" AllowEditing="False"/>
-                    <dxg:TreeListColumn FieldName="Value" AllowEditing="False"/>
+                    <dxg:TreeListColumn FieldName="ActualValue" AllowEditing="False"/>
+                    <dxg:TreeListColumn FieldName="InitialValue" AllowEditing="False"/>
                 </dxg:TreeListControl.Columns>
             </dxg:TreeListControl>
         </Grid>

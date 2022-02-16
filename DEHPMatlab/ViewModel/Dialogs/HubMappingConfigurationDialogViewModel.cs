@@ -402,7 +402,7 @@ namespace DEHPMatlab.ViewModel.Dialogs
 
             if (parameter.ParameterType is not SampledFunctionParameterType)
             {
-                validationResult = parameter.ParameterType.Validate(variable.Value, parameter.Scale);
+                validationResult = parameter.ParameterType.Validate(variable.ActualValue, parameter.Scale);
                 this.SelectedMappedElement.SelectedParameter = parameter;
                 this.SelectedMappedElement.SelectedMatlabVariable = variable;
                 this.SelectedMappedElement.VerifyValidity();

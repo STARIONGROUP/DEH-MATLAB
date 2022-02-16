@@ -149,7 +149,7 @@ namespace DEHPMatlab.Tests.MappingRules
             var lastVariable = variables.Last();
             Assert.AreEqual(3, variables.Count);
             Assert.AreEqual("5", firstVariable.SelectedValue.Value);
-            Assert.AreEqual(0.5d, initialMatlabVariables.First().Value);
+            Assert.AreEqual(0.5d, initialMatlabVariables.First().ActualValue);
             Assert.AreEqual("15", lastVariable.SelectedValue.Value);
             Assert.AreEqual(this.option1, lastVariable.SelectedOption);
             Assert.AreEqual(this.state2, lastVariable.SelectedState);

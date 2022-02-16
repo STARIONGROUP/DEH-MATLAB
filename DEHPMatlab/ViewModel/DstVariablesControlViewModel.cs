@@ -39,6 +39,8 @@ namespace DEHPMatlab.ViewModel
 
     using CDP4Common.CommonData;
 
+    using CDP4Dal;
+
     using DEHPCommon;
     using DEHPCommon.Enumerators;
     using DEHPCommon.HubController.Interfaces;
@@ -46,6 +48,7 @@ namespace DEHPMatlab.ViewModel
     using DEHPCommon.UserInterfaces.ViewModels.Interfaces;
     using DEHPCommon.UserInterfaces.ViewModels;
 
+    using DEHPMatlab.Events;
     using DEHPMatlab.ViewModel.Dialogs.Interfaces;
     using DEHPMatlab.Views.Dialogs;
 
@@ -105,6 +108,8 @@ namespace DEHPMatlab.ViewModel
 
             this.InputVariables = this.DstController.MatlabWorkspaceInputRowViewModels;
             this.WorkspaceVariables = this.DstController.MatlabAllWorkspaceRowViewModels;
+
+            this.SelectedThings.CountChanged.Subscribe(_ => this.UpdateNetChangePreviewBasedOnSelection());
 
             this.InitializeCommands();
         }
@@ -168,7 +173,7 @@ namespace DEHPMatlab.ViewModel
         /// <summary>
         /// Populate the context menu for this browser
         /// </summary>
-        public void PopulateContextMenu()
+        public virtual void PopulateContextMenu()
         {
             this.ContextMenu.Clear();
 
@@ -194,6 +199,14 @@ namespace DEHPMatlab.ViewModel
 
             this.WhenAnyValue(x => x.DstController.IsBusy)
                 .Subscribe(_ => this.UpdateProperties());
+        }
+
+        /// <summary>
+        /// Sends an update event to the Hub net change preview based on the current <see cref="SelectedThings"/>
+        /// </summary>
+        private void UpdateNetChangePreviewBasedOnSelection()
+        {
+            CDPMessageBus.Current.SendMessage(new UpdateHubPreviewBasedOnSelectionEvent(this.SelectedThings, null, false));
         }
 
         /// <summary>

@@ -34,13 +34,14 @@ namespace DEHPMatlab.ViewModel
 
     using DEHPMatlab.DstController;
     using DEHPMatlab.ViewModel.Interfaces;
+    using DEHPMatlab.ViewModel.NetChangePreview.Interfaces;
 
     using ReactiveUI;
 
     /// <summary>
     /// Represents the view model for <see cref="Views.MainWindow" />
     /// </summary>
-    public class MainWindowViewModel : IMainWindowViewModel
+    public class MainWindowViewModel : ReactiveObject, IMainWindowViewModel
     {
         /// <summary>
         /// The <see cref="IDstController" />
@@ -53,6 +54,11 @@ namespace DEHPMatlab.ViewModel
         private readonly INavigationService navigationService;
 
         /// <summary>
+        /// Backing field for <see cref="CurrentMappingDirection" />
+        /// </summary>
+        private int currentMappingDirection;
+
+        /// <summary>
         /// Create a new instance of <see cref="MainWindowViewModel" />
         /// </summary>
         /// <param name="hubDataSourceViewModel">A <see cref="IHubDataSourceViewModel" /></param>
@@ -62,9 +68,13 @@ namespace DEHPMatlab.ViewModel
         /// <param name="transferControlView">The <see cref="ITransferControlViewModel" /></param>
         /// <param name="navigationService">The <see cref="INavigationService" /></param>
         /// <param name="mappingViewModel">The <see cref="IMappingViewModel" /></param>
+        /// <param name="dstNetChange">The <see cref="IDstNetChangePreviewViewModel" /></param>
+        /// <param name="hubNetChange">The <see cref="IHubNetChangePreviewViewModel" /></param>
+        /// <param name="differenceView">The <see cref="IDifferenceViewModel" /></param>
         public MainWindowViewModel(IHubDataSourceViewModel hubDataSourceViewModel, IStatusBarControlViewModel statusBarControlViewModel,
             IDstDataSourceViewModel dstDataSourceViewModel, IDstController dstController, ITransferControlViewModel transferControlView,
-            INavigationService navigationService, IMappingViewModel mappingViewModel)
+            INavigationService navigationService, IMappingViewModel mappingViewModel, IDstNetChangePreviewViewModel dstNetChange,
+            IHubNetChangePreviewViewModel hubNetChange, IDifferenceViewModel differenceView)
         {
             this.HubDataSourceViewModel = hubDataSourceViewModel;
             this.StatusBarControlViewModel = statusBarControlViewModel;
@@ -73,9 +83,26 @@ namespace DEHPMatlab.ViewModel
             this.TransferControlViewModel = transferControlView;
             this.navigationService = navigationService;
             this.MappingViewModel = mappingViewModel;
+            this.DstNetChangePreviewViewModel = dstNetChange;
+            this.HubNetChangePreviewViewModel = hubNetChange;
+            this.DifferenceViewModel = differenceView;
 
             this.InitializeCommands();
         }
+
+        /// <summary>
+        /// Gets or sets the <see cref="CurrentMappingDirection" /> for proper binding
+        /// </summary>
+        public int CurrentMappingDirection
+        {
+            get => this.currentMappingDirection;
+            set => this.RaiseAndSetIfChanged(ref this.currentMappingDirection, value);
+        }
+
+        /// <summary>
+        /// The <see cref="IHubNetChangePreviewViewModel" />
+        /// </summary>
+        public IHubNetChangePreviewViewModel HubNetChangePreviewViewModel { get; }
 
         /// <summary>
         /// The <see cref="IMappingViewModel" />
@@ -108,6 +135,16 @@ namespace DEHPMatlab.ViewModel
         public ReactiveCommand<object> OpenExchangeHistory { get; private set; }
 
         /// <summary>
+        /// Gets the view model that represents the net change preview panel
+        /// </summary>
+        public IDstNetChangePreviewViewModel DstNetChangePreviewViewModel { get; }
+
+        /// <summary>
+        /// Gets the view model that represents the difference table
+        /// </summary>
+        public IDifferenceViewModel DifferenceViewModel { get; private set; }
+
+        /// <summary>
         /// Gets or sets the <see cref="ISwitchLayoutPanelOrderBehavior" />
         /// </summary>
         public ISwitchLayoutPanelOrderBehavior SwitchPanelBehavior { get; set; }
@@ -125,6 +162,8 @@ namespace DEHPMatlab.ViewModel
             this.SwitchPanelBehavior?.Switch();
 
             this.dstController.MappingDirection = this.SwitchPanelBehavior?.MappingDirection ?? MappingDirection.FromDstToHub;
+
+            this.CurrentMappingDirection = (int) this.dstController.MappingDirection;
         }
 
         /// <summary>
