@@ -41,6 +41,7 @@ namespace DEHPMatlab.Tests.MappingRules
     using DEHPCommon.HubController.Interfaces;
 
     using DEHPMatlab.MappingRules;
+    using DEHPMatlab.Services.MappingConfiguration;
     using DEHPMatlab.ViewModel.Row;
 
     using Moq;
@@ -64,6 +65,7 @@ namespace DEHPMatlab.Tests.MappingRules
         private RatioScale scale;
         private SampledFunctionParameterType scalarParameterType;
         private SampledFunctionParameterType dateTimeParameterType;
+        private Mock<IMappingConfigurationService> mappingConfigurationService;
 
         [SetUp]
         public void Setup()
@@ -93,8 +95,11 @@ namespace DEHPMatlab.Tests.MappingRules
             this.hubController.Setup(x => x.OpenIteration).Returns(this.iteration);
             this.hubController.Setup(x => x.GetSiteDirectory()).Returns(new SiteDirectory());
 
+            this.mappingConfigurationService = new Mock<IMappingConfigurationService>();
+
             var containerBuilder = new ContainerBuilder();
             containerBuilder.RegisterInstance(this.hubController.Object).As<IHubController>();
+            containerBuilder.RegisterInstance(this.mappingConfigurationService.Object).As<IMappingConfigurationService>();
             AppContainer.Container = containerBuilder.Build();
 
             this.actualFiniteStates = new ActualFiniteStateList()
@@ -319,8 +324,13 @@ namespace DEHPMatlab.Tests.MappingRules
                 }
             };
 
+            var state = new ActualFiniteState();
+            var option = new Option();
+
             var parameter2 = new Parameter()
             {
+                IsOptionDependent = true,
+                StateDependence = new ActualFiniteStateList() {ActualState = { state } },
                 ParameterType = new TextParameterType(),
                 ValueSet =
                 {
@@ -330,7 +340,9 @@ namespace DEHPMatlab.Tests.MappingRules
                         Formula = new ValueArray<string>(new[] { "-", "-" }),
                         Manual = new ValueArray<string>(new[] { "-", "-" }),
                         Reference = new ValueArray<string>(new[] { "-", "-" }),
-                        Published = new ValueArray<string>(new[] { "-", "-" })
+                        Published = new ValueArray<string>(new[] { "-", "-" }),
+                        ActualState = state,
+                        ActualOption = option
                     }
                 }
             };
@@ -340,6 +352,8 @@ namespace DEHPMatlab.Tests.MappingRules
 
             Assert.DoesNotThrow(() => this.rule.UpdateValueSet(variableRowViewModel, parameter0));
             Assert.DoesNotThrow(() => this.rule.UpdateValueSet(variableRowViewModel, parameter1));
+            variableRowViewModel.SelectedOption = option;
+            variableRowViewModel.SelectedActualFiniteState = state;
             Assert.DoesNotThrow(() => this.rule.UpdateValueSet(variableRowViewModel, parameter2));
             Assert.Throws<NullReferenceException>(() => this.rule.UpdateValueSet(null, null));
         }
