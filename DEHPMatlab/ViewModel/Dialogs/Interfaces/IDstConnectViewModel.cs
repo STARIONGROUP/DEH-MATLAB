@@ -37,9 +37,19 @@ namespace DEHPMatlab.ViewModel.Dialogs.Interfaces
     public interface IDstConnectViewModel
     {
         /// <summary>
+        /// Gets or sets whether a new Mapping Configuration should be created
+        /// </summary>
+        bool CreateNewMappingConfigurationChecked { get; set; }
+
+        /// <summary>
         /// Gets or sets whether this view model is busy or not
         /// </summary>
         bool IsBusy { get; set; }
+
+        /// <summary>
+        /// Gets or sets the name of the new Mapping Configuration
+        /// </summary>
+        string ExternalIdentifierMapNewName { get; set; }
 
         /// <summary>
         /// The currently selected MatlabVersion

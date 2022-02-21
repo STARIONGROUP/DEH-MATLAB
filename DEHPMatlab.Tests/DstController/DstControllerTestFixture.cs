@@ -50,6 +50,7 @@ namespace DEHPMatlab.Tests.DstController
     using DEHPCommon.UserInterfaces.Views;
 
     using DEHPMatlab.DstController;
+    using DEHPMatlab.Services.MappingConfiguration;
     using DEHPMatlab.Services.MatlabConnector;
     using DEHPMatlab.Services.MatlabParser;
     using DEHPMatlab.ViewModel.Row;
@@ -70,6 +71,7 @@ namespace DEHPMatlab.Tests.DstController
         private Mock<IHubController> hubController;
         private Mock<INavigationService> navigationService;
         private Mock<IExchangeHistoryService> exchangeHistory;
+        private Mock<IMappingConfigurationService> mappingConfiguration;
         private IMatlabParser matlabParser;
         private Iteration iteration;
 
@@ -130,8 +132,10 @@ namespace DEHPMatlab.Tests.DstController
 
             this.exchangeHistory = new Mock<IExchangeHistoryService>();
 
+            this.mappingConfiguration = new Mock<IMappingConfigurationService>();
+
             this.dstController = new DstController(this.matlabConnector.Object, this.matlabParser, this.statusBar.Object, this.mappingEngine.Object,
-                this.hubController.Object, this.navigationService.Object, this.exchangeHistory.Object);
+                this.hubController.Object, this.navigationService.Object, this.exchangeHistory.Object, this.mappingConfiguration.Object);
         }
 
         [Test]
@@ -265,9 +269,9 @@ namespace DEHPMatlab.Tests.DstController
             this.navigationService.Setup(
                 x => x.ShowDxDialog<CreateLogEntryDialog, CreateLogEntryDialogViewModel>(
                     It.IsAny<CreateLogEntryDialogViewModel>())).Returns(true);
-            
+
             Assert.DoesNotThrowAsync(async () => await this.dstController.TransferMappedThingsToHub());
-            
+
             var parameter = new Parameter
             {
                 ParameterType = new SimpleQuantityKind(),

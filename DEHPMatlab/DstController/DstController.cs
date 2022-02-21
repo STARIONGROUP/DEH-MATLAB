@@ -51,6 +51,7 @@ namespace DEHPMatlab.DstController
 
     using DEHPMatlab.Enumerator;
     using DEHPMatlab.Events;
+    using DEHPMatlab.Services.MappingConfiguration;
     using DEHPMatlab.Services.MatlabConnector;
     using DEHPMatlab.Services.MatlabParser;
     using DEHPMatlab.ViewModel.Row;
@@ -67,6 +68,11 @@ namespace DEHPMatlab.DstController
     public class DstController : ReactiveObject, IDstController
     {
         /// <summary>
+        /// Gets this running tool name
+        /// </summary>
+        public static readonly string ThisToolName = typeof(DstController).Assembly.GetName().Name;
+
+        /// <summary>
         /// The <see cref="IExchangeHistoryService" />
         /// </summary>
         private readonly IExchangeHistoryService exchangeHistory;
@@ -80,6 +86,11 @@ namespace DEHPMatlab.DstController
         /// Gets the current class logger
         /// </summary>
         private readonly Logger logger = LogManager.GetCurrentClassLogger();
+
+        /// <summary>
+        /// The <see cref="IMappingConfigurationService" />
+        /// </summary>
+        private readonly IMappingConfigurationService mappingConfigurationService;
 
         /// <summary>
         /// The <see cref="IMappingEngine" />
@@ -151,9 +162,10 @@ namespace DEHPMatlab.DstController
         /// <param name="hubController">The <see cref="IHubController" /></param>
         /// <param name="navigationService">The <see cref="INavigationService" /></param>
         /// <param name="exchangeHistory">The <see cref="IExchangeHistoryService" /></param>
+        /// <param name="mappingConfiguration">The <see cref="IMappingConfigurationService" /></param>
         public DstController(IMatlabConnector matlabConnector, IMatlabParser matlabParser,
             IStatusBarControlViewModel statusBar, IMappingEngine mappingEngine, IHubController hubController,
-            INavigationService navigationService, IExchangeHistoryService exchangeHistory)
+            INavigationService navigationService, IExchangeHistoryService exchangeHistory, IMappingConfigurationService mappingConfiguration)
         {
             this.matlabConnector = matlabConnector;
             this.matlabParser = matlabParser;
@@ -162,6 +174,7 @@ namespace DEHPMatlab.DstController
             this.hubController = hubController;
             this.navigationService = navigationService;
             this.exchangeHistory = exchangeHistory;
+            this.mappingConfigurationService = mappingConfiguration;
 
             this.InitializeObservables();
         }
@@ -244,7 +257,7 @@ namespace DEHPMatlab.DstController
         public ReactiveList<ElementBase> SelectedDstMapResultToTransfer { get; } = new();
 
         /// <summary>
-        /// Gets the collection of <see cref="ParameterToMatlabVariableMappingRowViewModel"/> that are selected to be transfered
+        /// Gets the collection of <see cref="ParameterToMatlabVariableMappingRowViewModel" /> that are selected to be transfered
         /// </summary>
         public ReactiveList<ParameterToMatlabVariableMappingRowViewModel> SelectedHubMapResultToTransfer { get; } = new();
 
@@ -368,6 +381,7 @@ namespace DEHPMatlab.DstController
             if (this.mappingEngine.Map(hubElementDefitions) is List<ParameterToMatlabVariableMappingRowViewModel> variables && variables.Any())
             {
                 this.HubMapResult.AddRange(variables);
+                this.mappingConfigurationService.AddToExternalIdentifierMap(variables);
             }
 
             CDPMessageBus.Current.SendMessage(new UpdateObjectBrowserTreeEvent());
@@ -420,11 +434,16 @@ namespace DEHPMatlab.DstController
 
                 transaction.CreateOrUpdate(iterationClone);
 
+                this.mappingConfigurationService.AddToExternalIdentifierMap(this.ParameterVariable);
+                this.mappingConfigurationService.PersistExternalIdentifierMap(transaction, iterationClone);
+
                 await this.hubController.Write(transaction);
 
                 await this.UpdateParametersValueSets();
 
                 await this.hubController.Refresh();
+
+                this.mappingConfigurationService.RefreshExternalIdentifierMap();
 
                 foreach (var variable in this.ParameterVariable.Values)
                 {
@@ -446,9 +465,9 @@ namespace DEHPMatlab.DstController
         }
 
         /// <summary>
-        /// Transfers the mapped <see cref="ElementBase"/> to the Dst data source
+        /// Transfers the mapped <see cref="ElementBase" /> to the Dst data source
         /// </summary>
-        /// <returns>A <see cref="Task"/></returns>
+        /// <returns>A <see cref="Task" /></returns>
         public async Task TransferMappedThingsToDst()
         {
             foreach (var mappedElement in this.SelectedHubMapResultToTransfer.ToList())
@@ -470,10 +489,13 @@ namespace DEHPMatlab.DstController
             }
 
             var (iteration, transaction) = this.GetIterationTransaction();
+            this.mappingConfigurationService.PersistExternalIdentifierMap(transaction, iteration);
             transaction.CreateOrUpdate(iteration);
-            
+
             await this.hubController.Write(transaction);
             await this.hubController.Refresh();
+
+            this.mappingConfigurationService.RefreshExternalIdentifierMap();
 
             CDPMessageBus.Current.SendMessage(new UpdateDstVariableTreeEvent(true));
         }
@@ -541,6 +563,11 @@ namespace DEHPMatlab.DstController
                 }
             });
 
+            foreach (var matlabVariable in variablesToAdd)
+            {
+                matlabVariable.Identifier = $"{this.LoadedScriptName}-{matlabVariable.Name}";
+            }
+
             foreach (var workspaceVariable in this.MatlabAllWorkspaceRowViewModels)
             {
                 var newVariable = variablesToModify.FirstOrDefault(x => x.Name == workspaceVariable.Name);
@@ -553,33 +580,6 @@ namespace DEHPMatlab.DstController
             }
 
             this.MatlabAllWorkspaceRowViewModels.AddRange(variablesToAdd);
-        }
-
-        /// <summary>
-        /// Unwrap a <see cref="MatlabWorkspaceRowViewModel"/> and check if any of the unwrapped variables is already present inside the workspace
-        /// </summary>
-        /// <param name="variablesToAdd">The collection containing non-present <see cref="MatlabWorkspaceInputRowViewModels" /> inside the workspace</param>
-        /// <param name="variablesToModify">The collection containing present <see cref="MatlabWorkspaceInputRowViewModels" /> inside the workspace</param>
-        /// <param name="matlabVariable">The <see cref="MatlabWorkspaceRowViewModel"/></param>
-        private void UnwrapVariableAndCheckIfPresent(ICollection<MatlabWorkspaceRowViewModel> variablesToAdd, ICollection<MatlabWorkspaceRowViewModel> variablesToModify,
-            MatlabWorkspaceRowViewModel matlabVariable)
-        {
-            List<MatlabWorkspaceRowViewModel> unwrapped = matlabVariable.UnwrapVariableRowViewModels();
-
-            foreach (var matlabWorkspaceBaseRowViewModel in unwrapped)
-            {
-                var variableAlreadyPresent = this.MatlabAllWorkspaceRowViewModels
-                    .FirstOrDefault(x => x.Name == matlabWorkspaceBaseRowViewModel.Name);
-
-                if (variableAlreadyPresent != null)
-                {
-                    variablesToModify.Add(matlabWorkspaceBaseRowViewModel);
-                }
-                else
-                {
-                    variablesToAdd.Add(matlabWorkspaceBaseRowViewModel);
-                }
-            }
         }
 
         /// <summary>
@@ -690,6 +690,40 @@ namespace DEHPMatlab.DstController
 
             this.hubController.RegisterNewLogEntryToTransaction(vm.LogEntryContent, transaction);
             return true;
+        }
+
+        /// <summary>
+        /// Unwrap a <see cref="MatlabWorkspaceRowViewModel" /> and check if any of the unwrapped variables is already present
+        /// inside the workspace
+        /// </summary>
+        /// <param name="variablesToAdd">
+        /// The collection containing non-present <see cref="MatlabWorkspaceInputRowViewModels" />
+        /// inside the workspace
+        /// </param>
+        /// <param name="variablesToModify">
+        /// The collection containing present <see cref="MatlabWorkspaceInputRowViewModels" />
+        /// inside the workspace
+        /// </param>
+        /// <param name="matlabVariable">The <see cref="MatlabWorkspaceRowViewModel" /></param>
+        private void UnwrapVariableAndCheckIfPresent(ICollection<MatlabWorkspaceRowViewModel> variablesToAdd, ICollection<MatlabWorkspaceRowViewModel> variablesToModify,
+            MatlabWorkspaceRowViewModel matlabVariable)
+        {
+            List<MatlabWorkspaceRowViewModel> unwrapped = matlabVariable.UnwrapVariableRowViewModels();
+
+            foreach (var matlabWorkspaceBaseRowViewModel in unwrapped)
+            {
+                var variableAlreadyPresent = this.MatlabAllWorkspaceRowViewModels
+                    .FirstOrDefault(x => x.Name == matlabWorkspaceBaseRowViewModel.Name);
+
+                if (variableAlreadyPresent != null)
+                {
+                    variablesToModify.Add(matlabWorkspaceBaseRowViewModel);
+                }
+                else
+                {
+                    variablesToAdd.Add(matlabWorkspaceBaseRowViewModel);
+                }
+            }
         }
 
         /// <summary>

@@ -37,10 +37,12 @@ namespace DEHPMatlab.MappingRules
     using CDP4Common.Types;
 
     using DEHPCommon;
+    using DEHPCommon.Enumerators;
     using DEHPCommon.HubController.Interfaces;
     using DEHPCommon.MappingEngine;
     using DEHPCommon.MappingRules.Core;
 
+    using DEHPMatlab.Services.MappingConfiguration;
     using DEHPMatlab.ViewModel.Row;
 
     using NLog;
@@ -49,7 +51,8 @@ namespace DEHPMatlab.MappingRules
     /// The <see cref="MatlabWorkspaceRowViewModel"/> is a <see cref="IMappingRule"/> for the <see cref="MappingEngine"/>
     /// That takes a <see cref="List{T}"/> of <see cref="MatlabWorkspaceRowViewModel"/> as input and outputs a E-TM-10-25 <see cref="ElementDefinition"/>
     /// </summary>
-    public class MatlabVariableToElementDefinitionRule : MappingRule<List<MatlabWorkspaceRowViewModel>, (Dictionary<ParameterOrOverrideBase, MatlabWorkspaceRowViewModel> parameterVariable, List<ElementBase> elements)>
+    public class MatlabVariableToElementDefinitionRule : MappingRule<List<MatlabWorkspaceRowViewModel>, 
+        (Dictionary<ParameterOrOverrideBase, MatlabWorkspaceRowViewModel> parameterVariable, List<ElementBase> elements)>
     {
         /// <summary>
         /// The current class logger
@@ -60,6 +63,11 @@ namespace DEHPMatlab.MappingRules
         /// The <see cref="IHubController"/>
         /// </summary>
         private readonly IHubController hubController = AppContainer.Container.Resolve<IHubController>();
+
+        /// <summary>
+        /// The <see cref="IMappingConfigurationService"/>
+        /// </summary>
+        private IMappingConfigurationService mappingConfigurationService;
 
         /// <summary>
         /// Holds a <see cref="Dictionary{TKey,TValue}"/> of <see cref="ParameterOrOverrideBase"/> and <see cref="MatlabWorkspaceRowViewModel"/>
@@ -80,6 +88,8 @@ namespace DEHPMatlab.MappingRules
         {
             try
             {
+                this.mappingConfigurationService = AppContainer.Container.Resolve<IMappingConfigurationService>();
+
                 this.owner = this.hubController.CurrentDomainOfExpertise;
                 this.parameterNodeIdIdentifier.Clear();
 
@@ -100,6 +110,9 @@ namespace DEHPMatlab.MappingRules
                         }
 
                         this.AddValueSetToSelectedParameter(matlabVariable);
+
+                        this.mappingConfigurationService.AddToExternalIdentifierMap(matlabVariable.SelectedElementDefinition.Iid,
+                            matlabVariable.Identifier, MappingDirection.FromDstToHub);
                     }
                 }
 
@@ -203,6 +216,8 @@ namespace DEHPMatlab.MappingRules
             var valueSet = (ParameterValueSetBase)parameter.QueryParameterBaseValueSet(matlabVariable.SelectedOption, matlabVariable.SelectedActualFiniteState);
             valueSet.Computed = new ValueArray<string>(new[] { FormattableString.Invariant($"{matlabVariable.ActualValue}") });
             valueSet.ValueSwitch = ParameterSwitchKind.COMPUTED;
+
+            this.AddParameterToExternalIdentifierMap(parameter, matlabVariable);
         }
 
         /// <summary>
@@ -217,6 +232,26 @@ namespace DEHPMatlab.MappingRules
 
             initialize?.Invoke(tThingInstance);
             return tThingInstance;
+        }
+
+        /// <summary>
+        /// Adds the <see cref="Parameter"/> and its mapped <see cref="Option"/> and mapped <see cref="ActualFiniteState"/>
+        /// </summary>
+        /// <param name="parameter">The <see cref="Parameter"/></param>
+        /// <param name="matlabVariable">The external identifier: the variable name</param>
+        private void AddParameterToExternalIdentifierMap(ParameterBase parameter, MatlabWorkspaceRowViewModel matlabVariable)
+        {
+            if (parameter.IsOptionDependent)
+            {
+                this.mappingConfigurationService.AddToExternalIdentifierMap(
+                    matlabVariable.SelectedOption.Iid, matlabVariable.Identifier, MappingDirection.FromDstToHub);
+            }
+
+            if (parameter.StateDependence is { })
+            {
+                this.mappingConfigurationService.AddToExternalIdentifierMap(
+                    matlabVariable.SelectedActualFiniteState.Iid, matlabVariable.Identifier, MappingDirection.FromDstToHub);
+            }
         }
     }
 }

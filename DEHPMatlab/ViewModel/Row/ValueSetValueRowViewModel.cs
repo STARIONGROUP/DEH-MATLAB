@@ -24,20 +24,59 @@
 
 namespace DEHPMatlab.ViewModel.Row
 {
+    using System;
+
     using CDP4Common.EngineeringModelData;
     using CDP4Common.SiteDirectoryData;
+
+    using DevExpress.Mvvm.Native;
 
     using ReactiveUI;
 
     /// <summary>
-    /// The <see cref="ValueSetValueRowViewModel"/> represents a single value from a <see cref="IValueSet"/>
+    /// The <see cref="ValueSetValueRowViewModel" /> represents a single value from a <see cref="IValueSet" />
     /// </summary>
     public class ValueSetValueRowViewModel : ReactiveObject
     {
         /// <summary>
-        /// Backing field for <see cref="Value"/>
+        /// Backing field for <see cref="ActualState" />
+        /// </summary>
+        private ActualFiniteState actualState;
+
+        /// <summary>
+        /// Backing field for <see cref="Container" />
+        /// </summary>
+        private IValueSet container;
+
+        /// <summary>
+        /// Backing field for <see cref="Option" />
+        /// </summary>
+        private Option option;
+
+        /// <summary>
+        /// Backing field for <see cref="Scale" />
+        /// </summary>
+        private MeasurementScale scale;
+
+        /// <summary>
+        /// Backing field for <see cref="Value" />
         /// </summary>
         private string value;
+
+        /// <summary>
+        /// Initializes a new <see cref="ValueSetValueRowViewModel" />
+        /// </summary>
+        /// <param name="container">The <see cref="ParameterValueSetBase" /></param>
+        /// <param name="value">The value</param>
+        /// <param name="scale">The <see cref="MeasurementScale" /></param>
+        public ValueSetValueRowViewModel(IValueSet container, string value, MeasurementScale scale)
+        {
+            this.Container = container;
+            this.Value = value;
+            this.Option = container.ActualOption;
+            this.ActualState = container.ActualState;
+            this.Scale = scale;
+        }
 
         /// <summary>
         /// gets or sets the represented value
@@ -49,11 +88,6 @@ namespace DEHPMatlab.ViewModel.Row
         }
 
         /// <summary>
-        /// Backing field for <see cref="Option"/>
-        /// </summary>
-        private Option option;
-
-        /// <summary>
         /// Gets or sets the option that this represented value depends on
         /// </summary>
         public Option Option
@@ -61,11 +95,6 @@ namespace DEHPMatlab.ViewModel.Row
             get => this.option;
             set => this.RaiseAndSetIfChanged(ref this.option, value);
         }
-
-        /// <summary>
-        /// Backing field for <see cref="ActualState"/>
-        /// </summary>
-        private ActualFiniteState actualState;
 
         /// <summary>
         /// gets or sets the represented value
@@ -77,12 +106,7 @@ namespace DEHPMatlab.ViewModel.Row
         }
 
         /// <summary>
-        /// Backing field for <see cref="Scale"/>
-        /// </summary>
-        private MeasurementScale scale;
-
-        /// <summary>
-        /// Gets the string associated <see cref="MeasurementScale"/> of this value
+        /// Gets the string associated <see cref="MeasurementScale" /> of this value
         /// </summary>
         public MeasurementScale Scale
         {
@@ -98,12 +122,7 @@ namespace DEHPMatlab.ViewModel.Row
                                         $"{this.Value} [{(this.Scale is null ? "-" : this.Scale.ShortName)}]";
 
         /// <summary>
-        /// Backing field for <see cref="Container"/>
-        /// </summary>
-        private IValueSet container;
-
-        /// <summary>
-        /// Gets or sets the container <see cref="IValueSet"/>
+        /// Gets or sets the container <see cref="IValueSet" />
         /// </summary>
         public IValueSet Container
         {
@@ -112,18 +131,31 @@ namespace DEHPMatlab.ViewModel.Row
         }
 
         /// <summary>
-        /// Initializes a new <see cref="ValueSetValueRowViewModel"/>
+        /// Gets the represented <see cref="Value" /> index from its <see cref="IValueSet" /> <see cref="Container" />
+        /// as 0 based index, -1 if not found
         /// </summary>
-        /// <param name="container">The <see cref="ParameterValueSetBase"/></param>
-        /// <param name="value">The value</param>
-        /// <param name="scale">The <see cref="MeasurementScale"/></param>
-        public ValueSetValueRowViewModel(IValueSet container, string value, MeasurementScale scale)
+        public (int Index, ParameterSwitchKind SwitchKind) GetValueIndexAndParameterSwitchKind()
         {
-            this.Container = container;
-            this.Value = value;
-            this.Option = container.ActualOption;
-            this.ActualState = container.ActualState;
-            this.Scale = scale;
+            var indexFromComputed = this.Container.Computed
+                .IndexOf(x => x.Equals(this.Value, StringComparison.InvariantCulture));
+
+            if (indexFromComputed > -1)
+            {
+                return (indexFromComputed, ParameterSwitchKind.COMPUTED);
+            }
+
+            var indexFromReference = this.Container.Reference
+                .IndexOf(x => x.Equals(this.Value, StringComparison.InvariantCulture));
+
+            if (indexFromReference > -1)
+            {
+                return (indexFromReference, ParameterSwitchKind.REFERENCE);
+            }
+
+            var indexFromManual = this.Container.Manual
+                .IndexOf(x => x.Equals(this.Value, StringComparison.InvariantCulture));
+
+            return (indexFromManual, ParameterSwitchKind.MANUAL);
         }
     }
 }
