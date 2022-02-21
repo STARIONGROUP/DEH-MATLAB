@@ -267,6 +267,11 @@ namespace DEHPMatlab.ViewModel.Row
         public ReactiveList<ElementUsage> SelectedElementUsages { get; set; } = new();
 
         /// <summary>
+        /// Gets or sets the mapping configurations
+        /// </summary>
+        public ReactiveList<IdCorrespondence> MappingConfigurations { get; set; } = new();
+
+        /// <summary>
         /// Verify if the <see cref="SelectedParameterType" /> is compatible with the current variable
         /// </summary>
         /// <returns>An assert whether the <see cref="SelectedParameterType" /> is compatible</returns>

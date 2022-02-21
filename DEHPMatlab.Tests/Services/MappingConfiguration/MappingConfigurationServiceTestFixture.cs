@@ -26,6 +26,7 @@ namespace DEHPMatlab.Tests.Services.MappingConfiguration
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
 
     using CDP4Common.CommonData;
     using CDP4Common.EngineeringModelData;
@@ -66,10 +67,23 @@ namespace DEHPMatlab.Tests.Services.MappingConfiguration
         private ParameterType parameterType;
         private ExternalIdentifierMap externalIdentifierMap;
         private List<ExternalIdentifier> externalIdentifiers;
+        private List<MatlabWorkspaceRowViewModel> variables;
 
         [SetUp]
         public void Setup()
         {
+            this.variables = new List<MatlabWorkspaceRowViewModel>()
+            {
+                new("a", 45)
+                {
+                    Identifier = "a-a"
+                },
+                new("b", 57)
+                {
+                    Identifier = "a-b"
+                }
+            };
+
             this.parameterType = new SimpleQuantityKind(Guid.NewGuid(), null, null);
             this.person = new Person(Guid.NewGuid(), null, null) { GivenName = "test", DefaultDomain = this.domain };
 
@@ -167,19 +181,19 @@ namespace DEHPMatlab.Tests.Services.MappingConfiguration
             {
                 new()
                 {
-                    MappingDirection = MappingDirection.FromDstToHub,
+                    MappingDirection = MappingDirection.FromHubToDst,
                     Identifier = "a-a",
                     ValueIndex = 0
                 },
                 new()
                 {
                     MappingDirection = MappingDirection.FromDstToHub,
-                    Identifier = "b-a",
+                    Identifier = "a-b",
                     ValueIndex = 0
                 },
                 new()
                 {
-                    MappingDirection = MappingDirection.FromHubToDst,
+                    MappingDirection = MappingDirection.FromDstToHub,
                     Identifier = "Mos.a",
                     ValueIndex = 0,
                     ParameterSwitchKind = ParameterSwitchKind.COMPUTED
@@ -258,7 +272,8 @@ namespace DEHPMatlab.Tests.Services.MappingConfiguration
                 }
             };
 
-            this.mappingConfiguration.AddToExternalIdentifierMap(mappedElements);
+            this.mappingConfiguration.AddToExternalIdentifierMap(mappedElements.First());
+            this.mappingConfiguration.AddToExternalIdentifierMap(mappedElements.Last());
             Assert.AreEqual(3,this.mappingConfiguration.ExternalIdentifierMap.Correspondence.Count);
 
             this.mappingConfiguration.AddToExternalIdentifierMap(new Dictionary<ParameterOrOverrideBase, MatlabWorkspaceRowViewModel>()
@@ -327,6 +342,81 @@ namespace DEHPMatlab.Tests.Services.MappingConfiguration
             Assert.IsNotNull(this.mappingConfiguration.ExternalIdentifierMap);
             Assert.AreSame(map, this.mappingConfiguration.ExternalIdentifierMap.Original);
             Assert.AreNotSame(this.externalIdentifierMap, this.mappingConfiguration.ExternalIdentifierMap);
+        }
+
+        [Test]
+        public void VerifyLoadMappingFromHubToDst()
+        {
+            Assert.IsNull(this.mappingConfiguration.LoadMappingFromHubToDst(this.variables));
+            this.mappingConfiguration.ExternalIdentifierMap = this.externalIdentifierMap;
+            this.externalIdentifierMap.Iid = Guid.Empty;
+            Assert.IsNull(this.mappingConfiguration.LoadMappingFromHubToDst(this.variables));
+            this.externalIdentifierMap.Iid = Guid.NewGuid();
+            var correspondences = this.externalIdentifierMap.Correspondence.ToArray();
+
+            this.externalIdentifierMap.Correspondence.Clear();
+            Assert.IsNull(this.mappingConfiguration.LoadMappingFromHubToDst(this.variables));
+            this.externalIdentifierMap.Correspondence.AddRange(correspondences);
+
+            var mappedRows = new List<ParameterToMatlabVariableMappingRowViewModel>();
+            Assert.DoesNotThrow(() => mappedRows = this.mappingConfiguration.LoadMappingFromHubToDst(this.variables));
+            ParameterValueSetBase valueSet = null;
+            this.hubController.Setup(x => x.GetThingById(It.IsAny<Guid>(), It.IsAny<Iteration>(), out valueSet));
+            Assert.DoesNotThrow(() => mappedRows = this.mappingConfiguration.LoadMappingFromHubToDst(this.variables));
+
+            valueSet = new ParameterValueSet()
+            {
+                Computed = new ValueArray<string>(new[] { "42" })
+            };
+
+            this.hubController.Setup(x => x.GetThingById(It.IsAny<Guid>(), It.IsAny<Iteration>(), out valueSet)).Returns(true);
+            Assert.DoesNotThrow(() => mappedRows = this.mappingConfiguration.LoadMappingFromHubToDst(this.variables));
+
+            Assert.AreEqual(1, mappedRows.Count);
+            Assert.AreEqual("42", mappedRows.First().SelectedValue.Value);
+        }
+
+        [Test]
+        public void VerifyLoadMappingFromDstToHub()
+        {
+            this.mappingConfiguration.ExternalIdentifierMap = this.externalIdentifierMap;
+            Assert.DoesNotThrow(() => this.mappingConfiguration.LoadMappingFromDstToHub(this.variables));
+
+            var thing = default(Thing);
+            Assert.DoesNotThrow(() => this.mappingConfiguration.LoadMappingFromDstToHub(this.variables));
+
+            var parameterAsThing = (Thing)this.parameter;
+            var elementAsThing = (Thing)this.elementDefinition0;
+            this.hubController.Setup(x => x.GetThingById(this.parameter.Iid, It.IsAny<Iteration>(), out parameterAsThing)).Returns(true);
+            this.hubController.Setup(x => x.GetThingById(this.elementDefinition0.Iid, It.IsAny<Iteration>(), out elementAsThing)).Returns(true);
+
+            var mappedVariables = new List<MatlabWorkspaceRowViewModel>();
+            Assert.DoesNotThrow(() => mappedVariables = this.mappingConfiguration.LoadMappingFromDstToHub(this.variables));
+
+            Assert.IsNotNull(mappedVariables);
+            Assert.AreEqual(1, mappedVariables.Count);
+
+            this.hubController.Verify(x => x.GetThingById(It.IsAny<Guid>(), It.IsAny<Iteration>(), out thing), Times.Exactly(3));
+        }
+
+        [Test]
+        public void VerifyPersist()
+        {
+            this.mappingConfiguration.ExternalIdentifierMap = this.externalIdentifierMap;
+            var transactionMock = new Mock<IThingTransaction>();
+            var iterationClone = new Iteration();
+            Assert.DoesNotThrow(() => this.mappingConfiguration.PersistExternalIdentifierMap(transactionMock.Object, iterationClone));
+
+            this.mappingConfiguration.ExternalIdentifierMap = new ExternalIdentifierMap()
+            {
+                Correspondence = { new IdCorrespondence(Guid.NewGuid(), null, null) }
+            };
+
+            Assert.DoesNotThrow(() => this.mappingConfiguration.PersistExternalIdentifierMap(transactionMock.Object, iterationClone));
+
+            Assert.AreEqual(1, iterationClone.ExternalIdentifierMap.Count);
+            transactionMock.Verify(x => x.CreateOrUpdate(It.IsAny<Thing>()), Times.Exactly(3));
+            transactionMock.Verify(x => x.Create(It.IsAny<Thing>(), null), Times.Exactly(3));
         }
     }
 }

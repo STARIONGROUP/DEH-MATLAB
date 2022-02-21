@@ -79,11 +79,14 @@ namespace DEHPMatlab.Tests.ViewModel
         private Iteration iteration;
         private ReactiveList<ElementBase> dstMapResult;
         private ReactiveList<ParameterToMatlabVariableMappingRowViewModel> hubMapResult;
+        private ReactiveList<object> selectedThings;
 
         [SetUp]
         public void Setup()
         {
             RxApp.MainThreadScheduler = Scheduler.CurrentThread;
+
+            this.selectedThings = new ReactiveList<object>();
 
             this.dstMapResult = new ReactiveList<ElementBase>();
             this.hubMapResult = new ReactiveList<ParameterToMatlabVariableMappingRowViewModel>();
@@ -155,7 +158,7 @@ namespace DEHPMatlab.Tests.ViewModel
             this.objectBrowser.Setup(x => x.CanMap).Returns(new Mock<IObservable<bool>>().Object);
             this.objectBrowser.Setup(x => x.MapCommand).Returns(ReactiveCommand.Create());
             this.objectBrowser.Setup(x => x.Things).Returns(new ReactiveList<BrowserViewModelBase>());
-            this.objectBrowser.Setup(x => x.SelectedThings).Returns(new ReactiveList<object>());
+            this.objectBrowser.Setup(x => x.SelectedThings).Returns(this.selectedThings);
 
             this.dstController.Setup(x => x.DstMapResult).Returns(this.dstMapResult);
             this.dstController.Setup(x => x.HubMapResult).Returns(this.hubMapResult);
@@ -186,8 +189,16 @@ namespace DEHPMatlab.Tests.ViewModel
         [Test]
         public void VerifyConnectCommand()
         {
+            this.selectedThings.Add(new object());
+
             Assert.IsTrue(this.viewModel.ConnectCommand.CanExecute(null));
             this.hubController.Setup(x => x.IsSessionOpen).Returns(true);
+            this.hubController.Setup(x => x.OpenIteration).Returns((Iteration) null);
+
+            this.viewModel.ConnectCommand.Execute(null);
+
+            this.hubController.Setup(x => x.OpenIteration).Returns(this.iteration);
+
             this.viewModel.ConnectCommand.Execute(null);
 
             this.dstMapResult.Add(new ElementDefinition());
@@ -209,7 +220,7 @@ namespace DEHPMatlab.Tests.ViewModel
             this.hubController.Setup(x => x.IsSessionOpen).Returns(false);
             this.hubController.Setup(x => x.OpenIteration).Returns((Iteration)null);
             this.viewModel.ConnectCommand.Execute(null);
-            this.hubController.Verify(x => x.Close(), Times.Exactly(3));
+            this.hubController.Verify(x => x.Close(), Times.Exactly(4));
             this.navigationService.Verify(x => x.ShowDialog<Login>(), Times.Once);
         }
 

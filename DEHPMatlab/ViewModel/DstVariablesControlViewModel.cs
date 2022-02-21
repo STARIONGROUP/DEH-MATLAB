@@ -109,6 +109,12 @@ namespace DEHPMatlab.ViewModel
             this.InputVariables = this.DstController.MatlabWorkspaceInputRowViewModels;
             this.WorkspaceVariables = this.DstController.MatlabAllWorkspaceRowViewModels;
 
+            this.WorkspaceVariables.IsEmptyChanged.Where(x => !x).Subscribe(_ =>
+            {
+                this.SelectedThing = null;
+                this.SelectedThings.Clear();
+            });
+
             this.SelectedThings.CountChanged.Subscribe(_ => this.UpdateNetChangePreviewBasedOnSelection());
 
             this.InitializeCommands();

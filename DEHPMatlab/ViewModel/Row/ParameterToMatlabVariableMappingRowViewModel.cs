@@ -78,6 +78,18 @@ namespace DEHPMatlab.ViewModel.Row
         }
 
         /// <summary>
+        /// Initializes a new <see cref="ParameterToMatlabVariableMappingRowViewModel"/>
+        /// </summary>
+        /// <param name="valueSet">The <see cref="IValueSet"/></param>
+        /// <param name="valueIndex">The value index</param>
+        /// <param name="switchKind">The <see cref="ParameterSwitchKind"/></param>
+        public ParameterToMatlabVariableMappingRowViewModel(IValueSet valueSet, int valueIndex, ParameterSwitchKind switchKind) : this()
+        {
+            this.SelectedParameter = (valueSet as ParameterValueSet)?.GetContainerOfType<ParameterOrOverrideBase>();
+            this.SelectedValue = new ValueSetValueRowViewModel(valueSet, valueIndex, switchKind);
+        }
+
+        /// <summary>
         /// Gets or sets the selected <see cref="ParameterOrOverrideBase"/> of this view model
         /// </summary>
         public ParameterOrOverrideBase SelectedParameter

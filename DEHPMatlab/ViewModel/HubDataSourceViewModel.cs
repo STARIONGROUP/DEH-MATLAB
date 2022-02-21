@@ -198,7 +198,7 @@ namespace DEHPMatlab.ViewModel
         private void UpdateNetChangePreviewBasedOnSelection()
         {
             CDPMessageBus.Current.SendMessage(new UpdateDstPreviewBasedOnSelectionEvent(
-                this.ObjectBrowser.SelectedThings.OfType<ElementDefinitionRowViewModel>(), null, false));
+                this.ObjectBrowser.SelectedThings, null, false));
         }
     }
 }

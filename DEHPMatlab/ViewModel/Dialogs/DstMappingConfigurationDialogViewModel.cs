@@ -28,6 +28,7 @@ namespace DEHPMatlab.ViewModel.Dialogs
     using System.Linq;
     using System.Reactive.Linq;
 
+    using CDP4Common.CommonData;
     using CDP4Common.EngineeringModelData;
     using CDP4Common.SiteDirectoryData;
 
@@ -140,6 +141,8 @@ namespace DEHPMatlab.ViewModel.Dialogs
                 .Subscribe(_ => this.UpdateHubFields(() =>
                 {
                     this.InitializesCommandsAndObservables();
+                    this.DstController.LoadMapping();
+                    this.UpdatePropertiesBasedOnMappingConfiguration();
                     this.CheckCanExecute();
                 }));
         }
@@ -403,6 +406,59 @@ namespace DEHPMatlab.ViewModel.Dialogs
         {
             this.AvailableOptions.AddRange(this.HubController.OpenIteration.Option
                 .Where(x => this.AvailableOptions.All(o => o.Iid != x.Iid)));
+        }
+
+        /// <summary>
+        /// Updates the mapping based on the available 10-25 elements
+        /// </summary>
+        private void UpdatePropertiesBasedOnMappingConfiguration()
+        {
+            foreach (var variable in this.Variables)
+            {
+                foreach (var idCorrespondence in variable.MappingConfigurations)
+                {
+                    if (!this.HubController.GetThingById(idCorrespondence.InternalThing, this.HubController.OpenIteration, out Thing thing))
+                    {
+                        continue;
+                    }
+
+                    Action action = thing switch
+                    {
+                        ElementDefinition => () => variable.SelectedElementDefinition =
+                            this.AvailableElementDefinitions.FirstOrDefault(x => x.Iid == thing.Iid),
+
+                        ElementUsage => () =>
+                        {
+                            if (this.AvailableElementDefinitions.SelectMany(e => e.ContainedElement)
+                                .FirstOrDefault(x => x.Iid == thing.Iid) is { } usage)
+                            {
+                                variable.SelectedElementUsages.Add(usage);
+                            }
+                        },
+
+                        Parameter => () => variable.SelectedParameter =
+                            this.AvailableElementDefinitions.SelectMany(e => e.Parameter)
+                                .FirstOrDefault(p => p.Iid == thing.Iid),
+
+                        Option option => () => variable.SelectedOption = option,
+
+                        ActualFiniteState state => () => variable.SelectedActualFiniteState = state,
+
+                        _ => null
+                    };
+
+                    action?.Invoke();
+
+                    if (action is null &&
+                        this.HubController.GetThingById(idCorrespondence.InternalThing, this.HubController.OpenIteration,
+                            out SampledFunctionParameterType parameterType))
+                    {
+                        variable.SelectedParameterType = parameterType;
+                    }
+                }
+            }
+
+            this.IsBusy = false;
         }
     }
 }

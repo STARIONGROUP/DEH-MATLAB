@@ -26,6 +26,7 @@ namespace DEHPMatlab.Tests.ViewModel
 {
     using System;
     using System.Collections.Generic;
+    using System.Reactive.Concurrency;
 
     using CDP4Common.EngineeringModelData;
 
@@ -56,6 +57,8 @@ namespace DEHPMatlab.Tests.ViewModel
         [SetUp]
         public void Setup()
         {
+            RxApp.MainThreadScheduler = Scheduler.CurrentThread;
+            
             this.dstController = new Mock<IDstController>();
             this.statusBar = new Mock<IStatusBarControlViewModel>();
             this.exchangeHistory = new Mock<IExchangeHistoryService>();
@@ -81,6 +84,8 @@ namespace DEHPMatlab.Tests.ViewModel
             {
                 new()
             });
+
+            this.dstController.Setup(x => x.ParameterVariable).Returns(new Dictionary<ParameterOrOverrideBase, MatlabWorkspaceRowViewModel>());
 
             Assert.IsFalse(this.viewModel.CancelCommand.CanExecute(null));
             this.viewModel.TransferInProgress = true;
@@ -122,6 +127,7 @@ namespace DEHPMatlab.Tests.ViewModel
 
             Assert.IsTrue(this.viewModel.TransferCommand.CanExecute(null));
             Assert.AreEqual(1, this.viewModel.NumberOfThing);
+            Assert.DoesNotThrowAsync(() => this.viewModel.TransferCommand.ExecuteAsyncTask());
 
             this.dstController.Setup(x => x.MappingDirection).Returns(MappingDirection.FromDstToHub);
             this.viewModel.UpdateNumberOfThingsToTransfer();
@@ -137,7 +143,7 @@ namespace DEHPMatlab.Tests.ViewModel
             this.dstController.Verify(x => x.TransferMappedThingsToHub(), Times.Exactly(2));
             this.statusBar.Verify(x => x.Append(It.IsAny<string>(), StatusBarMessageSeverity.Error), Times.Once);
 
-            this.exchangeHistory.Verify(x => x.Write(), Times.Once);
+            this.exchangeHistory.Verify(x => x.Write(), Times.Exactly(2));
         }
     }
 }

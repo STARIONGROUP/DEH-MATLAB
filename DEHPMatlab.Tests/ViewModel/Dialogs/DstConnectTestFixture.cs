@@ -24,8 +24,13 @@
 
 namespace DEHPMatlab.Tests.ViewModel.Dialogs
 {
+    using System.Collections.Generic;
+    using System.Linq;
     using System.Reactive.Concurrency;
 
+    using CDP4Common.EngineeringModelData;
+
+    using DEHPCommon.HubController.Interfaces;
     using DEHPCommon.UserInterfaces.Behaviors;
 
     using DEHPMatlab.DstController;
@@ -44,6 +49,7 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
         private DstConnectViewModel viewModel;
         private Mock<IDstController> dstController;
         private Mock<IMappingConfigurationService> mappingConfiguration;
+        private Mock<IHubController> hubController;
 
         [SetUp]
         public void Setup()
@@ -53,7 +59,16 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
 
             this.mappingConfiguration = new Mock<IMappingConfigurationService>();
 
-            this.viewModel = new DstConnectViewModel(this.dstController.Object, this.mappingConfiguration.Object);
+            this.hubController = new Mock<IHubController>();
+
+            this.hubController.Setup(x => x.AvailableExternalIdentifierMap(It.IsAny<string>())).Returns(new List<ExternalIdentifierMap>()
+            {
+                new(), 
+                new(), 
+                new()
+            });
+
+            this.viewModel = new DstConnectViewModel(this.dstController.Object, this.mappingConfiguration.Object, this.hubController.Object);
         }
 
         [Test]
@@ -92,11 +107,13 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
             this.viewModel.ExternalIdentifierMapNewName = "AName";
             Assert.IsTrue(this.viewModel.CreateNewMappingConfigurationChecked);
             Assert.IsTrue(this.viewModel.ConnectCommand.CanExecute(null));
-            this.viewModel.ExternalIdentifierMapNewName = string.Empty;
-            Assert.IsFalse(this.viewModel.CreateNewMappingConfigurationChecked);
             this.viewModel.ExternalIdentifierMapNewName = "AnOtherName";
             this.viewModel.CreateNewMappingConfigurationChecked = false;
             Assert.IsTrue(string.IsNullOrWhiteSpace(this.viewModel.ExternalIdentifierMapNewName));
+            this.viewModel.ExternalIdentifierMapNewName = "AnOtherName";
+            this.viewModel.SelectedExternalIdentifierMap = this.viewModel.AvailableExternalIdentifierMap.First();
+            Assert.IsTrue(string.IsNullOrWhiteSpace(this.viewModel.ExternalIdentifierMapNewName));
+            Assert.IsFalse(this.viewModel.CreateNewMappingConfigurationChecked);
         }
     }
 }

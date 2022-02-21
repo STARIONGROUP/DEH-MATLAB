@@ -322,12 +322,12 @@ namespace DEHPMatlab.Tests.NetChange
             Assert.AreEqual(1, this.viewModel.Things.Count);
             Assert.AreEqual(3, elements.Count);
             Assert.DoesNotThrow(() => this.viewModel.ComputeValues());
-            Assert.AreEqual(4, elements.Count);
+            Assert.AreEqual(3, elements.Count);
 
             var parameterRowViewModels = elements.First(x => x.Thing.Iid == this.elementDefinition0.Iid)
                 .ContainedRows.OfType<ParameterRowViewModel>();
 
-            Assert.AreEqual("42", parameterRowViewModels.First().Value);
+            Assert.AreEqual("2", parameterRowViewModels.First().Value);
 
             var lastElementParameters = elements.First(x => x.Thing.Iid == this.elementDefinition1.Iid)
                 .ContainedRows.OfType<ParameterRowViewModel>();
