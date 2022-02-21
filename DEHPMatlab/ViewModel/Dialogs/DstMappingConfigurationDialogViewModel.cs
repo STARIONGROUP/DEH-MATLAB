@@ -411,54 +411,64 @@ namespace DEHPMatlab.ViewModel.Dialogs
         /// <summary>
         /// Updates the mapping based on the available 10-25 elements
         /// </summary>
-        private void UpdatePropertiesBasedOnMappingConfiguration()
+        public void UpdatePropertiesBasedOnMappingConfiguration()
         {
             foreach (var variable in this.Variables)
             {
                 foreach (var idCorrespondence in variable.MappingConfigurations)
                 {
-                    if (!this.HubController.GetThingById(idCorrespondence.InternalThing, this.HubController.OpenIteration, out Thing thing))
-                    {
-                        continue;
-                    }
-
-                    Action action = thing switch
-                    {
-                        ElementDefinition => () => variable.SelectedElementDefinition =
-                            this.AvailableElementDefinitions.FirstOrDefault(x => x.Iid == thing.Iid),
-
-                        ElementUsage => () =>
-                        {
-                            if (this.AvailableElementDefinitions.SelectMany(e => e.ContainedElement)
-                                .FirstOrDefault(x => x.Iid == thing.Iid) is { } usage)
-                            {
-                                variable.SelectedElementUsages.Add(usage);
-                            }
-                        },
-
-                        Parameter => () => variable.SelectedParameter =
-                            this.AvailableElementDefinitions.SelectMany(e => e.Parameter)
-                                .FirstOrDefault(p => p.Iid == thing.Iid),
-
-                        Option option => () => variable.SelectedOption = option,
-
-                        ActualFiniteState state => () => variable.SelectedActualFiniteState = state,
-
-                        _ => null
-                    };
-
-                    action?.Invoke();
-
-                    if (action is null &&
-                        this.HubController.GetThingById(idCorrespondence.InternalThing, this.HubController.OpenIteration,
-                            out SampledFunctionParameterType parameterType))
-                    {
-                        variable.SelectedParameterType = parameterType;
-                    }
+                    this.UpdateVariableBasedOnCorrespondence(idCorrespondence, variable);
                 }
             }
 
             this.IsBusy = false;
+        }
+
+        /// <summary>
+        /// Update a <see cref="MatlabWorkspaceRowViewModel"/> if any correspondence has been found
+        /// </summary>
+        /// <param name="idCorrespondence">A <see cref="IdCorrespondence"/></param>
+        /// <param name="variable">A <see cref="MatlabWorkspaceRowViewModel"/></param>
+        private void UpdateVariableBasedOnCorrespondence(IdCorrespondence idCorrespondence, MatlabWorkspaceRowViewModel variable)
+        {
+            if (!this.HubController.GetThingById(idCorrespondence.InternalThing, this.HubController.OpenIteration, out Thing thing))
+            {
+                return;
+            }
+
+            Action action = thing switch
+            {
+                ElementDefinition => () => variable.SelectedElementDefinition =
+                    this.AvailableElementDefinitions.FirstOrDefault(x => x.Iid == thing.Iid),
+
+                ElementUsage => () =>
+                {
+                    if (this.AvailableElementDefinitions.SelectMany(e => e.ContainedElement)
+                            .FirstOrDefault(x => x.Iid == thing.Iid) is { } usage)
+                    {
+                        variable.SelectedElementUsages.Add(usage);
+                    }
+                },
+
+                Parameter => () => variable.SelectedParameter =
+                    this.AvailableElementDefinitions.SelectMany(e => e.Parameter)
+                        .FirstOrDefault(p => p.Iid == thing.Iid),
+
+                Option option => () => variable.SelectedOption = option,
+
+                ActualFiniteState state => () => variable.SelectedActualFiniteState = state,
+
+                _ => null
+            };
+
+            action?.Invoke();
+
+            if (action is null &&
+                this.HubController.GetThingById(idCorrespondence.InternalThing, this.HubController.OpenIteration,
+                    out SampledFunctionParameterType parameterType))
+            {
+                variable.SelectedParameterType = parameterType;
+            }
         }
     }
 }
