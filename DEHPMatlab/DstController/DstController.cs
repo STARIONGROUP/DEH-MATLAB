@@ -310,18 +310,26 @@ namespace DEHPMatlab.DstController
             List<MatlabWorkspaceRowViewModel> detectedInputs = this.matlabParser.ParseMatlabScript(scriptPath,
                 out this.loadedScriptPath);
 
-            if (!string.IsNullOrEmpty(this.loadedScriptPath))
-            {
-                this.LoadedScriptName = Path.GetFileName(scriptPath);
-                this.IsScriptLoaded = true;
+            this.LoadedScriptName = Path.GetFileName(scriptPath);
+            this.IsScriptLoaded = true;
 
-                foreach (var detectedInput in detectedInputs)
-                {
-                    detectedInput.Identifier = $"{this.LoadedScriptName}-{detectedInput.Name}";
-                    this.MatlabWorkspaceInputRowViewModels.Add(detectedInput);
-                    this.matlabVariableNames.Add(detectedInput.Name);
-                }
+            foreach (var detectedInput in detectedInputs)
+            {
+                detectedInput.Identifier = $"{this.LoadedScriptName}-{detectedInput.Name}";
+                this.MatlabWorkspaceInputRowViewModels.Add(detectedInput);
+                this.matlabVariableNames.Add(detectedInput.Name);
             }
+
+            this.LoadMapping();
+        }
+
+        /// <summary>
+        /// Loads the saved mapping and applies the mapping rule
+        /// </summary>
+        /// <returns>The number of mapped things loaded</returns>
+        public int LoadMapping()
+        {
+            return this.LoadMappingFromHubToDst() + this.LoadMappingFromDstToHub();
         }
 
         /// <summary>
@@ -347,6 +355,7 @@ namespace DEHPMatlab.DstController
             this.IsBusy = true;
             this.statusBar.Append(await Task.Run(() => this.matlabConnector.ExecuteFunction($"run('{this.loadedScriptPath}')")));
             await this.LoadMatlabWorkspace();
+            this.LoadMapping();
             this.IsBusy = false;
         }
 
@@ -381,7 +390,6 @@ namespace DEHPMatlab.DstController
             if (this.mappingEngine.Map(hubElementDefitions) is List<ParameterToMatlabVariableMappingRowViewModel> variables && variables.Any())
             {
                 this.HubMapResult.AddRange(variables);
-                this.mappingConfigurationService.AddToExternalIdentifierMap(variables);
             }
 
             CDPMessageBus.Current.SendMessage(new UpdateObjectBrowserTreeEvent());
@@ -445,15 +453,11 @@ namespace DEHPMatlab.DstController
 
                 this.mappingConfigurationService.RefreshExternalIdentifierMap();
 
-                foreach (var variable in this.ParameterVariable.Values)
-                {
-                    variable.SelectedElementDefinition = null;
-                    variable.SelectedParameter = null;
-                }
-
                 this.ParameterVariable.Clear();
                 this.SelectedDstMapResultToTransfer.Clear();
                 this.DstMapResult.Clear();
+
+                this.LoadMappingFromDstToHub();
 
                 CDPMessageBus.Current.SendMessage(new UpdateObjectBrowserTreeEvent(true));
             }
@@ -484,6 +488,8 @@ namespace DEHPMatlab.DstController
                 this.SelectedHubMapResultToTransfer.Remove(mappedElement);
                 this.HubMapResult.Remove(mappedElement);
 
+                this.mappingConfigurationService.AddToExternalIdentifierMap(mappedElement);
+
                 this.exchangeHistory.Append($"Value [{mappedElement.SelectedValue.Representation}] from {mappedElement.SelectedParameter.ModelCode()} " +
                                             $"has been transfered to {mappedElement.SelectedMatlabVariable.Name}");
             }
@@ -496,6 +502,8 @@ namespace DEHPMatlab.DstController
             await this.hubController.Refresh();
 
             this.mappingConfigurationService.RefreshExternalIdentifierMap();
+
+            this.LoadMappingFromHubToDst();
 
             CDPMessageBus.Current.SendMessage(new UpdateDstVariableTreeEvent(true));
         }
@@ -668,6 +676,49 @@ namespace DEHPMatlab.DstController
             this.MatlabWorkspaceInputRowViewModels.ItemChanged
                 .ObserveOn(RxApp.MainThreadScheduler)
                 .Subscribe(this.UpdateVariable);
+        }
+
+        /// <summary>
+        /// Loads the saved mapping to the dst
+        /// </summary>
+        /// <returns>The number of mapped things loaded</returns>
+        private int LoadMappingFromHubToDst()
+        {
+            if (this.mappingConfigurationService.LoadMappingFromHubToDst(this.MatlabWorkspaceInputRowViewModels) is not { } mappedElements 
+                || !mappedElements.Any())
+            {
+                return 0;
+            }
+
+            mappedElements.ForEach(x => x.VerifyValidity());
+            var validMappedElements = mappedElements.Where(x => x.IsValid).ToList();
+            this.Map(validMappedElements);
+
+            return validMappedElements.Count;
+        }
+
+        /// <summary>
+        /// Loads the saved mapping to the hub and applies the mapping rule
+        /// </summary>
+        /// <returns>The number of mapped things loaded</returns>
+        private int LoadMappingFromDstToHub()
+        {
+            if (this.mappingConfigurationService.LoadMappingFromDstToHub(this.MatlabWorkspaceInputRowViewModels) is not { } mappedVariables || !mappedVariables.Any())
+            {
+                return 0;
+            }
+
+            var validMappedVariables = mappedVariables.Where(x => x.IsValid()).ToList();
+
+            if (!validMappedVariables.Any())
+            {
+                return validMappedVariables.Count;
+            }
+
+            this.ParameterVariable.Clear();
+            this.Map(validMappedVariables);
+
+            return validMappedVariables.Count;
         }
 
         /// <summary>

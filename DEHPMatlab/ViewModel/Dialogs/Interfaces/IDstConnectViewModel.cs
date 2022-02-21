@@ -27,12 +27,14 @@ namespace DEHPMatlab.ViewModel.Dialogs.Interfaces
     using System.Collections.Generic;
     using System.Reactive;
 
+    using CDP4Common.EngineeringModelData;
+
     using DEHPCommon.UserInterfaces.Behaviors;
 
     using ReactiveUI;
 
     /// <summary>
-    /// Interface definition for <see cref="DstConnectViewModel"/>
+    /// Interface definition for <see cref="DstConnectViewModel" />
     /// </summary>
     public interface IDstConnectViewModel
     {
@@ -52,27 +54,37 @@ namespace DEHPMatlab.ViewModel.Dialogs.Interfaces
         string ExternalIdentifierMapNewName { get; set; }
 
         /// <summary>
-        /// The currently selected MatlabVersion
-        /// </summary>
-        KeyValuePair<string,string> SelectedMatlabVersion { get; set; }
-
-        /// <summary>
         /// Display this message if we cannot connect to the selected MatlabVersion
         /// </summary>
         string ErrorMessageText { get; set; }
 
         /// <summary>
-        /// The <see cref="Dictionary{TKey,TValue}"/> containing all Matlab Version
+        /// The currently selected MatlabVersion
+        /// </summary>
+        KeyValuePair<string, string> SelectedMatlabVersion { get; set; }
+
+        /// <summary>
+        /// Gets or sets the <see cref="ExternalIdentifierMap" /> selected
+        /// </summary>
+        ExternalIdentifierMap SelectedExternalIdentifierMap { get; set; }
+
+        /// <summary>
+        /// The <see cref="Dictionary{TKey,TValue}" /> containing all Matlab Version
         /// </summary>
         Dictionary<string, string> MatlabVersionDictionary { get; }
 
         /// <summary>
-        /// The <see cref="ReactiveCommand"/> for initialize the connection to Matlab
+        /// A collection of all available <see cref="ExternalIdentifierMap" />
+        /// </summary>
+        ReactiveList<ExternalIdentifierMap> AvailableExternalIdentifierMap { get; }
+
+        /// <summary>
+        /// The <see cref="ReactiveCommand" /> for initialize the connection to Matlab
         /// </summary>
         ReactiveCommand<Unit> ConnectCommand { get; }
 
         /// <summary>
-        /// Gets or sets the <see cref="ICloseWindowBehavior"/> instance
+        /// Gets or sets the <see cref="ICloseWindowBehavior" /> instance
         /// </summary>
         ICloseWindowBehavior CloseWindowBehavior { get; set; }
     }

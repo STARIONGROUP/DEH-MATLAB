@@ -79,21 +79,15 @@ namespace DEHPMatlab.ViewModel.Row
         }
 
         /// <summary>
-        /// gets or sets the represented value
+        /// Initializes a new <see cref="ValueSetValueRowViewModel" />
         /// </summary>
-        public string Value
+        /// <param name="valueSet">The <see cref="IValueSet" /></param>
+        /// <param name="valueIndex">The value index</param>
+        /// <param name="parameterSwitchKind">The <see cref="ParameterSwitchKind" /></param>
+        public ValueSetValueRowViewModel(IValueSet valueSet, int valueIndex, ParameterSwitchKind parameterSwitchKind)
         {
-            get => this.value;
-            set => this.RaiseAndSetIfChanged(ref this.value, value);
-        }
-
-        /// <summary>
-        /// Gets or sets the option that this represented value depends on
-        /// </summary>
-        public Option Option
-        {
-            get => this.option;
-            set => this.RaiseAndSetIfChanged(ref this.option, value);
+            this.Container = valueSet;
+            this.SetValueFromValueIndex(valueIndex, parameterSwitchKind);
         }
 
         /// <summary>
@@ -106,12 +100,30 @@ namespace DEHPMatlab.ViewModel.Row
         }
 
         /// <summary>
+        /// Gets or sets the container <see cref="IValueSet" />
+        /// </summary>
+        public IValueSet Container
+        {
+            get => this.container;
+            set => this.RaiseAndSetIfChanged(ref this.container, value);
+        }
+
+        /// <summary>
         /// Gets the string associated <see cref="MeasurementScale" /> of this value
         /// </summary>
         public MeasurementScale Scale
         {
             get => this.scale;
             set => this.RaiseAndSetIfChanged(ref this.scale, value);
+        }
+
+        /// <summary>
+        /// Gets or sets the option that this represented value depends on
+        /// </summary>
+        public Option Option
+        {
+            get => this.option;
+            set => this.RaiseAndSetIfChanged(ref this.option, value);
         }
 
         /// <summary>
@@ -122,12 +134,12 @@ namespace DEHPMatlab.ViewModel.Row
                                         $"{this.Value} [{(this.Scale is null ? "-" : this.Scale.ShortName)}]";
 
         /// <summary>
-        /// Gets or sets the container <see cref="IValueSet" />
+        /// gets or sets the represented value
         /// </summary>
-        public IValueSet Container
+        public string Value
         {
-            get => this.container;
-            set => this.RaiseAndSetIfChanged(ref this.container, value);
+            get => this.value;
+            set => this.RaiseAndSetIfChanged(ref this.value, value);
         }
 
         /// <summary>
@@ -156,6 +168,24 @@ namespace DEHPMatlab.ViewModel.Row
                 .IndexOf(x => x.Equals(this.Value, StringComparison.InvariantCulture));
 
             return (indexFromManual, ParameterSwitchKind.MANUAL);
+        }
+
+        /// <summary>
+        /// Setsn the value from the <paramref name="valueIndex" />
+        /// </summary>
+        /// <param name="valueIndex">The value index</param>
+        /// <param name="parameterSwitchKind">The <see cref="ParameterSwitchKind" /></param>
+        private void SetValueFromValueIndex(int valueIndex, ParameterSwitchKind parameterSwitchKind)
+        {
+            var collection = parameterSwitchKind switch
+            {
+                ParameterSwitchKind.REFERENCE => this.Container.Reference,
+                ParameterSwitchKind.COMPUTED => this.Container.Computed,
+                ParameterSwitchKind.MANUAL => this.Container.Manual,
+                _ => throw new ArgumentOutOfRangeException(nameof(parameterSwitchKind), parameterSwitchKind, null)
+            };
+
+            this.Value = collection[valueIndex];
         }
     }
 }

@@ -71,7 +71,7 @@ namespace DEHPMatlab.Tests.DstController
         private Mock<IHubController> hubController;
         private Mock<INavigationService> navigationService;
         private Mock<IExchangeHistoryService> exchangeHistory;
-        private Mock<IMappingConfigurationService> mappingConfiguration;
+        private Mock<IMappingConfigurationService> mappingConfigurationService;
         private IMatlabParser matlabParser;
         private Iteration iteration;
 
@@ -132,10 +132,10 @@ namespace DEHPMatlab.Tests.DstController
 
             this.exchangeHistory = new Mock<IExchangeHistoryService>();
 
-            this.mappingConfiguration = new Mock<IMappingConfigurationService>();
+            this.mappingConfigurationService = new Mock<IMappingConfigurationService>();
 
             this.dstController = new DstController(this.matlabConnector.Object, this.matlabParser, this.statusBar.Object, this.mappingEngine.Object,
-                this.hubController.Object, this.navigationService.Object, this.exchangeHistory.Object, this.mappingConfiguration.Object);
+                this.hubController.Object, this.navigationService.Object, this.exchangeHistory.Object, this.mappingConfigurationService.Object);
         }
 
         [Test]
@@ -356,8 +356,6 @@ namespace DEHPMatlab.Tests.DstController
 
             Assert.DoesNotThrowAsync(async () => await this.dstController.TransferMappedThingsToHub());
 
-            Assert.IsNull(variable.SelectedParameter);
-            Assert.IsNull(variable.SelectedElementDefinition);
             Assert.IsEmpty(this.dstController.ParameterVariable);
 
             this.navigationService.Verify(
@@ -412,6 +410,70 @@ namespace DEHPMatlab.Tests.DstController
             this.dstController.MatlabWorkspaceInputRowViewModels.Add(mappedElement.SelectedMatlabVariable);
             Assert.DoesNotThrowAsync(async () => await this.dstController.TransferMappedThingsToDst());
             Assert.AreEqual("35", this.dstController.MatlabWorkspaceInputRowViewModels.First(x => x.Name == mappedElement.SelectedMatlabVariable.Name).ActualValue);
+        }
+
+        [Test]
+        public void VerifyLoadMapping()
+        {
+            this.mappingConfigurationService.Setup(
+                    x => x.LoadMappingFromHubToDst(It.IsAny<ReactiveList<MatlabWorkspaceRowViewModel>>()))
+                .Returns(default(List<ParameterToMatlabVariableMappingRowViewModel>));
+
+            this.mappingConfigurationService.Setup(
+                    x => x.LoadMappingFromDstToHub(It.IsAny<ReactiveList<MatlabWorkspaceRowViewModel>>()))
+                .Returns(default(List<MatlabWorkspaceRowViewModel>));
+
+            Assert.DoesNotThrow(() => this.dstController.LoadMapping());
+
+            var mappedElementDefinitionRowViewModels = new List<ParameterToMatlabVariableMappingRowViewModel>();
+            var variableRowViewModels = new List<MatlabWorkspaceRowViewModel>();
+
+            this.mappingConfigurationService.Setup(
+                    x => x.LoadMappingFromHubToDst(It.IsAny<ReactiveList<MatlabWorkspaceRowViewModel>>()))
+                .Returns(mappedElementDefinitionRowViewModels);
+
+            this.mappingConfigurationService.Setup(
+                    x => x.LoadMappingFromDstToHub(It.IsAny<ReactiveList<MatlabWorkspaceRowViewModel>>()))
+                .Returns(variableRowViewModels);
+
+            Assert.DoesNotThrow(() => this.dstController.LoadMapping());
+
+            mappedElementDefinitionRowViewModels.AddRange(new List<ParameterToMatlabVariableMappingRowViewModel>()
+            {
+                new (),
+                new ()
+            });
+
+            MeasurementScale scale = new RatioScale() { Name = "scale", NumberSet = NumberSetKind.REAL_NUMBER_SET };
+
+            variableRowViewModels.AddRange(new List<MatlabWorkspaceRowViewModel>()
+            {
+                new ("b", 45)
+                {
+                    Identifier = "b-a",
+                }
+            });
+
+            Assert.DoesNotThrow(() => this.dstController.LoadMapping());
+
+            variableRowViewModels.AddRange(new List<MatlabWorkspaceRowViewModel>()
+            {
+                new ("a", 45)
+                {
+                    Identifier = "a-a",
+                    SelectedParameter = new Parameter(),
+                    SelectedElementDefinition = new ElementDefinition(),
+                    SelectedScale = scale,
+                    SelectedParameterType = new SimpleQuantityKind()
+                    {
+                        DefaultScale = scale,
+                        PossibleScale = { scale },
+                        Name = "SimpleQuantityKind"
+                    }
+                }
+            });
+
+            Assert.DoesNotThrow(() => this.dstController.LoadMapping());
         }
     }
 }

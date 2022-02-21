@@ -61,10 +61,10 @@ namespace DEHPMatlab.Services.MappingConfiguration
         void AddToExternalIdentifierMap(Guid internalId, ExternalIdentifier externalIdentifier);
 
         /// <summary>
-        /// Adds all correspondence to the <see cref="MappingConfigurationService.ExternalIdentifierMap" />
+        /// Adds one correspondence to the <see cref="MappingConfigurationService.ExternalIdentifierMap" />
         /// </summary>
-        /// <param name="variables">A collection of <see cref="ParameterToMatlabVariableMappingRowViewModel" /></param>
-        void AddToExternalIdentifierMap(List<ParameterToMatlabVariableMappingRowViewModel> variables);
+        /// <param name="mappedElement">The <see cref="ParameterToMatlabVariableMappingRowViewModel" /></param>
+        void AddToExternalIdentifierMap(ParameterToMatlabVariableMappingRowViewModel mappedElement);
 
         /// <summary>
         /// Adds as many correspondence as <paramref name="parameterVariable" /> values
@@ -98,5 +98,19 @@ namespace DEHPMatlab.Services.MappingConfiguration
         /// Refreshes the <see cref="MappingConfigurationService.ExternalIdentifierMap" /> usually done after a session write
         /// </summary>
         void RefreshExternalIdentifierMap();
+
+        /// <summary>
+        /// Loads the mapping configuration from hub to dst and generates the map result
+        /// </summary>
+        /// <param name="matlabWorkspaceInputRowViewModels">A collection of <see cref="MatlabWorkspaceRowViewModel"/></param>
+        /// <returns>A collection of <see cref="ParameterToMatlabVariableMappingRowViewModel"/></returns>
+        List<ParameterToMatlabVariableMappingRowViewModel> LoadMappingFromHubToDst(IList<MatlabWorkspaceRowViewModel> matlabWorkspaceInputRowViewModels);
+
+        /// <summary>
+        /// Loads the mapping configuration from dst to hub and generates the map result respectively
+        /// </summary>
+        /// <param name="variables">The collection of <see cref="MatlabWorkspaceRowViewModel"/></param>
+        /// <returns>A collection of <see cref="MatlabWorkspaceRowViewModel"/></returns>
+        List<MatlabWorkspaceRowViewModel> LoadMappingFromDstToHub(IList<MatlabWorkspaceRowViewModel> variables);
     }
 }

@@ -36,7 +36,7 @@ namespace DEHPMatlab.Events
     /// <summary>
     /// Event for the <see cref="CDPMessageBus"/>
     /// </summary>
-    public class UpdateDstPreviewBasedOnSelectionEvent : UpdatePreviewBasedOnSelectionBaseEvent<ElementDefinitionRowViewModel, IDstNetChangePreviewViewModel>
+    public class UpdateDstPreviewBasedOnSelectionEvent : UpdatePreviewBasedOnSelectionBaseEvent<object, IDstNetChangePreviewViewModel>
     {
         /// <summary>
         /// Initializes a new <see cref="UpdateDstVariableTreeEvent" />
@@ -44,7 +44,7 @@ namespace DEHPMatlab.Events
         /// <param name="things">The collection of <see cref="ElementDefinitionRowViewModel"/> selection</param>
         /// <param name="target">The target <see cref="T:System.Type" /></param>
         /// <param name="reset">a value indicating whether the listener should reset its tree</param>
-        public UpdateDstPreviewBasedOnSelectionEvent(IEnumerable<ElementDefinitionRowViewModel> things, IDstNetChangePreviewViewModel target, bool reset) : base(things, target, reset)
+        public UpdateDstPreviewBasedOnSelectionEvent(IEnumerable<object> things, IDstNetChangePreviewViewModel target, bool reset) : base(things, target, reset)
         {
         }
     }

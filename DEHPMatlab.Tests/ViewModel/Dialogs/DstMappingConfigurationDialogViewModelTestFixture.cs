@@ -69,6 +69,11 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
         private MeasurementScale scale;
         private SampledFunctionParameterType scalarParameterType;
         private SampledFunctionParameterType parameterType;
+        private ElementDefinition elementDefinition;
+        private Parameter parameter;
+        private Option option;
+        private ActualFiniteState state;
+        private ElementUsage elementUsage;
 
         [SetUp]
         public void Setup()
@@ -165,6 +170,26 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
             this.hubController.Setup(x => x.CurrentDomainOfExpertise).Returns(this.domain);
             this.hubController.Setup(x => x.GetSiteDirectory()).Returns(new SiteDirectory());
 
+            this.elementDefinition = new ElementDefinition(Guid.NewGuid(), null, null);
+            var elementDefinitionAsThing = (Thing) this.elementDefinition;
+            this.hubController.Setup(x => x.GetThingById(this.elementDefinition.Iid, this.iteration, out elementDefinitionAsThing)).Returns(true);
+
+            this.parameter = new Parameter(Guid.NewGuid(), null, null);
+            var parameterAsThing = (Thing) this.parameter;
+            this.hubController.Setup(x => x.GetThingById(this.parameter.Iid, this.iteration, out parameterAsThing)).Returns(true);
+
+            this.option = new Option(Guid.NewGuid(), null, null);
+            var optionAsThing = (Thing) this.option;
+            this.hubController.Setup(x => x.GetThingById(this.option.Iid, this.iteration, out optionAsThing)).Returns(true);
+
+            this.state = new ActualFiniteState(Guid.NewGuid(), null, null);
+            var stateAsThing = (Thing) this.state;
+            this.hubController.Setup(x => x.GetThingById(this.state.Iid, this.iteration, out stateAsThing)).Returns(true);
+
+            this.elementUsage = new ElementUsage(Guid.NewGuid(), null, null);
+            var elementUsageAsThing = (Thing) this.elementUsage;
+            this.hubController.Setup(x => x.GetThingById(this.elementUsage.Iid, this.iteration, out elementUsageAsThing)).Returns(true);
+
             this.navigationService = new Mock<INavigationService>();
             this.navigationService.Setup(x => x.ShowDxDialog<MappingValidationErrorDialog>()).Returns(false);
 
@@ -181,7 +206,8 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
 
             this.viewModel.Variables.Add(new MatlabWorkspaceRowViewModel("aVariable", 4.54d)
             {
-                SelectedParameterType = this.scalarParameterType
+                SelectedParameterType = this.scalarParameterType,
+                Identifier = "a-a"
             });
         }
 
@@ -366,7 +392,7 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
                 }
             };
 
-            var elementUsage = new ElementUsage(Guid.NewGuid(), null, null)
+            var elementUsage2 = new ElementUsage(Guid.NewGuid(), null, null)
             {
                 ElementDefinition = element0,
                 ParameterOverride =
@@ -388,7 +414,7 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
                 }
             };
 
-            element0.ContainedElement.Add(elementUsage);
+            element0.ContainedElement.Add(elementUsage2);
             this.iteration.Element.Add(element0);
 
             variable.SelectedElementDefinition = element0;
@@ -403,6 +429,36 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
 
             this.viewModel.SelectedThing = variable;
             Assert.DoesNotThrow(() => this.viewModel.UpdateAvailableElementsUsages());
+        }
+
+        [Test]
+        public void VerifyUpdatePropertiesBasedOnMappingConfiguration()
+        {
+            var correspondences = new List<IdCorrespondence>
+            {
+                new () { ExternalId = "a-a", InternalThing = this.elementDefinition.Iid },
+                new () { ExternalId = "a-a", InternalThing = this.parameter.Iid },
+                new () { ExternalId = "a-a", InternalThing = this.option.Iid },
+                new () { ExternalId = "a-a", InternalThing = this.state.Iid },
+                new () { ExternalId = "a-a", InternalThing = this.elementUsage.Iid },
+                new () { ExternalId = "a-a", InternalThing = this.domain.Iid },
+            };
+
+            this.viewModel.AvailableElementDefinitions.Add(new ElementDefinition()
+            {
+                ContainedElement = { this.elementUsage },
+                Parameter = { this.parameter }
+            });
+
+            foreach (var variable in this.viewModel.Variables)
+            {
+                variable.MappingConfigurations.AddRange(
+                    correspondences.Where(
+                        x => x.ExternalId == variable.Identifier));
+            }
+
+            Assert.DoesNotThrow(() => this.viewModel.UpdatePropertiesBasedOnMappingConfiguration());
+            this.hubController.Verify(x => x.GetThingById(It.IsAny<Guid>(), It.IsAny<Iteration>(), out It.Ref<Thing>.IsAny), Times.Exactly(6));
         }
     }
 }

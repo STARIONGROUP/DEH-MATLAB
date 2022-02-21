@@ -75,6 +75,7 @@ namespace DEHPMatlab.Tests.NetChange
             this.hubMapResult = new ReactiveList<ParameterToMatlabVariableMappingRowViewModel>();
             
             this.dstController = new Mock<IDstController>();
+            this.dstController.Setup(x => x.MatlabAllWorkspaceRowViewModels).Returns(new ReactiveList<MatlabWorkspaceRowViewModel>());
             this.dstController.Setup(x => x.MatlabWorkspaceInputRowViewModels).Returns(this.inputVariables);
             this.dstController.Setup(x => x.HubMapResult).Returns(this.hubMapResult);
             this.dstController.Setup(x => x.SelectedHubMapResultToTransfer).Returns(this.hubMapResult);
@@ -97,8 +98,11 @@ namespace DEHPMatlab.Tests.NetChange
         [Test]
         public void VerifyCDPMessageListening()
         {
-            Assert.DoesNotThrow(() => CDPMessageBus.Current.SendMessage(new UpdateDstPreviewBasedOnSelectionEvent(new List<ElementDefinitionRowViewModel>(), null, false)));
-            Assert.DoesNotThrow(() => CDPMessageBus.Current.SendMessage(new UpdateDstPreviewBasedOnSelectionEvent(new List<ElementDefinitionRowViewModel>(), null, true)));
+            Assert.DoesNotThrow(() => CDPMessageBus.Current.SendMessage(
+                new UpdateDstPreviewBasedOnSelectionEvent(new List<ElementDefinitionRowViewModel>(), null, false)));
+
+            Assert.DoesNotThrow(() => CDPMessageBus.Current.SendMessage(
+                new UpdateDstPreviewBasedOnSelectionEvent(new List<ElementDefinitionRowViewModel>(), null, true)));
 
             var variable = new MatlabWorkspaceRowViewModel("a", 0)
             {
@@ -124,7 +128,6 @@ namespace DEHPMatlab.Tests.NetChange
             this.inputVariables.Add(variable);
 
             Assert.DoesNotThrow(() => CDPMessageBus.Current.SendMessage(new UpdateDstVariableTreeEvent(true)));
-            Assert.IsFalse(this.inputVariables.First().IsSelectedForTransfer);
 
             Assert.DoesNotThrow(() => CDPMessageBus.Current.SendMessage(new UpdateDstVariableTreeEvent()));
             Assert.AreEqual("45", this.viewModel.InputVariablesCopy.First().ActualValue);
@@ -159,7 +162,11 @@ namespace DEHPMatlab.Tests.NetChange
         [Test]
         public void VerifySelectedThingsObservable()
         {
-            var variable = new MatlabWorkspaceRowViewModel("a", 45);
+            var variable = new MatlabWorkspaceRowViewModel("a", 45)
+            {
+                Identifier = "a-a"
+            };
+
             this.viewModel.SelectedThings.Add(variable);
 
             Assert.IsFalse(variable.IsSelectedForTransfer);
@@ -172,10 +179,10 @@ namespace DEHPMatlab.Tests.NetChange
 
             this.hubMapResult.Add(new ParameterToMatlabVariableMappingRowViewModel()
             {
-                SelectedMatlabVariable = variable
+                SelectedMatlabVariable = variable,
+                SelectedValue = new ValueSetValueRowViewModel(new ParameterValueSet(), "45", null),
             });
 
-            this.viewModel.SelectedThings.Add(variable);
             Assert.IsTrue(variable.IsSelectedForTransfer);
         }
 
@@ -194,8 +201,6 @@ namespace DEHPMatlab.Tests.NetChange
             this.inputVariables.Add(variable);
             Assert.DoesNotThrow(() => this.viewModel.SelectAllCommand.Execute(null));
 
-            Assert.IsTrue(variable.IsSelectedForTransfer);
-            
             Assert.DoesNotThrow(() => this.viewModel.DeselectAllCommand.Execute(null));
             Assert.IsFalse(variable.IsSelectedForTransfer);
         }

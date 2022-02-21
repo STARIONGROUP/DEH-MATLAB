@@ -198,7 +198,7 @@ namespace DEHPMatlab.MappingRules
             foreach (var elementUsage in matlabVariable.SelectedElementUsages)
             {
                 if (matlabVariable.SelectedParameter is { } parameter
-                    && elementUsage.ParameterOverride.First(x => x.Parameter.Iid == parameter.Iid) is { } parameterOverride)
+                    && elementUsage.ParameterOverride.FirstOrDefault(x => x.Parameter.Iid == parameter.Iid) is { } parameterOverride)
                 {
                     this.UpdateValueSet(matlabVariable, parameterOverride);
                     this.parameterNodeIdIdentifier[parameterOverride] = matlabVariable;

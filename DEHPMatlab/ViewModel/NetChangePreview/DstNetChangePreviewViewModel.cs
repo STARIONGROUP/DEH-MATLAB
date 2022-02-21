@@ -54,6 +54,11 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
     public class DstNetChangePreviewViewModel : DstVariablesControlViewModel, IDstNetChangePreviewViewModel
     {
         /// <summary>
+        /// Collection containing the previous selection of object received
+        /// </summary>
+        private readonly List<object> previousSelection = new();
+
+        /// <summary>
         /// Initializes a new <see cref="DstNetChangePreviewViewModel" />
         /// </summary>
         /// <param name="dstController">The <see cref="IDstController" /></param>
@@ -67,11 +72,6 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
         }
 
         /// <summary>
-        /// A collection of copy of all elements presents in the <see cref="DstVariablesControlViewModel.InputVariables" />
-        /// </summary>
-        public ReactiveList<MatlabWorkspaceRowViewModel> InputVariablesCopy { get; } = new();
-
-        /// <summary>
         /// The command for the context menu that allows to deselect all selectable <see cref="MatlabTransferControlViewModel" />
         /// for transfer.
         /// </summary>
@@ -81,6 +81,11 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
         /// The command for the context menu that allows to select all selectable <see cref="ElementBase" /> for transfer.
         /// </summary>
         public ReactiveCommand<object> SelectAllCommand { get; private set; }
+
+        /// <summary>
+        /// A collection of copy of all elements presents in the <see cref="DstVariablesControlViewModel.InputVariables" />
+        /// </summary>
+        public ReactiveList<MatlabWorkspaceRowViewModel> InputVariablesCopy { get; } = new();
 
         /// <summary>
         /// Populates the context menu
@@ -136,6 +141,39 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
         }
 
         /// <summary>
+        /// Occurs when a variable inside the <see cref="DstVariablesControlViewModel.InputVariables" /> changed
+        /// </summary>
+        /// <param name="eventArgs">The <see cref="IReactivePropertyChangedEventArgs{TSender}" /></param>
+        public void WhenInputVariableChanged(IReactivePropertyChangedEventArgs<MatlabWorkspaceRowViewModel> eventArgs)
+        {
+            var matlabVariableCopy = this.InputVariablesCopy.FirstOrDefault(x => x.Name == eventArgs.Sender.Name);
+
+            if (matlabVariableCopy is null)
+            {
+                return;
+            }
+
+            var modifiedPropertyValue = eventArgs.Sender.GetType().GetProperty(eventArgs.PropertyName)?.GetValue(eventArgs.Sender);
+            matlabVariableCopy.GetType().GetProperty(eventArgs.PropertyName)?.SetValue(matlabVariableCopy, modifiedPropertyValue);
+        }
+
+        /// <summary>
+        /// Occurs when a variable inside the <see cref="DstVariablesControlViewModel.InputVariables" /> is removed
+        /// </summary>
+        /// <param name="matlabVariable">The removed <see cref="MatlabWorkspaceRowViewModel" /></param>
+        public void WhenInputVariableRemoved(MatlabWorkspaceRowViewModel matlabVariable)
+        {
+            var matlabVariableCopy = this.InputVariablesCopy.FirstOrDefault(x => x.Name == matlabVariable.Name);
+
+            if (matlabVariableCopy is null)
+            {
+                return;
+            }
+
+            this.InputVariablesCopy.Remove(matlabVariableCopy);
+        }
+
+        /// <summary>
         /// Adds or removes the <paramref name="mappedElement" /> to/from the
         /// <see cref="IDstController.SelectedHubMapResultToTransfer" />
         /// </summary>
@@ -183,11 +221,13 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
         {
             CDPMessageBus.Current.Listen<UpdateDstVariableTreeEvent>()
                 .ObserveOn(RxApp.MainThreadScheduler)
-                .Subscribe(x => this.UpdateTree(x.Reset));
+                .Subscribe(_ => this.UpdateTreeBasedOnSelectionHandler(this.previousSelection));
 
             CDPMessageBus.Current.Listen<UpdateDstPreviewBasedOnSelectionEvent>()
                 .ObserveOn(RxApp.MainThreadScheduler)
                 .Subscribe(x => this.UpdateTreeBasedOnSelectionHandler(x.Selection.ToList()));
+
+            this.DstController.HubMapResult.IsEmptyChanged.Subscribe(this.UpdateTree);
 
             this.InputVariables.BeforeItemsAdded.Subscribe(this.WhenInputVariableAdded);
             this.InputVariables.BeforeItemsRemoved.Subscribe(this.WhenInputVariableRemoved);
@@ -208,15 +248,37 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
         /// Updates the trees with the selection
         /// </summary>
         /// <param name="selection">The collection of selected <see cref="ElementDefinitionRowViewModel" /> </param>
-        private void UpdateTreeBasedOnSelection(IEnumerable<ElementDefinitionRowViewModel> selection)
+        private void UpdateTreeBasedOnSelection(IEnumerable<object> selection)
         {
             this.UpdateTree(true);
 
-            var mappedElements = this.DstController.HubMapResult
-                .Where(x =>
-                    selection.Any(e => e.ContainedRows
-                        .OfType<IRowViewModelBase<ParameterOrOverrideBase>>()
-                        .Any(p => p.Thing.Iid == x.SelectedParameter.Iid)));
+            var mappedElements = new List<ParameterToMatlabVariableMappingRowViewModel>();
+
+            foreach (var selectedObject in selection)
+            {
+                switch (selectedObject)
+                {
+                    case ElementDefinitionRowViewModel elementDefinitionRow:
+                        mappedElements.AddRange(this.DstController.HubMapResult
+                            .Where(x =>
+                                elementDefinitionRow.ContainedRows.OfType<IRowViewModelBase<ParameterOrOverrideBase>>()
+                                    .Any(p => p.Thing.Iid == x.SelectedParameter.Iid)));
+
+                        break;
+                    case ElementUsageRowViewModel elementUsageRow:
+                        mappedElements.AddRange(this.DstController.HubMapResult
+                            .Where(x =>
+                                elementUsageRow.ContainedRows.OfType<IRowViewModelBase<ParameterOrOverrideBase>>()
+                                    .Any(p => p.Thing.Iid == x.SelectedParameter.Iid)));
+
+                        break;
+                    case ParameterOrOverrideBaseRowViewModel parameterOrOverrideBaseRow:
+                        mappedElements.AddRange(this.DstController.HubMapResult.Where(x =>
+                            x.SelectedParameter.Iid == parameterOrOverrideBaseRow.Thing.Iid));
+
+                        break;
+                }
+            }
 
             foreach (var mappedElement in mappedElements)
             {
@@ -231,7 +293,7 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
         /// Updates the tree and filter changed things based on a selection
         /// </summary>
         /// <param name="selection">The collection of selected <see cref="ElementDefinitionRowViewModel" /> </param>
-        private void UpdateTreeBasedOnSelectionHandler(IReadOnlyCollection<ElementDefinitionRowViewModel> selection)
+        private void UpdateTreeBasedOnSelectionHandler(IReadOnlyCollection<object> selection)
         {
             if (!this.DstController.HubMapResult.Any())
             {
@@ -239,6 +301,7 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
             }
 
             this.IsBusy = true;
+            this.previousSelection.Clear();
 
             if (!selection.Any())
             {
@@ -247,6 +310,7 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
 
             else if (selection.Any())
             {
+                this.previousSelection.AddRange(selection);
                 this.UpdateTreeBasedOnSelection(selection);
             }
 
@@ -285,39 +349,6 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
         private void WhenInputVariableAdded(MatlabWorkspaceRowViewModel matlabVariable)
         {
             this.InputVariablesCopy.Add(new MatlabWorkspaceRowViewModel(matlabVariable.Name, matlabVariable.ActualValue));
-        }
-
-        /// <summary>
-        /// Occurs when a variable inside the <see cref="DstVariablesControlViewModel.InputVariables" /> changed
-        /// </summary>
-        /// <param name="eventArgs">The <see cref="IReactivePropertyChangedEventArgs{TSender}" /></param>
-        public void WhenInputVariableChanged(IReactivePropertyChangedEventArgs<MatlabWorkspaceRowViewModel> eventArgs)
-        {
-            var matlabVariableCopy = this.InputVariablesCopy.FirstOrDefault(x => x.Name == eventArgs.Sender.Name);
-
-            if (matlabVariableCopy is null)
-            {
-                return;
-            }
-
-            var modifiedPropertyValue = eventArgs.Sender.GetType().GetProperty(eventArgs.PropertyName)?.GetValue(eventArgs.Sender);
-            matlabVariableCopy.GetType().GetProperty(eventArgs.PropertyName)?.SetValue(matlabVariableCopy, modifiedPropertyValue);
-        }
-
-        /// <summary>
-        /// Occurs when a variable inside the <see cref="DstVariablesControlViewModel.InputVariables" /> is removed
-        /// </summary>
-        /// <param name="matlabVariable">The removed <see cref="MatlabWorkspaceRowViewModel" /></param>
-        public void WhenInputVariableRemoved(MatlabWorkspaceRowViewModel matlabVariable)
-        {
-            var matlabVariableCopy = this.InputVariablesCopy.FirstOrDefault(x => x.Name == matlabVariable.Name);
-
-            if (matlabVariableCopy is null)
-            {
-                return;
-            }
-
-            this.InputVariablesCopy.Remove(matlabVariableCopy);
         }
 
         /// <summary>

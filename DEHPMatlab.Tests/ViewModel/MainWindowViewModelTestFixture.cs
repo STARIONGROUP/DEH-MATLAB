@@ -85,6 +85,8 @@ namespace DEHPMatlab.Tests.ViewModel
             Assert.IsNotNull(this.viewModel.DstNetChangePreviewViewModel);
             Assert.IsNotNull(this.viewModel.HubNetChangePreviewViewModel);
             Assert.IsNotNull(this.viewModel.DifferenceViewModel);
+            Assert.AreEqual((int)MappingDirection.FromDstToHub, this.viewModel.CurrentMappingDirection);
+            Assert.IsNotNull(this.viewModel.TransferControlViewModel);
         }
 
         [Test]

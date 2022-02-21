@@ -25,6 +25,7 @@
 namespace DEHPMatlab.Tests.ViewModel
 {
     using System.Linq;
+    using System.Reactive.Concurrency;
 
     using Autofac;
 
@@ -58,6 +59,8 @@ namespace DEHPMatlab.Tests.ViewModel
         [SetUp]
         public void Setup()
         {
+            RxApp.MainThreadScheduler = Scheduler.CurrentThread;
+
             this.dstController = new Mock<IDstController>();
             
             this.dstController.Setup(x => x.MatlabWorkspaceInputRowViewModels).Returns(
@@ -100,6 +103,10 @@ namespace DEHPMatlab.Tests.ViewModel
             this.viewModel.SelectedThing = this.viewModel.WorkspaceVariables.First();
             Assert.AreEqual(this.viewModel.WorkspaceVariables.First(), this.viewModel.SelectedThing);
             Assert.IsFalse(this.viewModel.MapCommand.CanExecute(null));
+            this.viewModel.WorkspaceVariables.Clear();
+            Assert.IsNotNull(this.viewModel.SelectedThing);
+            this.viewModel.WorkspaceVariables.Add(new MatlabWorkspaceRowViewModel("a", 5));
+            Assert.IsNull(this.viewModel.SelectedThing);
         }
 
         [Test]

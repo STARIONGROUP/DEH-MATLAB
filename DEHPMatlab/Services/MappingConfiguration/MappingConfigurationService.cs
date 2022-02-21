@@ -27,6 +27,7 @@ namespace DEHPMatlab.Services.MappingConfiguration
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Windows;
 
     using CDP4Common.CommonData;
     using CDP4Common.EngineeringModelData;
@@ -154,23 +155,20 @@ namespace DEHPMatlab.Services.MappingConfiguration
         }
 
         /// <summary>
-        /// Adds all correspondence to the <see cref="MappingConfigurationService.ExternalIdentifierMap" />
+        /// Adds one correspondence to the <see cref="MappingConfigurationService.ExternalIdentifierMap" />
         /// </summary>
-        /// <param name="variables">A collection of <see cref="ParameterToMatlabVariableMappingRowViewModel" /></param>
-        public void AddToExternalIdentifierMap(List<ParameterToMatlabVariableMappingRowViewModel> variables)
+        /// <param name="mappedElement">A <see cref="ParameterToMatlabVariableMappingRowViewModel" /></param>
+        public void AddToExternalIdentifierMap(ParameterToMatlabVariableMappingRowViewModel mappedElement)
         {
-            foreach (var mappedElement in variables)
-            {
-                var (index, switchKind) = mappedElement.SelectedValue.GetValueIndexAndParameterSwitchKind();
+            var (index, switchKind) = mappedElement.SelectedValue.GetValueIndexAndParameterSwitchKind();
 
-                this.AddToExternalIdentifierMap(((Thing) mappedElement.SelectedValue.Container).Iid, new ExternalIdentifier
-                {
-                    Identifier = mappedElement.SelectedMatlabVariable.Identifier,
-                    MappingDirection = MappingDirection.FromHubToDst,
-                    ValueIndex = index,
-                    ParameterSwitchKind = switchKind
-                });
-            }
+            this.AddToExternalIdentifierMap(((Thing) mappedElement.SelectedValue.Container).Iid, new ExternalIdentifier
+            {
+                Identifier = mappedElement.SelectedMatlabVariable.Identifier,
+                MappingDirection = MappingDirection.FromHubToDst,
+                ValueIndex = index,
+                ParameterSwitchKind = switchKind
+            });
         }
 
         /// <summary>
@@ -248,6 +246,149 @@ namespace DEHPMatlab.Services.MappingConfiguration
         {
             this.hubController.GetThingById(this.ExternalIdentifierMap.Iid, this.hubController.OpenIteration, out ExternalIdentifierMap map);
             this.ExternalIdentifierMap = map.Clone(true);
+        }
+
+        /// <summary>
+        /// Loads the mapping configuration and generates the map result respectively
+        /// </summary>
+        /// <param name="variables">The collection of <see cref="MatlabWorkspaceRowViewModel" /></param>
+        /// <returns>A collection of <see cref="ParameterToMatlabVariableMappingRowViewModel" /></returns>
+        public List<ParameterToMatlabVariableMappingRowViewModel> LoadMappingFromHubToDst(IList<MatlabWorkspaceRowViewModel> variables)
+        {
+            return this.LoadMapping(this.MapElementsFromTheExternalIdentifierMapToDst, variables);
+        }
+
+        /// <summary>
+        /// Loads the mapping configuration and generates the map result respectively
+        /// </summary>
+        /// <param name="variables">The collection of <see cref="MatlabWorkspaceRowViewModel" /></param>
+        /// <returns>A collection of <see cref="MatlabWorkspaceRowViewModel" /></returns>
+        public List<MatlabWorkspaceRowViewModel> LoadMappingFromDstToHub(IList<MatlabWorkspaceRowViewModel> variables)
+        {
+            return this.LoadMapping(this.MapElementsFromTheExternalIdentifierMapToHub, variables);
+        }
+
+        /// <summary>
+        /// Loads referenced <see cref="Thing" />s
+        /// </summary>
+        /// <param name="element">The <see cref="MatlabWorkspaceRowViewModel" /></param>
+        /// <param name="idCorrespondences">The collection of <see cref="IdCorrespondence" /></param>
+        private void LoadCorrespondences(MatlabWorkspaceRowViewModel element, IEnumerable<(Guid InternalId, ExternalIdentifier ExternalIdentifier, Guid Iid)> idCorrespondences)
+        {
+            foreach (var idCorrespondence in idCorrespondences)
+            {
+                if (!this.hubController.GetThingById(idCorrespondence.InternalId, this.hubController.OpenIteration, out Thing thing))
+                {
+                    continue;
+                }
+
+                Action action = thing switch
+                {
+                    ElementDefinition elementDefinition => () => element.SelectedElementDefinition = elementDefinition.Clone(true),
+                    ElementUsage elementUsage => () => element.SelectedElementUsages.Add(elementUsage.Clone(true)),
+                    Parameter parameter => () => element.SelectedParameter = parameter.Clone(true),
+                    Option option => () => element.SelectedOption = option.Clone(false),
+                    ActualFiniteState state => () => element.SelectedActualFiniteState = state.Clone(false),
+                    _ => null
+                };
+
+                if (element.SelectedParameter is { } selectedParameter)
+                {
+                    Application.Current.Dispatcher.Invoke(() => element.SelectedParameterType = selectedParameter.ParameterType);
+                }
+
+                action?.Invoke();
+            }
+        }
+
+        /// <summary>
+        /// Calls the specify load mapping function
+        /// <param name="loadMappingFunction"></param>
+        /// </summary>
+        /// <typeparam name="TViewModel">The type of row view model to return depending on the mapping direction</typeparam>
+        /// <param name="loadMappingFunction">The specific load mapping <see cref="Func{TInput,TResult}" /></param>
+        /// <param name="variables">The collection of <see cref="MatlabWorkspaceRowViewModel" /></param>
+        /// <returns>A collection of <typeparamref name="TViewModel" /></returns>
+        private List<TViewModel> LoadMapping<TViewModel>(Func<IList<MatlabWorkspaceRowViewModel>, List<TViewModel>> loadMappingFunction, IList<MatlabWorkspaceRowViewModel> variables)
+        {
+            if (this.ExternalIdentifierMap != null && this.ExternalIdentifierMap.Iid != Guid.Empty
+                                                   && this.ExternalIdentifierMap.Correspondence.Any())
+            {
+                return loadMappingFunction(variables);
+            }
+
+            return default;
+        }
+
+        /// <summary>
+        /// Maps the <see cref="MatlabWorkspaceRowViewModel" />s defined in the <see cref="ExternalIdentifierMap" />
+        /// </summary>
+        /// <param name="variables">The collection of <see cref="MatlabWorkspaceRowViewModel" /></param>
+        /// <returns>A collection of <see cref="ParameterToMatlabVariableMappingRowViewModel" /></returns>
+        private List<ParameterToMatlabVariableMappingRowViewModel> MapElementsFromTheExternalIdentifierMapToDst(IList<MatlabWorkspaceRowViewModel> variables)
+        {
+            var mappedElements = new List<ParameterToMatlabVariableMappingRowViewModel>();
+
+            foreach (var idCorrespondences in this.correspondences
+                         .Where(x => x.ExternalIdentifier.MappingDirection == MappingDirection.FromHubToDst)
+                         .GroupBy(x => x.ExternalIdentifier.Identifier))
+            {
+                if (variables.FirstOrDefault(x => x.Identifier.Equals(idCorrespondences.Key)) is not { } element)
+                {
+                    continue;
+                }
+
+                foreach (var (internalId, externalId, idCorrespondence) in idCorrespondences)
+                {
+                    if (!this.hubController.GetThingById(internalId, this.hubController.OpenIteration, out ParameterValueSet valueSet))
+                    {
+                        continue;
+                    }
+
+                    if (!int.TryParse($"{externalId.ValueIndex}", out var index))
+                    {
+                        continue;
+                    }
+
+                    var mappedElement = new ParameterToMatlabVariableMappingRowViewModel(valueSet, index, externalId.ParameterSwitchKind)
+                    {
+                        SelectedMatlabVariable = element
+                    };
+
+                    mappedElements.Add(mappedElement);
+                }
+            }
+
+            return mappedElements;
+        }
+
+        /// <summary>
+        /// Maps the <see cref="MatlabWorkspaceRowViewModel" />s defined in the <see cref="ExternalIdentifierMap" />
+        /// </summary>
+        /// <param name="variables">The collection of <see cref="MatlabWorkspaceRowViewModel" /></param>
+        /// <returns>A collection of <see cref="MatlabWorkspaceRowViewModel" /></returns>
+        private List<MatlabWorkspaceRowViewModel> MapElementsFromTheExternalIdentifierMapToHub(IList<MatlabWorkspaceRowViewModel> variables)
+        {
+            var mappedVariables = new List<MatlabWorkspaceRowViewModel>();
+
+            foreach (var idCorrespondences in this.correspondences
+                         .Where(x => x.ExternalIdentifier.MappingDirection == MappingDirection.FromDstToHub)
+                         .GroupBy(x => x.ExternalIdentifier.Identifier))
+            {
+                if (variables.FirstOrDefault(x => x.Identifier.Equals(idCorrespondences.Key)) is not { } element)
+                {
+                    continue;
+                }
+
+                this.LoadCorrespondences(element, idCorrespondences);
+
+                element.MappingConfigurations.AddRange(this.ExternalIdentifierMap.Correspondence
+                    .Where(x => idCorrespondences.Any(c => c.Iid == x.Iid)).ToList());
+
+                mappedVariables.Add(element);
+            }
+
+            return mappedVariables;
         }
 
         /// <summary>
