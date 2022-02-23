@@ -58,6 +58,11 @@ namespace DEHPMatlab.ViewModel.Dialogs
         private readonly INavigationService navigationService;
 
         /// <summary>
+        /// Collection of <see cref="IDisposable"/>
+        /// </summary>
+        private readonly List<IDisposable> disposablesObservables = new();
+
+        /// <summary>
         /// Backing field for <see cref="SelectedThing"/>
         /// </summary>
         private MatlabWorkspaceRowViewModel selectedThing;
@@ -66,11 +71,6 @@ namespace DEHPMatlab.ViewModel.Dialogs
         /// Backing field for <see cref="CanContinue"/>
         /// </summary>
         private bool canContinue;
-
-        /// <summary>
-        /// Collection of <see cref="IDisposable"/>
-        /// </summary>
-        private List<IDisposable> disposablesObservables = new();
 
         /// <summary>
         /// Initializes a new <see cref="DstMappingConfigurationDialogViewModel"/>
