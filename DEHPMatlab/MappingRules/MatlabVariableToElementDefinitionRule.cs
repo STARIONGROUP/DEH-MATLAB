@@ -42,6 +42,8 @@ namespace DEHPMatlab.MappingRules
     using DEHPCommon.MappingEngine;
     using DEHPCommon.MappingRules.Core;
 
+    using DEHPMatlab.Enumerator;
+    using DEHPMatlab.Extensions;
     using DEHPMatlab.Services.MappingConfiguration;
     using DEHPMatlab.ViewModel.Row;
 
@@ -214,10 +216,93 @@ namespace DEHPMatlab.MappingRules
         public void UpdateValueSet(MatlabWorkspaceRowViewModel matlabVariable, ParameterBase parameter)
         {
             var valueSet = (ParameterValueSetBase)parameter.QueryParameterBaseValueSet(matlabVariable.SelectedOption, matlabVariable.SelectedActualFiniteState);
-            valueSet.Computed = new ValueArray<string>(new[] { FormattableString.Invariant($"{matlabVariable.ActualValue}") });
+
+            switch (parameter.ParameterType)
+            {
+                case SampledFunctionParameterType sampledFunction when sampledFunction.Validate(matlabVariable.ArrayValue,
+                    matlabVariable.RowColumnSelection, matlabVariable.SampledFunctionParameters.ToList()):
+                    this.AssignNewValues(matlabVariable, valueSet);
+                    break;
+                case ArrayParameterType arrayParameter when arrayParameter.Validate(matlabVariable.ArrayValue, matlabVariable.SelectedScale):
+                    this.AssignNewValuesToArray(matlabVariable, valueSet);
+                    break;
+                default:
+                    valueSet.Computed = new ValueArray<string>(new[] { FormattableString.Invariant($"{matlabVariable.ActualValue}") });
+                    break;
+            }
+
             valueSet.ValueSwitch = ParameterSwitchKind.COMPUTED;
 
             this.AddParameterToExternalIdentifierMap(parameter, matlabVariable);
+        }
+
+        /// <summary>
+        /// Assigns the new values the <paramref name="valueSet"/> in case of <see cref="SampledFunctionParameterType"/>
+        /// </summary>
+        /// <param name="matlabVariable">The <see cref="MatlabWorkspaceRowViewModel"/></param>
+        /// <param name="valueSet">The <see cref="IValueSet"/> to update</param>
+        private void AssignNewValues(MatlabWorkspaceRowViewModel matlabVariable, ParameterValueSetBase valueSet)
+        {
+            if (matlabVariable.ArrayValue is not Array arrayValue)
+            {
+                return;
+            }
+
+            var values = new List<string>();
+
+            var iMax = matlabVariable.RowColumnSelection == RowColumnSelection.Column ? arrayValue.GetLength(0) : arrayValue.GetLength(1);
+
+            var independants = matlabVariable.SampledFunctionParameters
+                .Where(x => !x.IsDependantParameter).ToList();
+
+            var dependants = matlabVariable.SampledFunctionParameters
+                .Where(x => x.IsDependantParameter).ToList();
+
+            var indexOrder = independants.Select(independant => independant.Index).ToList();
+
+            indexOrder.AddRange(dependants.Select(x => x.Index));
+
+            for (var i = 0; i < iMax; i++)
+            {
+                foreach (var index in indexOrder)
+                {
+                    var valueToAdd = matlabVariable.RowColumnSelection == RowColumnSelection.Column ? arrayValue.GetValue(i, index): arrayValue.GetValue(index, i);
+                    values.Add(FormattableString.Invariant($"{valueToAdd}"));
+                }
+            }
+
+            if (values.Any())
+            {
+                valueSet.Computed = new ValueArray<string>(values);
+            }
+        }
+
+        /// <summary>
+        /// Assigns the new values the <paramref name="valueSet"/> in case of <see cref="ArrayParameterType"/>
+        /// </summary>
+        /// <param name="matlabVariable">The <see cref="MatlabWorkspaceRowViewModel"/></param>
+        /// <param name="valueSet">The <see cref="IValueSet"/> to update</param>
+        private void AssignNewValuesToArray(MatlabWorkspaceRowViewModel matlabVariable, ParameterValueSetBase valueSet)
+        {
+            if (matlabVariable.ArrayValue is not Array arrayValue)
+            {
+                return;
+            }
+
+            var values = new List<string>();
+
+            for (var i = 0; i < arrayValue.GetLength(0); i++)
+            {
+                for (var j = 0; j < arrayValue.GetLength(1); j++)
+                {
+                    values.Add(FormattableString.Invariant($"{arrayValue.GetValue(i,j)}"));
+                }
+            }
+
+            if (values.Any())
+            {
+                valueSet.Computed = new ValueArray<string>(values);
+            }
         }
 
         /// <summary>

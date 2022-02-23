@@ -25,6 +25,7 @@
 namespace DEHPMatlab.ViewModel.Dialogs
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Reactive.Linq;
 
@@ -38,6 +39,8 @@ namespace DEHPMatlab.ViewModel.Dialogs
     using DEHPCommon.UserInterfaces.ViewModels.Interfaces;
 
     using DEHPMatlab.DstController;
+    using DEHPMatlab.Enumerator;
+    using DEHPMatlab.Extensions;
     using DEHPMatlab.ViewModel.Dialogs.Interfaces;
     using DEHPMatlab.ViewModel.Row;
     using DEHPMatlab.Views.Dialogs;
@@ -63,6 +66,11 @@ namespace DEHPMatlab.ViewModel.Dialogs
         /// Backing field for <see cref="CanContinue"/>
         /// </summary>
         private bool canContinue;
+
+        /// <summary>
+        /// Collection of <see cref="IDisposable"/>
+        /// </summary>
+        private List<IDisposable> disposablesObservables = new();
 
         /// <summary>
         /// Initializes a new <see cref="DstMappingConfigurationDialogViewModel"/>
@@ -129,6 +137,11 @@ namespace DEHPMatlab.ViewModel.Dialogs
         /// Gets the collection of the available <see cref="Option"/> from the connected Hub Model
         /// </summary>
         public ReactiveList<Option> AvailableOptions { get; } = new();
+
+        /// <summary>
+        /// Gets the collection of all <see cref="RowColumnSelection"/> values
+        /// </summary>
+        public List<RowColumnSelection> RowColumnValues { get; } = new() { RowColumnSelection.Column, RowColumnSelection.Row };
 
         /// <summary>
         /// Initializes this view model properties
@@ -202,6 +215,42 @@ namespace DEHPMatlab.ViewModel.Dialogs
                     this.UpdateAvailableActualFiniteStates();
                     this.CheckCanExecute();
                 }));
+
+            this.WhenAnyValue(x => x.SelectedThing)
+                .ObserveOn(RxApp.MainThreadScheduler)
+                .Subscribe(_ => this.UpdateHubFields(() =>
+                {
+                    this.RefreshSelectedThingObservables();
+                    this.UpdateAvailableParameters();
+                    this.UpdateAvailableParameterType();
+                    this.UpdateAvailableElementsUsages();
+                }));
+        }
+
+        /// <summary>
+        /// Initializes the <see cref="Observable"/> for the <see cref="SelectedThing"/>
+        /// </summary>
+        private void RefreshSelectedThingObservables()
+        {
+            if (this.SelectedThing is null)
+            {
+                return;
+            }
+
+            foreach (var disposable in this.disposablesObservables)
+            {
+                disposable.Dispose();
+            }
+
+            this.disposablesObservables.Clear();
+
+            this.disposablesObservables.Add(this.WhenAnyValue(x => x.SelectedThing.RowColumnSelection)
+                .ObserveOn(RxApp.MainThreadScheduler)
+                .Subscribe(_ => this.UpdateHubFields(this.UpdateAvailableParameterType)));
+
+            this.disposablesObservables.Add(this.SelectedThing.SampledFunctionParameters.ItemChanged
+                .ObserveOn(RxApp.MainThreadScheduler)
+                .Subscribe(_ => this.UpdateHubFields(this.UpdateAvailableParameterType)));
         }
 
         /// <summary>
@@ -381,10 +430,44 @@ namespace DEHPMatlab.ViewModel.Dialogs
         {
             this.AvailableParameterTypes.Clear();
 
-            this.AvailableParameterTypes.AddRange(this.HubController.OpenIteration
-                .GetContainerOfType<EngineeringModel>().RequiredRdls
-                .SelectMany(x => x.ParameterType)
-                .OrderBy(x => x.Name));
+            var isAnArray = this.SelectedThing?.ArrayValue != null;
+
+            var parameterTypes = this.HubController.OpenIteration
+                .GetContainerOfType<EngineeringModel>()
+                .RequiredRdls
+                .SelectMany(x => x.ParameterType);
+            
+            if (isAnArray)
+            {
+                parameterTypes = parameterTypes.Where(x => x is SampledFunctionParameterType or ArrayParameterType);
+            }
+
+            var filteredParameterTypes = parameterTypes
+                .Where(this.FilterParameterType)
+                .OrderBy(x => x.Name);
+
+            this.AvailableParameterTypes.AddRange(filteredParameterTypes);
+        }
+
+        /// <summary>
+        /// Verify if the <paramref name="parameterType"/> is <see cref="ScalarParameterType"/>
+        /// or is <see cref="SampledFunctionParameterType"/> and at least compatible with this dst adapter
+        /// </summary>
+        /// <param name="parameterType">The <see cref="ParameterType"/></param>
+        /// <returns>An value indicating whether the <paramref name="parameterType"/> is valid</returns>
+        private bool FilterParameterType(ParameterType parameterType)
+        {
+            return !parameterType.IsDeprecated && parameterType switch
+            {
+                SampledFunctionParameterType when this.SelectedThing is null => true,
+                SampledFunctionParameterType sampledFunctionParameterType =>
+                    sampledFunctionParameterType.Validate(this.SelectedThing?.ArrayValue, this.SelectedThing.RowColumnSelection, this.SelectedThing.SampledFunctionParameters.ToList()),
+                ArrayParameterType when this.SelectedThing is null => true,
+                ArrayParameterType arrayParameterType =>
+                    arrayParameterType.Validate(this.SelectedThing?.ArrayValue, this.SelectedThing?.SelectedScale),
+                ScalarParameterType => true,
+                _ => false
+            };
         }
 
         /// <summary>

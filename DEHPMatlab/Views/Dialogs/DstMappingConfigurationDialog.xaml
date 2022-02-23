@@ -81,24 +81,58 @@
                 </dxg:TreeListControl>
             </GroupBox>
             <GroupBox Grid.Row="1" Header="Select Value Set" Margin="10" Padding="10">
-                <Grid Margin="5">
+                <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="4*" />
-                        <ColumnDefinition Width="6*" />
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-                    <Label Grid.Row="1" Grid.Column="0" Content="Element Definition:" />
+                    <Grid Grid.Column="0" Margin="5">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Label Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Height="25" HorizontalAlignment="Left" Content="Parameters are split into :" />
+                            <dxe:ComboBoxEdit Grid.Row="0" Grid.Column="1" Margin="5" Height="25"
+                                              ItemsSource="{Binding RowColumnValues}"
+                                              SelectedItem="{Binding SelectedThing.RowColumnSelection}"
+                                              Width="Auto" ToolTip="Select Row if the array is a [2xX] array, Column if the array is a [Xx2] array."/>
+                            <dxg:GridControl Grid.Row="1" Grid.ColumnSpan="2" Grid.Column="0" Margin="5"
+                                             Height="190" ItemsSource="{Binding SelectedThing.SampledFunctionParameters}" 
+                                             ToolTip="Assign each row or column to the correct type of dependant or independant parameter type">
+                                <dxg:GridControl.View>
+                                    <dxg:TableView VerticalScrollbarVisibility="Auto"/>
+                                </dxg:GridControl.View>
+                                <dxg:GridControl.Columns>
+                                    <dxg:GridColumn AllowEditing="False" FieldName="Index" UnboundType="Integer"/>
+                                    <dxg:GridColumn AllowEditing="True"  FieldName="IsDependantParameter" UnboundType="Boolean"/>
+                                </dxg:GridControl.Columns>
+                            </dxg:GridControl>
+                        </Grid>
+                    </Grid>
+                    <Grid Grid.Column="1" Margin="5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="4*" />
+                            <ColumnDefinition Width="6*" />
+                        </Grid.ColumnDefinitions>
+
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Label Grid.Row="1" Grid.Column="0" Content="Element Definition:" />
                         <dxe:ComboBoxEdit Grid.Row="1" Grid.Column="1" Margin="2" AllowNullInput="True" AutoComplete="True" ClearSelectionOnBackspace="True" 
                                               DisplayMember="ShortName" ItemsSource="{Binding AvailableElementDefinitions}"
                                               NullText="Create New Element Definition" NullValueButtonPlacement="EditBox"
@@ -171,7 +205,6 @@
                                           SelectedItem="{Binding SelectedThing.SelectedScale}"
                                           ToolTip="Select a scale if the parameter type allows to do so"
                                           ShowNullTextForEmptyValue="True" ValidateOnTextInput="False" ValueMember="Name" />
-
                         </Grid>
                         <Label Grid.Row="5" Grid.Column="0" Content="Parameter:" />
                         <dxe:ComboBoxEdit Grid.Row="5" Grid.Column="1" Margin="2" AllowNullInput="True" ApplyItemTemplateToSelectedItem="True" AutoComplete="True" ClearSelectionOnBackspace="True"
@@ -189,13 +222,15 @@
                                                       ToolTip="Select an ActualFiniteState when the selected Parameter has state dependency"
                                                       ShowNullTextForEmptyValue="True" ValidateOnTextInput="False" ValueMember="Name" />
                         <Label Grid.Row="7" Grid.Column="0" Content="Option:" />
-                    <dxe:ComboBoxEdit Grid.Row="7" Grid.Column="1" Margin="2" AutoComplete="True" DisplayMember="ShortName"
+                        <dxe:ComboBoxEdit Grid.Row="7" Grid.Column="1" Margin="2" AutoComplete="True" DisplayMember="ShortName"
                                               ItemsSource="{Binding AvailableOptions}" SelectedIndex="0" NullText="Select an option"
                                               SelectedItem="{Binding SelectedThing.SelectedOption}" NullValueButtonPlacement="EditBox"
                                               ShowNullTextForEmptyValue="True" ValidateOnTextInput="False" 
                                               ValueMember="Name" AllowNullInput="True" 
                                               ToolTip="Select an Option when mapping to an option dependant Parameter"/>
+                    </Grid>
                 </Grid>
+                
             </GroupBox>
             <Grid Grid.Row="2">
                 <Grid.ColumnDefinitions>

@@ -26,6 +26,7 @@ namespace DEHPMatlab.ViewModel.Row
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Reactive.Linq;
 
     using CDP4Common.EngineeringModelData;
@@ -34,7 +35,9 @@ namespace DEHPMatlab.ViewModel.Row
 
     using CDP4Dal;
 
+    using DEHPMatlab.Enumerator;
     using DEHPMatlab.Events;
+    using DEHPMatlab.Extensions;
 
     using ReactiveUI;
 
@@ -114,6 +117,16 @@ namespace DEHPMatlab.ViewModel.Row
         private object initialValue;
 
         /// <summary>
+        /// Backing field for <see cref="ArrayValue"/>
+        /// </summary>
+        private object arrayValue;
+        
+        /// <summary>
+        /// Backing field for <see cref="RowColumnSelection"/>
+        /// </summary>
+        private RowColumnSelection rowColumnSelection;
+
+        /// <summary>
         /// Initializes a new <see cref="MatlabWorkspaceRowViewModel" />
         /// </summary>
         /// <param name="name">The name of the variable</param>
@@ -123,6 +136,9 @@ namespace DEHPMatlab.ViewModel.Row
             this.Name = name;
             this.ActualValue = actualValue;
             this.InitialValue = actualValue;
+
+            this.WhenAnyValue(x => x.RowColumnSelection)
+                .Subscribe(_ => this.PopulateSampledFunctionParameters());
 
             _ = CDPMessageBus.Current.Listen<DstHighlightEvent>()
                 .Where(x => x.TargetThingId.ToString() == this.Identifier)
@@ -164,6 +180,24 @@ namespace DEHPMatlab.ViewModel.Row
         {
             get => this.actualValue;
             set => this.RaiseAndSetIfChanged(ref this.actualValue, value);
+        }
+
+        /// <summary>
+        /// Contains the array if <see cref="ActualValue"/> was an <see cref="Array"/>
+        /// </summary>
+        public object ArrayValue
+        {
+            get => this.arrayValue;
+            set => this.RaiseAndSetIfChanged(ref this.arrayValue, value);
+        }
+
+        /// <summary>
+        /// The <see cref="RowColumnSelection"/> value
+        /// </summary>
+        public RowColumnSelection RowColumnSelection
+        {
+            get => this.rowColumnSelection;
+            set => this.RaiseAndSetIfChanged(ref this.rowColumnSelection, value);
         }
 
         /// <summary>
@@ -272,6 +306,11 @@ namespace DEHPMatlab.ViewModel.Row
         public ReactiveList<IdCorrespondence> MappingConfigurations { get; set; } = new();
 
         /// <summary>
+        /// Gets the collection of <see cref="SampledFunctionParametersDefinitionRowViewModel"/>
+        /// </summary>
+        public ReactiveList<SampledFunctionParametersDefinitionRowViewModel> SampledFunctionParameters { get; } = new() { ChangeTrackingEnabled = true };
+
+        /// <summary>
         /// Verify if the <see cref="SelectedParameterType" /> is compatible with the current variable
         /// </summary>
         /// <returns>An assert whether the <see cref="SelectedParameterType" /> is compatible</returns>
@@ -279,6 +318,10 @@ namespace DEHPMatlab.ViewModel.Row
         {
             return this.SelectedParameterType switch
             {
+                SampledFunctionParameterType sampledFunctionParameterType => 
+                    sampledFunctionParameterType.Validate(this.ArrayValue, this.RowColumnSelection, this.SampledFunctionParameters.ToList()),
+                ArrayParameterType arrayParameterType => 
+                    arrayParameterType.Validate(this.ArrayValue, this.SelectedScale),
                 ScalarParameterType scalarParameterType =>
                     this.SelectedParameterType.Validate(this.ActualValue,
                             this.SelectedScale ?? (scalarParameterType as QuantityKind)?.DefaultScale)
@@ -312,6 +355,10 @@ namespace DEHPMatlab.ViewModel.Row
 
             if (this.ActualValue != null && this.ActualValue.GetType().IsArray)
             {
+                this.ArrayValue = this.ActualValue;
+                
+                this.PopulateSampledFunctionParameters();
+
                 var array = (Array)this.ActualValue;
 
                 for (var i = 0; i < array.GetLength(0); i++)
@@ -329,12 +376,38 @@ namespace DEHPMatlab.ViewModel.Row
                     }
                 }
 
+                this.RowColumnSelection = array.GetLength(0) < array.GetLength(1) ? RowColumnSelection.Row : RowColumnSelection.Column;
+
                 this.ActualValue = $"[{array.GetLength(0)}x{array.GetLength(1)}] matrices of {array.GetValue(0,0).GetType().Name}";
 
                 this.InitialValue ??= this.ActualValue;
             }
+            else
+            {
+                this.ArrayValue = null;
+            }
 
             return unwrappedArray;
+        }
+
+        /// <summary>
+        /// Populate the <see cref="SampledFunctionParameters"/> collections
+        /// </summary>
+        private void PopulateSampledFunctionParameters()
+        {
+            this.SampledFunctionParameters.Clear();
+
+            if (this.ArrayValue is not Array arrayValueAsArray)
+            {
+                return;
+            }
+
+            var parametersCount = this.RowColumnSelection == RowColumnSelection.Column ? arrayValueAsArray.GetLength(1) : arrayValueAsArray.GetLength(0);
+
+            for (var i = 0; i < parametersCount; i++)
+            {
+                this.SampledFunctionParameters.Add(new SampledFunctionParametersDefinitionRowViewModel(i, i != 0));
+            }
         }
     }
 }

@@ -213,6 +213,83 @@ namespace DEHPMatlab.Tests.ViewModel
             this.dstMapResult.Clear();
 
             Assert.IsEmpty(this.viewModel.MappingRows);
+            
+            var scale = new RatioScale() { Name = "scale", NumberSet = NumberSetKind.REAL_NUMBER_SET };
+
+            var sfpt = new SampledFunctionParameterType()
+            {
+                Name = "TextXQuantity",
+                IndependentParameterType =
+                {
+                    new IndependentParameterTypeAssignment()
+                    {
+                        ParameterType = new SimpleQuantityKind()
+                        {
+                            Name = "IndependentText",
+                            DefaultScale = scale,
+                            PossibleScale = { scale },
+                        },
+                        MeasurementScale = scale
+                    }
+                },
+
+                DependentParameterType =
+                {
+                    new DependentParameterTypeAssignment()
+                    {
+                        ParameterType = new SimpleQuantityKind()
+                        {
+                            Name = "DependentQuantityKing",
+                            DefaultScale = scale,
+                            PossibleScale = { scale }
+                        },
+                        MeasurementScale = scale
+                    },
+                    new DependentParameterTypeAssignment()
+                    {
+                        ParameterType = new SimpleQuantityKind()
+                        {
+                            Name = "DependentQuantityKing2",
+                            DefaultScale = scale,
+                            PossibleScale = { scale }
+                        },
+                        MeasurementScale = scale
+                    }
+                }
+            };
+
+            var parameter = new Parameter()
+            {
+                Iid = Guid.NewGuid(),
+                ParameterType = sfpt,
+                ValueSet =
+                {
+                    new ParameterValueSet()
+                    {
+                        Computed = new ValueArray<string>(new []{"8", "5","3"}),
+                        Manual = new ValueArray<string>(new []{"5"}),
+                        Reference = new ValueArray<string>(new []{"3"})
+                    }
+                }
+            };
+
+            parameter.Container = this.element0;
+            this.element0.Parameter.Add(parameter);
+
+            toAdd = new ParameterToMatlabVariableMappingRowViewModel()
+            {
+                SelectedParameter = parameter,
+                SelectedMatlabVariable = new MatlabWorkspaceRowViewModel("a", new object[3,1]),
+                SelectedValue = new ValueSetValueRowViewModel(this.parameter0.QueryParameterBaseValueSet(null, null), "8", null)
+            };
+
+            this.dstController.Setup(x => x.ParameterVariable).Returns(new Dictionary<ParameterOrOverrideBase, MatlabWorkspaceRowViewModel>()
+            {
+                { parameter, toAdd.SelectedMatlabVariable}
+            });
+
+            this.hubMapResult.Add(toAdd);
+            this.dstMapResult.Add(this.element0);
         }
     }
 }

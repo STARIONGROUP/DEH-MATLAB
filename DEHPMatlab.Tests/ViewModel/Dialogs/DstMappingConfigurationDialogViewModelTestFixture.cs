@@ -43,6 +43,7 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
     using DEHPCommon.UserInterfaces.ViewModels.Interfaces;
 
     using DEHPMatlab.DstController;
+    using DEHPMatlab.Enumerator;
     using DEHPMatlab.ViewModel.Dialogs;
     using DEHPMatlab.ViewModel.Row;
     using DEHPMatlab.Views.Dialogs;
@@ -219,6 +220,8 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
             Assert.IsFalse(this.viewModel.IsBusy);
             Assert.IsNotNull(this.viewModel.CloseWindowBehavior);
             Assert.IsNotNull(this.viewModel.ContinueCommand);
+            Assert.IsNotNull(this.viewModel.RowColumnValues);
+            Assert.AreEqual(2,this.viewModel.RowColumnValues.Count);
         }
 
         [Test]
@@ -459,6 +462,172 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
 
             Assert.DoesNotThrow(() => this.viewModel.UpdatePropertiesBasedOnMappingConfiguration());
             this.hubController.Verify(x => x.GetThingById(It.IsAny<Guid>(), It.IsAny<Iteration>(), out It.Ref<Thing>.IsAny), Times.Exactly(6));
+        }
+
+        [Test]
+        public void VerifySelectedThingWithArrayValue()
+        {
+            var array = new double[3, 2];
+
+            for (var i = 0; i < array.GetLength(0); i++)
+            {
+                for (var j = 0; j < array.GetLength(1); j++)
+                {
+                    array.SetValue(i + j+1, i, j);
+                }
+            }
+
+            var variable = new MatlabWorkspaceRowViewModel("aName", array);
+            Assert.IsEmpty(variable.SampledFunctionParameters);
+
+            variable.UnwrapVariableRowViewModels();
+            Assert.AreEqual(2, variable.SampledFunctionParameters.Count);
+            Assert.AreEqual(RowColumnSelection.Column, variable.RowColumnSelection);
+            Assert.IsFalse(variable.SampledFunctionParameters.First().IsDependantParameter);
+            Assert.AreEqual(1, variable.SampledFunctionParameters.Last().Index);
+
+            variable.RowColumnSelection = RowColumnSelection.Row;
+            Assert.AreEqual(3, variable.SampledFunctionParameters.Count);
+
+            this.viewModel.Variables.Add(variable);
+            this.viewModel.SelectedThing = variable;
+            Assert.AreEqual(0, this.viewModel.AvailableParameterTypes.Count);
+
+            var sfpt = new SampledFunctionParameterType()
+            {
+                Name = "TextXQuantity",
+                IndependentParameterType =
+                {
+                    new IndependentParameterTypeAssignment()
+                    {
+                        ParameterType = new SimpleQuantityKind()
+                        {
+                            Name = "IndependentText",
+                            DefaultScale = this.scale,
+                            PossibleScale = { this.scale },
+                        }, 
+                        MeasurementScale = this.scale
+                    }
+                },
+
+                DependentParameterType =
+                {
+                    new DependentParameterTypeAssignment()
+                    {
+                        ParameterType = new SimpleQuantityKind()
+                        {
+                            Name = "DependentQuantityKing",
+                            DefaultScale = this.scale,
+                            PossibleScale = { this.scale }
+                        },
+                        MeasurementScale = this.scale
+                    },
+                    new DependentParameterTypeAssignment()
+                    {
+                        ParameterType = new SimpleQuantityKind()
+                        {
+                            Name = "DependentQuantityKing2",
+                            DefaultScale = this.scale,
+                            PossibleScale = { this.scale }
+                        },
+                        MeasurementScale = this.scale
+                    }
+                }
+            };
+
+            var simpleQuantityKind = new SimpleQuantityKind()
+            {
+                Name = "aSimpleQuantity",
+                PossibleScale = { this.scale },
+                DefaultScale = this.scale
+            };
+
+            var arrayParameter = new ArrayParameterType()
+            {
+                Name = "Array3x2",
+                ShortName = "array3x2",
+            };
+
+            arrayParameter.Dimension = new OrderedItemList<int>(arrayParameter) { 3, 2 };
+
+            for (var i = 0; i < 6; i++)
+            {
+                arrayParameter.Component.Add(new ParameterTypeComponent()
+                {
+                    ParameterType = simpleQuantityKind,
+                    Scale = this.scale
+                });
+            }
+
+            this.modelReferenceDataLibrary.ParameterType.Add(sfpt);
+            Assert.DoesNotThrow(() => this.viewModel.UpdateAvailableParameterType());
+
+            this.viewModel.SelectedThing = null;
+            Assert.DoesNotThrow(() => this.viewModel.UpdateAvailableParameterType());
+
+            this.modelReferenceDataLibrary.ParameterType.Add(arrayParameter);
+            Assert.DoesNotThrow(() => this.viewModel.UpdateAvailableParameterType());
+
+            this.viewModel.SelectedThing = variable;
+            Assert.DoesNotThrow(() => this.viewModel.UpdateAvailableParameterType());
+
+            Assert.AreEqual(2, this.viewModel.AvailableParameterTypes.Count);
+
+            array = new double[1, 3];
+
+            for (var i = 0; i < array.GetLength(0); i++)
+            {
+                for (var j = 0; j < array.GetLength(1); j++)
+                {
+                    array.SetValue(i + j + 1, i, j);
+                }
+            }
+
+            variable.ActualValue = array;
+            variable.UnwrapVariableRowViewModels();
+
+            Assert.DoesNotThrow(() => this.viewModel.UpdateAvailableParameterType());
+            Assert.AreEqual(0, this.viewModel.AvailableParameterTypes.Count);
+
+            variable.ActualValue = 5;
+            variable.UnwrapVariableRowViewModels();
+
+            variable.SelectedParameterType = sfpt;
+            Assert.IsFalse(variable.IsValid());
+
+            variable.SelectedParameterType = arrayParameter;
+            Assert.IsFalse(variable.IsValid());
+
+            variable.ActualValue = array;
+            variable.UnwrapVariableRowViewModels();
+
+            arrayParameter.Component.Clear();
+
+            for (var i = 0; i < 5; i++)
+            {
+                arrayParameter.Component.Add(new ParameterTypeComponent()
+                {
+                    ParameterType = simpleQuantityKind,
+                    Scale = this.scale
+                });
+            }
+
+            arrayParameter.Component.Add((new ParameterTypeComponent()
+            {
+                ParameterType = this.scalarParameterType,
+                Scale = this.scale
+            }));
+
+            Assert.IsFalse(variable.IsValid());
+
+            arrayParameter.Dimension = new OrderedItemList<int>(arrayParameter) { 1, 1, 1 };
+            Assert.IsFalse(variable.IsValid());
+
+            sfpt.DependentParameterType.First().MeasurementScale = null;
+            variable.ActualValue = array;
+            variable.UnwrapVariableRowViewModels();
+            variable.RowColumnSelection = RowColumnSelection.Column;
+            Assert.IsFalse(variable.IsValid());
         }
     }
 }

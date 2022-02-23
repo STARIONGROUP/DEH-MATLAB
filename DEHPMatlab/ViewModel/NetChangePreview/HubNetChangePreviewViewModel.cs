@@ -451,7 +451,7 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
         /// <summary>
         /// Calls the <see cref="ComputeValues" /> with some household
         /// </summary>
-        private void ComputeValuesWrapper()
+        public void ComputeValuesWrapper()
         {
             this.IsBusy = true;
             var isExpanded = this.Things.First().IsExpanded;
@@ -621,7 +621,7 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
 
                 var elementRow = this.VerifyElementIsInTheTree(elementBase.Value.First());
 
-                if (elementClone is ElementDefinition elementDefition)
+                if (elementClone is ElementDefinition { Container: { } } elementDefition)
                 {
                     elementRow.UpdateThing(elementDefition);
                     elementRow.UpdateChildren();
