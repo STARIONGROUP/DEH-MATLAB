@@ -220,7 +220,7 @@ namespace DEHPMatlab.MappingRules
             switch (parameter.ParameterType)
             {
                 case SampledFunctionParameterType sampledFunction when sampledFunction.Validate(matlabVariable.ArrayValue,
-                    matlabVariable.RowColumnSelection, matlabVariable.SampledFunctionParameters.ToList()):
+                    matlabVariable.RowColumnSelection, matlabVariable.SampledFunctionParameterParameterAssignementRows.ToList()):
                     this.AssignNewValues(matlabVariable, valueSet);
                     break;
                 case ArrayParameterType arrayParameter when arrayParameter.Validate(matlabVariable.ArrayValue, matlabVariable.SelectedScale):
@@ -250,23 +250,23 @@ namespace DEHPMatlab.MappingRules
 
             var values = new List<string>();
 
-            var iMax = matlabVariable.RowColumnSelection == RowColumnSelection.Column ? arrayValue.GetLength(0) : arrayValue.GetLength(1);
+            var lengthToProcess = matlabVariable.RowColumnSelection == RowColumnSelection.Column ? arrayValue.GetLength(0) : arrayValue.GetLength(1);
 
-            var independants = matlabVariable.SampledFunctionParameters
+            var independants = matlabVariable.SampledFunctionParameterParameterAssignementRows
                 .Where(x => !x.IsDependantParameter).ToList();
 
-            var dependants = matlabVariable.SampledFunctionParameters
+            var dependants = matlabVariable.SampledFunctionParameterParameterAssignementRows
                 .Where(x => x.IsDependantParameter).ToList();
 
             var indexOrder = independants.Select(independant => independant.Index).ToList();
 
             indexOrder.AddRange(dependants.Select(x => x.Index));
 
-            for (var i = 0; i < iMax; i++)
+            for (var lengthIndex = 0; lengthIndex < lengthToProcess; lengthIndex++)
             {
                 foreach (var index in indexOrder)
                 {
-                    var valueToAdd = matlabVariable.RowColumnSelection == RowColumnSelection.Column ? arrayValue.GetValue(i, index): arrayValue.GetValue(index, i);
+                    var valueToAdd = matlabVariable.RowColumnSelection == RowColumnSelection.Column ? arrayValue.GetValue(lengthIndex, index): arrayValue.GetValue(index, lengthIndex);
                     values.Add(FormattableString.Invariant($"{valueToAdd}"));
                 }
             }
@@ -291,11 +291,11 @@ namespace DEHPMatlab.MappingRules
 
             var values = new List<string>();
 
-            for (var i = 0; i < arrayValue.GetLength(0); i++)
+            for (var rowIndex = 0; rowIndex < arrayValue.GetLength(0); rowIndex++)
             {
-                for (var j = 0; j < arrayValue.GetLength(1); j++)
+                for (var columnIndex = 0; columnIndex < arrayValue.GetLength(1); columnIndex++)
                 {
-                    values.Add(FormattableString.Invariant($"{arrayValue.GetValue(i,j)}"));
+                    values.Add(FormattableString.Invariant($"{arrayValue.GetValue(rowIndex,columnIndex)}"));
                 }
             }
 

@@ -306,9 +306,9 @@ namespace DEHPMatlab.ViewModel.Row
         public ReactiveList<IdCorrespondence> MappingConfigurations { get; set; } = new();
 
         /// <summary>
-        /// Gets the collection of <see cref="SampledFunctionParametersDefinitionRowViewModel"/>
+        /// Gets the collection of <see cref="SampledFunctionParameterParameterAssignementRowViewModel"/>
         /// </summary>
-        public ReactiveList<SampledFunctionParametersDefinitionRowViewModel> SampledFunctionParameters { get; } = new() { ChangeTrackingEnabled = true };
+        public ReactiveList<SampledFunctionParameterParameterAssignementRowViewModel> SampledFunctionParameterParameterAssignementRows { get; } = new() { ChangeTrackingEnabled = true };
 
         /// <summary>
         /// Verify if the <see cref="SelectedParameterType" /> is compatible with the current variable
@@ -319,7 +319,7 @@ namespace DEHPMatlab.ViewModel.Row
             return this.SelectedParameterType switch
             {
                 SampledFunctionParameterType sampledFunctionParameterType => 
-                    sampledFunctionParameterType.Validate(this.ArrayValue, this.RowColumnSelection, this.SampledFunctionParameters.ToList()),
+                    sampledFunctionParameterType.Validate(this.ArrayValue, this.RowColumnSelection, this.SampledFunctionParameterParameterAssignementRows.ToList()),
                 ArrayParameterType arrayParameterType => 
                     arrayParameterType.Validate(this.ArrayValue, this.SelectedScale),
                 ScalarParameterType scalarParameterType =>
@@ -391,11 +391,11 @@ namespace DEHPMatlab.ViewModel.Row
         }
 
         /// <summary>
-        /// Populate the <see cref="SampledFunctionParameters"/> collections
+        /// Populate the <see cref="SampledFunctionParameterParameterAssignementRows"/> collections
         /// </summary>
         private void PopulateSampledFunctionParameters()
         {
-            this.SampledFunctionParameters.Clear();
+            this.SampledFunctionParameterParameterAssignementRows.Clear();
 
             if (this.ArrayValue is not Array arrayValueAsArray)
             {
@@ -404,9 +404,9 @@ namespace DEHPMatlab.ViewModel.Row
 
             var parametersCount = this.RowColumnSelection == RowColumnSelection.Column ? arrayValueAsArray.GetLength(1) : arrayValueAsArray.GetLength(0);
 
-            for (var i = 0; i < parametersCount; i++)
+            for (var parameterIndex = 0; parameterIndex < parametersCount; parameterIndex++)
             {
-                this.SampledFunctionParameters.Add(new SampledFunctionParametersDefinitionRowViewModel(i, i != 0));
+                this.SampledFunctionParameterParameterAssignementRows.Add(new SampledFunctionParameterParameterAssignementRowViewModel(parameterIndex, parameterIndex != 0));
             }
         }
     }

@@ -414,8 +414,8 @@ namespace DEHPMatlab.Tests.MappingRules
             Assert.DoesNotThrow(() => this.rule.UpdateValueSet(variable, parameter));
             
             variable.UnwrapVariableRowViewModels();
-            variable.SampledFunctionParameters.First().IsDependantParameter = true;
-            variable.SampledFunctionParameters.Last().IsDependantParameter = false;
+            variable.SampledFunctionParameterParameterAssignementRows.First().IsDependantParameter = true;
+            variable.SampledFunctionParameterParameterAssignementRows.Last().IsDependantParameter = false;
             Assert.DoesNotThrow(() => this.rule.UpdateValueSet(variable, parameter));
             Assert.AreEqual("2", parameter.ValueSet.First().Computed.First());
         }

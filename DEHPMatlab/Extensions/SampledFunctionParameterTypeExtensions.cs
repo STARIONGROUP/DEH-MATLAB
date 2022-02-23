@@ -45,10 +45,10 @@ namespace DEHPMatlab.Extensions
         /// <param name="parameterType">The <see cref="SampledFunctionParameterType"/></param>
         /// <param name="value">The <see cref="object"/> value</param>
         /// <param name="rowColumnSelection">The <see cref="RowColumnSelection"/></param>
-        /// <param name="parametersDefinition">The collection of <see cref="SampledFunctionParametersDefinitionRowViewModel"/></param>
+        /// <param name="parametersDefinition">The collection of <see cref="SampledFunctionParameterParameterAssignementRowViewModel"/></param>
         /// <returns>A value indicating if the <paramref name="parameterType"/> is compliant</returns>
         public static bool Validate(this SampledFunctionParameterType parameterType, object value,
-            RowColumnSelection rowColumnSelection, List<SampledFunctionParametersDefinitionRowViewModel> parametersDefinition)
+            RowColumnSelection rowColumnSelection, List<SampledFunctionParameterParameterAssignementRowViewModel> parametersDefinition)
         {
             if (value is not Array arrayValue)
             {

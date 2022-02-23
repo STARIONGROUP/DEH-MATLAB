@@ -1,5 +1,5 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="SampledFunctionParametersDefinitionRowViewModel.cs" company="RHEA System S.A.">
+// <copyright file="SampledFunctionParameterParameterAssignementRowViewModel.cs" company="RHEA System S.A.">
 // Copyright (c) 2020-2022 RHEA System S.A.
 // 
 // Author: Sam Gerené, Alex Vorobiev, Alexander van Delft, Nathanael Smiechowski, Antoine Théate.
@@ -31,7 +31,7 @@ namespace DEHPMatlab.ViewModel.Row
     /// <summary>
     /// Used to define the mapping for array to <see cref="SampledFunctionParameterType"/> parameters
     /// </summary>
-    public class SampledFunctionParametersDefinitionRowViewModel : ReactiveObject
+    public class SampledFunctionParameterParameterAssignementRowViewModel : ReactiveObject
     {
         /// <summary>
         /// Backing field for <see cref="Index"/>
@@ -44,11 +44,11 @@ namespace DEHPMatlab.ViewModel.Row
         private bool isDependantParameter;
 
         /// <summary>
-        /// Initializes a new <see cref="SampledFunctionParametersDefinitionRowViewModel"/>
+        /// Initializes a new <see cref="SampledFunctionParameterParameterAssignementRowViewModel"/>
         /// </summary>
         /// <param name="index">The index</param>
         /// <param name="isDependantParameter">The assert</param>
-        public SampledFunctionParametersDefinitionRowViewModel(int index, bool isDependantParameter)
+        public SampledFunctionParameterParameterAssignementRowViewModel(int index, bool isDependantParameter)
         {
             this.Index = index;
             this.IsDependantParameter = isDependantParameter;

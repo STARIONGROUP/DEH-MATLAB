@@ -248,7 +248,7 @@ namespace DEHPMatlab.ViewModel.Dialogs
                 .ObserveOn(RxApp.MainThreadScheduler)
                 .Subscribe(_ => this.UpdateHubFields(this.UpdateAvailableParameterType)));
 
-            this.disposablesObservables.Add(this.SelectedThing.SampledFunctionParameters.ItemChanged
+            this.disposablesObservables.Add(this.SelectedThing.SampledFunctionParameterParameterAssignementRows.ItemChanged
                 .ObserveOn(RxApp.MainThreadScheduler)
                 .Subscribe(_ => this.UpdateHubFields(this.UpdateAvailableParameterType)));
         }
@@ -461,7 +461,7 @@ namespace DEHPMatlab.ViewModel.Dialogs
             {
                 SampledFunctionParameterType when this.SelectedThing is null => true,
                 SampledFunctionParameterType sampledFunctionParameterType =>
-                    sampledFunctionParameterType.Validate(this.SelectedThing?.ArrayValue, this.SelectedThing.RowColumnSelection, this.SelectedThing.SampledFunctionParameters.ToList()),
+                    sampledFunctionParameterType.Validate(this.SelectedThing?.ArrayValue, this.SelectedThing.RowColumnSelection, this.SelectedThing.SampledFunctionParameterParameterAssignementRows.ToList()),
                 ArrayParameterType when this.SelectedThing is null => true,
                 ArrayParameterType arrayParameterType =>
                     arrayParameterType.Validate(this.SelectedThing?.ArrayValue, this.SelectedThing?.SelectedScale),

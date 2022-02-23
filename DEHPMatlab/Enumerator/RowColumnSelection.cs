@@ -30,12 +30,12 @@ namespace DEHPMatlab.Enumerator
     public enum RowColumnSelection
     {
         /// <summary>
-        /// Define that the independent and dependant parameter type are stored in two differents columns
+        /// Define that the independent and dependant parameter type are stored in differents columns
         /// </summary>
         Column,
 
         /// <summary>
-        /// Define that the independent and dependant parameter type are stored in two differents rows
+        /// Define that the independent and dependant parameter type are stored in differents rows
         /// </summary>
         Row
     }

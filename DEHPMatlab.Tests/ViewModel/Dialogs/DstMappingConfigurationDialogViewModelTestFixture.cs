@@ -478,16 +478,16 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
             }
 
             var variable = new MatlabWorkspaceRowViewModel("aName", array);
-            Assert.IsEmpty(variable.SampledFunctionParameters);
+            Assert.IsEmpty(variable.SampledFunctionParameterParameterAssignementRows);
 
             variable.UnwrapVariableRowViewModels();
-            Assert.AreEqual(2, variable.SampledFunctionParameters.Count);
+            Assert.AreEqual(2, variable.SampledFunctionParameterParameterAssignementRows.Count);
             Assert.AreEqual(RowColumnSelection.Column, variable.RowColumnSelection);
-            Assert.IsFalse(variable.SampledFunctionParameters.First().IsDependantParameter);
-            Assert.AreEqual(1, variable.SampledFunctionParameters.Last().Index);
+            Assert.IsFalse(variable.SampledFunctionParameterParameterAssignementRows.First().IsDependantParameter);
+            Assert.AreEqual(1, variable.SampledFunctionParameterParameterAssignementRows.Last().Index);
 
             variable.RowColumnSelection = RowColumnSelection.Row;
-            Assert.AreEqual(3, variable.SampledFunctionParameters.Count);
+            Assert.AreEqual(3, variable.SampledFunctionParameterParameterAssignementRows.Count);
 
             this.viewModel.Variables.Add(variable);
             this.viewModel.SelectedThing = variable;

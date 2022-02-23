@@ -103,7 +103,7 @@
                                               SelectedItem="{Binding SelectedThing.RowColumnSelection}"
                                               Width="Auto" ToolTip="Select Row if the array is a [2xX] array, Column if the array is a [Xx2] array."/>
                             <dxg:GridControl Grid.Row="1" Grid.ColumnSpan="2" Grid.Column="0" Margin="5"
-                                             Height="190" ItemsSource="{Binding SelectedThing.SampledFunctionParameters}" 
+                                             Height="190" ItemsSource="{Binding SelectedThing.SampledFunctionParameterParameterAssignementRows}" 
                                              ToolTip="Assign each row or column to the correct type of dependant or independant parameter type">
                                 <dxg:GridControl.View>
                                     <dxg:TableView VerticalScrollbarVisibility="Auto"/>
