@@ -457,7 +457,7 @@ namespace DEHPMatlab.DstController
                 this.SelectedDstMapResultToTransfer.Clear();
                 this.DstMapResult.Clear();
 
-                this.LoadMappingFromDstToHub();
+                this.LoadMapping();
 
                 CDPMessageBus.Current.SendMessage(new UpdateObjectBrowserTreeEvent(true));
             }
@@ -503,7 +503,7 @@ namespace DEHPMatlab.DstController
 
             this.mappingConfigurationService.RefreshExternalIdentifierMap();
 
-            this.LoadMappingFromHubToDst();
+            this.LoadMapping();
 
             CDPMessageBus.Current.SendMessage(new UpdateDstVariableTreeEvent(true));
         }
@@ -703,7 +703,7 @@ namespace DEHPMatlab.DstController
         /// <returns>The number of mapped things loaded</returns>
         private int LoadMappingFromDstToHub()
         {
-            if (this.mappingConfigurationService.LoadMappingFromDstToHub(this.MatlabWorkspaceInputRowViewModels) is not { } mappedVariables || !mappedVariables.Any())
+            if (this.mappingConfigurationService.LoadMappingFromDstToHub(this.MatlabAllWorkspaceRowViewModels) is not { } mappedVariables || !mappedVariables.Any())
             {
                 return 0;
             }

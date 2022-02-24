@@ -323,6 +323,7 @@ namespace DEHPMatlab.Tests.NetChange
             Assert.AreEqual(3, elements.Count);
             Assert.DoesNotThrow(() => this.viewModel.ComputeValues());
             Assert.AreEqual(3, elements.Count);
+            Assert.DoesNotThrow(() => this.viewModel.ComputeValuesWrapper());
 
             var parameterRowViewModels = elements.First(x => x.Thing.Iid == this.elementDefinition0.Iid)
                 .ContainedRows.OfType<ParameterRowViewModel>();
@@ -333,8 +334,6 @@ namespace DEHPMatlab.Tests.NetChange
                 .ContainedRows.OfType<ParameterRowViewModel>();
 
             Assert.AreEqual(1, lastElementParameters.Count());
-
-            CDPMessageBus.Current.ClearSubscriptions();
         }
 
         [Test]

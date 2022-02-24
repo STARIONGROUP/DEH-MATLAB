@@ -12,7 +12,7 @@
                    xmlns:engineeringModelData="clr-namespace:CDP4Common.EngineeringModelData;assembly=CDP4Common"
                    xmlns:viewModels="clr-namespace:DEHPCommon.UserInterfaces.ViewModels.Rows.ElementDefinitionTreeRows;assembly=DEHPCommon"
                    xmlns:converters="clr-namespace:DEHPCommon.Converters;assembly=DEHPCommon"
-                   Title="HubMappingConfigurationDialog"
+                   Title="Mapping Configuration Dialog"
                    WindowStartupLocation="CenterScreen" Topmost="True"
                    mc:Ignorable="d" MinHeight="450" MinWidth="800">
     <Window.Resources>
