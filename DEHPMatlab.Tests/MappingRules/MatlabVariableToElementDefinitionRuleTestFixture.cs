@@ -41,6 +41,7 @@ namespace DEHPMatlab.Tests.MappingRules
     using DEHPCommon.HubController.Interfaces;
 
     using DEHPMatlab.MappingRules;
+    using DEHPMatlab.Services.MappingConfiguration;
     using DEHPMatlab.ViewModel.Row;
 
     using Moq;
@@ -64,6 +65,7 @@ namespace DEHPMatlab.Tests.MappingRules
         private RatioScale scale;
         private SampledFunctionParameterType scalarParameterType;
         private SampledFunctionParameterType dateTimeParameterType;
+        private Mock<IMappingConfigurationService> mappingConfigurationService;
 
         [SetUp]
         public void Setup()
@@ -93,8 +95,11 @@ namespace DEHPMatlab.Tests.MappingRules
             this.hubController.Setup(x => x.OpenIteration).Returns(this.iteration);
             this.hubController.Setup(x => x.GetSiteDirectory()).Returns(new SiteDirectory());
 
+            this.mappingConfigurationService = new Mock<IMappingConfigurationService>();
+
             var containerBuilder = new ContainerBuilder();
             containerBuilder.RegisterInstance(this.hubController.Object).As<IHubController>();
+            containerBuilder.RegisterInstance(this.mappingConfigurationService.Object).As<IMappingConfigurationService>();
             AppContainer.Container = containerBuilder.Build();
 
             this.actualFiniteStates = new ActualFiniteStateList()
@@ -319,8 +324,13 @@ namespace DEHPMatlab.Tests.MappingRules
                 }
             };
 
+            var state = new ActualFiniteState();
+            var option = new Option();
+
             var parameter2 = new Parameter()
             {
+                IsOptionDependent = true,
+                StateDependence = new ActualFiniteStateList() {ActualState = { state } },
                 ParameterType = new TextParameterType(),
                 ValueSet =
                 {
@@ -330,7 +340,9 @@ namespace DEHPMatlab.Tests.MappingRules
                         Formula = new ValueArray<string>(new[] { "-", "-" }),
                         Manual = new ValueArray<string>(new[] { "-", "-" }),
                         Reference = new ValueArray<string>(new[] { "-", "-" }),
-                        Published = new ValueArray<string>(new[] { "-", "-" })
+                        Published = new ValueArray<string>(new[] { "-", "-" }),
+                        ActualState = state,
+                        ActualOption = option
                     }
                 }
             };
@@ -340,8 +352,125 @@ namespace DEHPMatlab.Tests.MappingRules
 
             Assert.DoesNotThrow(() => this.rule.UpdateValueSet(variableRowViewModel, parameter0));
             Assert.DoesNotThrow(() => this.rule.UpdateValueSet(variableRowViewModel, parameter1));
+            variableRowViewModel.SelectedOption = option;
+            variableRowViewModel.SelectedActualFiniteState = state;
             Assert.DoesNotThrow(() => this.rule.UpdateValueSet(variableRowViewModel, parameter2));
             Assert.Throws<NullReferenceException>(() => this.rule.UpdateValueSet(null, null));
+        }
+
+        [Test]
+        public void VerifyUpdateValueSetSFPT()
+        {
+            var sfpt = new SampledFunctionParameterType()
+            {
+                Name = "TextXQuantity",
+                IndependentParameterType =
+                {
+                    new IndependentParameterTypeAssignment()
+                    {
+                        ParameterType = new SimpleQuantityKind()
+                        {
+                            Name = "IndependentText"
+                        }, 
+                        MeasurementScale = this.scale
+                    }
+                },
+
+                DependentParameterType =
+                {
+                    new DependentParameterTypeAssignment()
+                    {
+                        ParameterType = new SimpleQuantityKind()
+                        {
+                            Name = "DependentQuantityKing",
+                            DefaultScale = this.scale,
+                            PossibleScale = { this.scale }
+                        },
+                        MeasurementScale = this.scale
+                    }
+                }
+            };
+
+            var arrayValue = new object[2, 3];
+
+            for (var i = 0; i < arrayValue.GetLength(0); i++)
+            {
+                for (var j = 0; j < arrayValue.GetLength(1); j++)
+                {
+                    arrayValue.SetValue(i + j + 1, i, j);
+                }
+            }
+
+            var variable = new MatlabWorkspaceRowViewModel("a", arrayValue);
+
+            var parameter = new Parameter()
+            {
+                Iid = new Guid(),
+                ParameterType = sfpt, 
+                Container = new ElementDefinition(new Guid(), null, null), 
+                ValueSet = { new ParameterValueSet() }
+            };
+
+            Assert.DoesNotThrow(() => this.rule.UpdateValueSet(variable, parameter));
+            
+            variable.UnwrapVariableRowViewModels();
+            variable.SampledFunctionParameterParameterAssignementRows.First().IsDependantParameter = true;
+            variable.SampledFunctionParameterParameterAssignementRows.Last().IsDependantParameter = false;
+            Assert.DoesNotThrow(() => this.rule.UpdateValueSet(variable, parameter));
+            Assert.AreEqual("2", parameter.ValueSet.First().Computed.First());
+        }
+
+        [Test]
+        public void VerifyMappingArrayParameterType()
+        {
+            var arrayParameter = new ArrayParameterType()
+            {
+                Name = "Array3x2",
+                ShortName = "array3x2",
+            };
+
+            arrayParameter.Dimension = new OrderedItemList<int>(arrayParameter) { 3, 2 };
+
+            var simpleQuantityKind = new SimpleQuantityKind()
+            {
+                Name = "aSimpleQuantity",
+                PossibleScale = { this.scale },
+                DefaultScale = this.scale
+            };
+
+            for (var i = 0; i < 6; i++)
+            {
+                arrayParameter.Component.Add(new ParameterTypeComponent()
+                {
+                    ParameterType = simpleQuantityKind,
+                    Scale = this.scale
+                });
+            }
+
+            var parameter = new Parameter()
+            {
+                Iid = new Guid(),
+                ParameterType = arrayParameter,
+                Container = new ElementDefinition(new Guid(), null, null),
+                ValueSet = { new ParameterValueSet() }
+            };
+
+            var arrayValue = new object[3, 2];
+
+            for (var i = 0; i < arrayValue.GetLength(0); i++)
+            {
+                for (var j = 0; j < arrayValue.GetLength(1); j++)
+                {
+                    arrayValue.SetValue(i + j + 1, i, j);
+                }
+            }
+
+            var variable = new MatlabWorkspaceRowViewModel("a", arrayValue);
+
+            variable.UnwrapVariableRowViewModels();
+            Assert.DoesNotThrow(() => this.rule.UpdateValueSet(variable, parameter));
+            Assert.AreEqual("1", parameter.ValueSet.First().Computed.First());
+            Assert.AreEqual(6, parameter.ValueSet.First().Computed.Count());
         }
     }
 }

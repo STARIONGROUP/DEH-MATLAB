@@ -1,5 +1,5 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="UpdateDstPreviewBasedOnSelectionEvent.cs" company="RHEA System S.A.">
+// <copyright file="RowColumnSelection.cs" company="RHEA System S.A.">
 // Copyright (c) 2020-2022 RHEA System S.A.
 // 
 // Author: Sam Gerené, Alex Vorobiev, Alexander van Delft, Nathanael Smiechowski, Antoine Théate.
@@ -22,30 +22,21 @@
 // </copyright>
 // --------------------------------------------------------------------------------------------------------------------
 
-namespace DEHPMatlab.Events
+namespace DEHPMatlab.Enumerator
 {
-    using System.Collections.Generic;
-
-    using CDP4Dal;
-
-    using DEHPCommon.Events;
-    using DEHPCommon.UserInterfaces.ViewModels.Rows.ElementDefinitionTreeRows;
-
-    using DEHPMatlab.ViewModel.NetChangePreview.Interfaces;
-
     /// <summary>
-    /// Event for the <see cref="CDPMessageBus"/>
+    /// The <see cref="RowColumnSelection"/> represents if the independant and dependant parameter are stored into columns or rows
     /// </summary>
-    public class UpdateDstPreviewBasedOnSelectionEvent : UpdatePreviewBasedOnSelectionBaseEvent<object, IDstNetChangePreviewViewModel>
+    public enum RowColumnSelection
     {
         /// <summary>
-        /// Initializes a new <see cref="UpdateDstVariableTreeEvent" />
+        /// Define that the independent and dependant parameter type are stored in differents columns
         /// </summary>
-        /// <param name="things">The collection of <see cref="ElementDefinitionRowViewModel"/> selection</param>
-        /// <param name="target">The target <see cref="T:System.Type" /></param>
-        /// <param name="reset">a value indicating whether the listener should reset its tree</param>
-        public UpdateDstPreviewBasedOnSelectionEvent(IEnumerable<object> things, IDstNetChangePreviewViewModel target, bool reset) : base(things, target, reset)
-        {
-        }
+        Column,
+
+        /// <summary>
+        /// Define that the independent and dependant parameter type are stored in differents rows
+        /// </summary>
+        Row
     }
 }

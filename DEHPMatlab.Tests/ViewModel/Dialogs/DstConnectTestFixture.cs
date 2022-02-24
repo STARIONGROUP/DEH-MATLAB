@@ -24,27 +24,51 @@
 
 namespace DEHPMatlab.Tests.ViewModel.Dialogs
 {
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Reactive.Concurrency;
+
+    using CDP4Common.EngineeringModelData;
+
+    using DEHPCommon.HubController.Interfaces;
     using DEHPCommon.UserInterfaces.Behaviors;
 
     using DEHPMatlab.DstController;
+    using DEHPMatlab.Services.MappingConfiguration;
     using DEHPMatlab.ViewModel.Dialogs;
 
     using Moq;
 
     using NUnit.Framework;
 
+    using ReactiveUI;
+
     [TestFixture]
     public class DstConnectTestFixture
     {
         private DstConnectViewModel viewModel;
         private Mock<IDstController> dstController;
+        private Mock<IMappingConfigurationService> mappingConfiguration;
+        private Mock<IHubController> hubController;
 
         [SetUp]
         public void Setup()
         {
+            RxApp.MainThreadScheduler = Scheduler.CurrentThread;
             this.dstController = new Mock<IDstController>();
 
-            this.viewModel = new DstConnectViewModel(this.dstController.Object);
+            this.mappingConfiguration = new Mock<IMappingConfigurationService>();
+
+            this.hubController = new Mock<IHubController>();
+
+            this.hubController.Setup(x => x.AvailableExternalIdentifierMap(It.IsAny<string>())).Returns(new List<ExternalIdentifierMap>()
+            {
+                new(), 
+                new(), 
+                new()
+            });
+
+            this.viewModel = new DstConnectViewModel(this.dstController.Object, this.mappingConfiguration.Object, this.hubController.Object);
         }
 
         [Test]
@@ -60,6 +84,8 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
             Assert.IsTrue(string.IsNullOrEmpty(this.viewModel.ErrorMessageText));
             Assert.AreEqual("Matlab R2014b", this.viewModel.MatlabVersionDictionary["Matlab.Application.8.4"]);
             Assert.AreEqual("Matlab R2021b", this.viewModel.MatlabVersionDictionary["Matlab.Application.9.11"]);
+            Assert.IsFalse(this.viewModel.CreateNewMappingConfigurationChecked);
+            Assert.IsTrue(string.IsNullOrWhiteSpace(this.viewModel.ExternalIdentifierMapNewName));
         }
 
         [Test]
@@ -72,6 +98,22 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
             this.dstController.Setup(x => x.IsSessionOpen).Returns(true);
             Assert.DoesNotThrowAsync(async () => await this.viewModel.ConnectCommand.ExecuteAsyncTask());
             this.dstController.Verify(x => x.Connect("Matlab.Autoserver"), Times.Exactly(2));
+        }
+
+        [Test]
+        public void VerifySpecifyExternalIdentifierMap()
+        {
+            Assert.IsFalse(this.viewModel.ConnectCommand.CanExecute(null));
+            this.viewModel.ExternalIdentifierMapNewName = "AName";
+            Assert.IsTrue(this.viewModel.CreateNewMappingConfigurationChecked);
+            Assert.IsTrue(this.viewModel.ConnectCommand.CanExecute(null));
+            this.viewModel.ExternalIdentifierMapNewName = "AnOtherName";
+            this.viewModel.CreateNewMappingConfigurationChecked = false;
+            Assert.IsTrue(string.IsNullOrWhiteSpace(this.viewModel.ExternalIdentifierMapNewName));
+            this.viewModel.ExternalIdentifierMapNewName = "AnOtherName";
+            this.viewModel.SelectedExternalIdentifierMap = this.viewModel.AvailableExternalIdentifierMap.First();
+            Assert.IsTrue(string.IsNullOrWhiteSpace(this.viewModel.ExternalIdentifierMapNewName));
+            Assert.IsFalse(this.viewModel.CreateNewMappingConfigurationChecked);
         }
     }
 }

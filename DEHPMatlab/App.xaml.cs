@@ -38,6 +38,7 @@ namespace DEHPMatlab
     using DEHPCommon.UserInterfaces.ViewModels.Interfaces;
 
     using DEHPMatlab.DstController;
+    using DEHPMatlab.Services.MappingConfiguration;
     using DEHPMatlab.Services.MatlabConnector;
     using DEHPMatlab.Services.MatlabParser;
     using DEHPMatlab.ViewModel;
@@ -120,6 +121,7 @@ namespace DEHPMatlab
             containerBuilder.RegisterType<DstController.DstController>().As<IDstController>().SingleInstance();
             containerBuilder.RegisterType<MatlabParser>().As<IMatlabParser>().SingleInstance();
             containerBuilder.RegisterType<MappingEngine>().As<IMappingEngine>().WithParameter(MappingEngine.ParameterName, Assembly.GetExecutingAssembly());
+            containerBuilder.RegisterType<MappingConfigurationService>().As<IMappingConfigurationService>().SingleInstance();
         }
 
         /// <summary>

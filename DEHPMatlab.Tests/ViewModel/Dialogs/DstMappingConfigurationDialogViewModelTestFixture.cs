@@ -43,6 +43,7 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
     using DEHPCommon.UserInterfaces.ViewModels.Interfaces;
 
     using DEHPMatlab.DstController;
+    using DEHPMatlab.Enumerator;
     using DEHPMatlab.ViewModel.Dialogs;
     using DEHPMatlab.ViewModel.Row;
     using DEHPMatlab.Views.Dialogs;
@@ -69,6 +70,11 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
         private MeasurementScale scale;
         private SampledFunctionParameterType scalarParameterType;
         private SampledFunctionParameterType parameterType;
+        private ElementDefinition elementDefinition;
+        private Parameter parameter;
+        private Option option;
+        private ActualFiniteState state;
+        private ElementUsage elementUsage;
 
         [SetUp]
         public void Setup()
@@ -165,6 +171,26 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
             this.hubController.Setup(x => x.CurrentDomainOfExpertise).Returns(this.domain);
             this.hubController.Setup(x => x.GetSiteDirectory()).Returns(new SiteDirectory());
 
+            this.elementDefinition = new ElementDefinition(Guid.NewGuid(), null, null);
+            var elementDefinitionAsThing = (Thing) this.elementDefinition;
+            this.hubController.Setup(x => x.GetThingById(this.elementDefinition.Iid, this.iteration, out elementDefinitionAsThing)).Returns(true);
+
+            this.parameter = new Parameter(Guid.NewGuid(), null, null);
+            var parameterAsThing = (Thing) this.parameter;
+            this.hubController.Setup(x => x.GetThingById(this.parameter.Iid, this.iteration, out parameterAsThing)).Returns(true);
+
+            this.option = new Option(Guid.NewGuid(), null, null);
+            var optionAsThing = (Thing) this.option;
+            this.hubController.Setup(x => x.GetThingById(this.option.Iid, this.iteration, out optionAsThing)).Returns(true);
+
+            this.state = new ActualFiniteState(Guid.NewGuid(), null, null);
+            var stateAsThing = (Thing) this.state;
+            this.hubController.Setup(x => x.GetThingById(this.state.Iid, this.iteration, out stateAsThing)).Returns(true);
+
+            this.elementUsage = new ElementUsage(Guid.NewGuid(), null, null);
+            var elementUsageAsThing = (Thing) this.elementUsage;
+            this.hubController.Setup(x => x.GetThingById(this.elementUsage.Iid, this.iteration, out elementUsageAsThing)).Returns(true);
+
             this.navigationService = new Mock<INavigationService>();
             this.navigationService.Setup(x => x.ShowDxDialog<MappingValidationErrorDialog>()).Returns(false);
 
@@ -181,7 +207,8 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
 
             this.viewModel.Variables.Add(new MatlabWorkspaceRowViewModel("aVariable", 4.54d)
             {
-                SelectedParameterType = this.scalarParameterType
+                SelectedParameterType = this.scalarParameterType,
+                Identifier = "a-a"
             });
         }
 
@@ -193,6 +220,8 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
             Assert.IsFalse(this.viewModel.IsBusy);
             Assert.IsNotNull(this.viewModel.CloseWindowBehavior);
             Assert.IsNotNull(this.viewModel.ContinueCommand);
+            Assert.IsNotNull(this.viewModel.RowColumnValues);
+            Assert.AreEqual(2,this.viewModel.RowColumnValues.Count);
         }
 
         [Test]
@@ -366,7 +395,7 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
                 }
             };
 
-            var elementUsage = new ElementUsage(Guid.NewGuid(), null, null)
+            var elementUsage2 = new ElementUsage(Guid.NewGuid(), null, null)
             {
                 ElementDefinition = element0,
                 ParameterOverride =
@@ -388,7 +417,7 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
                 }
             };
 
-            element0.ContainedElement.Add(elementUsage);
+            element0.ContainedElement.Add(elementUsage2);
             this.iteration.Element.Add(element0);
 
             variable.SelectedElementDefinition = element0;
@@ -403,6 +432,202 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
 
             this.viewModel.SelectedThing = variable;
             Assert.DoesNotThrow(() => this.viewModel.UpdateAvailableElementsUsages());
+        }
+
+        [Test]
+        public void VerifyUpdatePropertiesBasedOnMappingConfiguration()
+        {
+            var correspondences = new List<IdCorrespondence>
+            {
+                new () { ExternalId = "a-a", InternalThing = this.elementDefinition.Iid },
+                new () { ExternalId = "a-a", InternalThing = this.parameter.Iid },
+                new () { ExternalId = "a-a", InternalThing = this.option.Iid },
+                new () { ExternalId = "a-a", InternalThing = this.state.Iid },
+                new () { ExternalId = "a-a", InternalThing = this.elementUsage.Iid },
+                new () { ExternalId = "a-a", InternalThing = this.domain.Iid },
+            };
+
+            this.viewModel.AvailableElementDefinitions.Add(new ElementDefinition()
+            {
+                ContainedElement = { this.elementUsage },
+                Parameter = { this.parameter }
+            });
+
+            foreach (var variable in this.viewModel.Variables)
+            {
+                variable.MappingConfigurations.AddRange(
+                    correspondences.Where(
+                        x => x.ExternalId == variable.Identifier));
+            }
+
+            Assert.DoesNotThrow(() => this.viewModel.UpdatePropertiesBasedOnMappingConfiguration());
+            this.hubController.Verify(x => x.GetThingById(It.IsAny<Guid>(), It.IsAny<Iteration>(), out It.Ref<Thing>.IsAny), Times.Exactly(6));
+        }
+
+        [Test]
+        public void VerifySelectedThingWithArrayValue()
+        {
+            var array = new double[3, 2];
+
+            for (var i = 0; i < array.GetLength(0); i++)
+            {
+                for (var j = 0; j < array.GetLength(1); j++)
+                {
+                    array.SetValue(i + j+1, i, j);
+                }
+            }
+
+            var variable = new MatlabWorkspaceRowViewModel("aName", array);
+            Assert.IsEmpty(variable.SampledFunctionParameterParameterAssignementRows);
+
+            variable.UnwrapVariableRowViewModels();
+            Assert.AreEqual(2, variable.SampledFunctionParameterParameterAssignementRows.Count);
+            Assert.AreEqual(RowColumnSelection.Column, variable.RowColumnSelection);
+            Assert.IsFalse(variable.SampledFunctionParameterParameterAssignementRows.First().IsDependantParameter);
+            Assert.AreEqual(1, variable.SampledFunctionParameterParameterAssignementRows.Last().Index);
+
+            variable.RowColumnSelection = RowColumnSelection.Row;
+            Assert.AreEqual(3, variable.SampledFunctionParameterParameterAssignementRows.Count);
+
+            this.viewModel.Variables.Add(variable);
+            this.viewModel.SelectedThing = variable;
+            Assert.AreEqual(0, this.viewModel.AvailableParameterTypes.Count);
+
+            var sfpt = new SampledFunctionParameterType()
+            {
+                Name = "TextXQuantity",
+                IndependentParameterType =
+                {
+                    new IndependentParameterTypeAssignment()
+                    {
+                        ParameterType = new SimpleQuantityKind()
+                        {
+                            Name = "IndependentText",
+                            DefaultScale = this.scale,
+                            PossibleScale = { this.scale },
+                        }, 
+                        MeasurementScale = this.scale
+                    }
+                },
+
+                DependentParameterType =
+                {
+                    new DependentParameterTypeAssignment()
+                    {
+                        ParameterType = new SimpleQuantityKind()
+                        {
+                            Name = "DependentQuantityKing",
+                            DefaultScale = this.scale,
+                            PossibleScale = { this.scale }
+                        },
+                        MeasurementScale = this.scale
+                    },
+                    new DependentParameterTypeAssignment()
+                    {
+                        ParameterType = new SimpleQuantityKind()
+                        {
+                            Name = "DependentQuantityKing2",
+                            DefaultScale = this.scale,
+                            PossibleScale = { this.scale }
+                        },
+                        MeasurementScale = this.scale
+                    }
+                }
+            };
+
+            var simpleQuantityKind = new SimpleQuantityKind()
+            {
+                Name = "aSimpleQuantity",
+                PossibleScale = { this.scale },
+                DefaultScale = this.scale
+            };
+
+            var arrayParameter = new ArrayParameterType()
+            {
+                Name = "Array3x2",
+                ShortName = "array3x2",
+            };
+
+            arrayParameter.Dimension = new OrderedItemList<int>(arrayParameter) { 3, 2 };
+
+            for (var i = 0; i < 6; i++)
+            {
+                arrayParameter.Component.Add(new ParameterTypeComponent()
+                {
+                    ParameterType = simpleQuantityKind,
+                    Scale = this.scale
+                });
+            }
+
+            this.modelReferenceDataLibrary.ParameterType.Add(sfpt);
+            Assert.DoesNotThrow(() => this.viewModel.UpdateAvailableParameterType());
+
+            this.viewModel.SelectedThing = null;
+            Assert.DoesNotThrow(() => this.viewModel.UpdateAvailableParameterType());
+
+            this.modelReferenceDataLibrary.ParameterType.Add(arrayParameter);
+            Assert.DoesNotThrow(() => this.viewModel.UpdateAvailableParameterType());
+
+            this.viewModel.SelectedThing = variable;
+            Assert.DoesNotThrow(() => this.viewModel.UpdateAvailableParameterType());
+
+            Assert.AreEqual(2, this.viewModel.AvailableParameterTypes.Count);
+
+            array = new double[1, 3];
+
+            for (var i = 0; i < array.GetLength(0); i++)
+            {
+                for (var j = 0; j < array.GetLength(1); j++)
+                {
+                    array.SetValue(i + j + 1, i, j);
+                }
+            }
+
+            variable.ActualValue = array;
+            variable.UnwrapVariableRowViewModels();
+
+            Assert.DoesNotThrow(() => this.viewModel.UpdateAvailableParameterType());
+            Assert.AreEqual(0, this.viewModel.AvailableParameterTypes.Count);
+
+            variable.ActualValue = 5;
+            variable.UnwrapVariableRowViewModels();
+
+            variable.SelectedParameterType = sfpt;
+            Assert.IsFalse(variable.IsValid());
+
+            variable.SelectedParameterType = arrayParameter;
+            Assert.IsFalse(variable.IsValid());
+
+            variable.ActualValue = array;
+            variable.UnwrapVariableRowViewModels();
+
+            arrayParameter.Component.Clear();
+
+            for (var i = 0; i < 5; i++)
+            {
+                arrayParameter.Component.Add(new ParameterTypeComponent()
+                {
+                    ParameterType = simpleQuantityKind,
+                    Scale = this.scale
+                });
+            }
+
+            arrayParameter.Component.Add((new ParameterTypeComponent()
+            {
+                ParameterType = this.scalarParameterType,
+                Scale = this.scale
+            }));
+
+            Assert.IsFalse(variable.IsValid());
+
+            arrayParameter.Dimension = new OrderedItemList<int>(arrayParameter) { 1, 1, 1 };
+            Assert.IsFalse(variable.IsValid());
+
+            sfpt.DependentParameterType.First().MeasurementScale = null;
+            variable.ActualValue = array;
+            variable.UnwrapVariableRowViewModels();
+            variable.RowColumnSelection = RowColumnSelection.Column;
+            Assert.IsFalse(variable.IsValid());
         }
     }
 }

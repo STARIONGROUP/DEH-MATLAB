@@ -37,10 +37,14 @@ namespace DEHPMatlab.MappingRules
     using CDP4Common.Types;
 
     using DEHPCommon;
+    using DEHPCommon.Enumerators;
     using DEHPCommon.HubController.Interfaces;
     using DEHPCommon.MappingEngine;
     using DEHPCommon.MappingRules.Core;
 
+    using DEHPMatlab.Enumerator;
+    using DEHPMatlab.Extensions;
+    using DEHPMatlab.Services.MappingConfiguration;
     using DEHPMatlab.ViewModel.Row;
 
     using NLog;
@@ -49,7 +53,8 @@ namespace DEHPMatlab.MappingRules
     /// The <see cref="MatlabWorkspaceRowViewModel"/> is a <see cref="IMappingRule"/> for the <see cref="MappingEngine"/>
     /// That takes a <see cref="List{T}"/> of <see cref="MatlabWorkspaceRowViewModel"/> as input and outputs a E-TM-10-25 <see cref="ElementDefinition"/>
     /// </summary>
-    public class MatlabVariableToElementDefinitionRule : MappingRule<List<MatlabWorkspaceRowViewModel>, (Dictionary<ParameterOrOverrideBase, MatlabWorkspaceRowViewModel> parameterVariable, List<ElementBase> elements)>
+    public class MatlabVariableToElementDefinitionRule : MappingRule<List<MatlabWorkspaceRowViewModel>, 
+        (Dictionary<ParameterOrOverrideBase, MatlabWorkspaceRowViewModel> parameterVariable, List<ElementBase> elements)>
     {
         /// <summary>
         /// The current class logger
@@ -60,6 +65,11 @@ namespace DEHPMatlab.MappingRules
         /// The <see cref="IHubController"/>
         /// </summary>
         private readonly IHubController hubController = AppContainer.Container.Resolve<IHubController>();
+
+        /// <summary>
+        /// The <see cref="IMappingConfigurationService"/>
+        /// </summary>
+        private IMappingConfigurationService mappingConfigurationService;
 
         /// <summary>
         /// Holds a <see cref="Dictionary{TKey,TValue}"/> of <see cref="ParameterOrOverrideBase"/> and <see cref="MatlabWorkspaceRowViewModel"/>
@@ -80,6 +90,8 @@ namespace DEHPMatlab.MappingRules
         {
             try
             {
+                this.mappingConfigurationService = AppContainer.Container.Resolve<IMappingConfigurationService>();
+
                 this.owner = this.hubController.CurrentDomainOfExpertise;
                 this.parameterNodeIdIdentifier.Clear();
 
@@ -100,6 +112,9 @@ namespace DEHPMatlab.MappingRules
                         }
 
                         this.AddValueSetToSelectedParameter(matlabVariable);
+
+                        this.mappingConfigurationService.AddToExternalIdentifierMap(matlabVariable.SelectedElementDefinition.Iid,
+                            matlabVariable.Identifier, MappingDirection.FromDstToHub);
                     }
                 }
 
@@ -185,7 +200,7 @@ namespace DEHPMatlab.MappingRules
             foreach (var elementUsage in matlabVariable.SelectedElementUsages)
             {
                 if (matlabVariable.SelectedParameter is { } parameter
-                    && elementUsage.ParameterOverride.First(x => x.Parameter.Iid == parameter.Iid) is { } parameterOverride)
+                    && elementUsage.ParameterOverride.FirstOrDefault(x => x.Parameter.Iid == parameter.Iid) is { } parameterOverride)
                 {
                     this.UpdateValueSet(matlabVariable, parameterOverride);
                     this.parameterNodeIdIdentifier[parameterOverride] = matlabVariable;
@@ -201,8 +216,93 @@ namespace DEHPMatlab.MappingRules
         public void UpdateValueSet(MatlabWorkspaceRowViewModel matlabVariable, ParameterBase parameter)
         {
             var valueSet = (ParameterValueSetBase)parameter.QueryParameterBaseValueSet(matlabVariable.SelectedOption, matlabVariable.SelectedActualFiniteState);
-            valueSet.Computed = new ValueArray<string>(new[] { FormattableString.Invariant($"{matlabVariable.ActualValue}") });
+
+            switch (parameter.ParameterType)
+            {
+                case SampledFunctionParameterType sampledFunction when sampledFunction.Validate(matlabVariable.ArrayValue,
+                    matlabVariable.RowColumnSelection, matlabVariable.SampledFunctionParameterParameterAssignementRows.ToList()):
+                    this.AssignNewValues(matlabVariable, valueSet);
+                    break;
+                case ArrayParameterType arrayParameter when arrayParameter.Validate(matlabVariable.ArrayValue, matlabVariable.SelectedScale):
+                    this.AssignNewValuesToArray(matlabVariable, valueSet);
+                    break;
+                default:
+                    valueSet.Computed = new ValueArray<string>(new[] { FormattableString.Invariant($"{matlabVariable.ActualValue}") });
+                    break;
+            }
+
             valueSet.ValueSwitch = ParameterSwitchKind.COMPUTED;
+
+            this.AddParameterToExternalIdentifierMap(parameter, matlabVariable);
+        }
+
+        /// <summary>
+        /// Assigns the new values the <paramref name="valueSet"/> in case of <see cref="SampledFunctionParameterType"/>
+        /// </summary>
+        /// <param name="matlabVariable">The <see cref="MatlabWorkspaceRowViewModel"/></param>
+        /// <param name="valueSet">The <see cref="IValueSet"/> to update</param>
+        private void AssignNewValues(MatlabWorkspaceRowViewModel matlabVariable, ParameterValueSetBase valueSet)
+        {
+            if (matlabVariable.ArrayValue is not Array arrayValue)
+            {
+                return;
+            }
+
+            var values = new List<string>();
+
+            var lengthToProcess = matlabVariable.RowColumnSelection == RowColumnSelection.Column ? arrayValue.GetLength(0) : arrayValue.GetLength(1);
+
+            var independants = matlabVariable.SampledFunctionParameterParameterAssignementRows
+                .Where(x => !x.IsDependantParameter).ToList();
+
+            var dependants = matlabVariable.SampledFunctionParameterParameterAssignementRows
+                .Where(x => x.IsDependantParameter).ToList();
+
+            var indexOrder = independants.Select(independant => independant.Index).ToList();
+
+            indexOrder.AddRange(dependants.Select(x => x.Index));
+
+            for (var lengthIndex = 0; lengthIndex < lengthToProcess; lengthIndex++)
+            {
+                foreach (var index in indexOrder)
+                {
+                    var valueToAdd = matlabVariable.RowColumnSelection == RowColumnSelection.Column ? arrayValue.GetValue(lengthIndex, index): arrayValue.GetValue(index, lengthIndex);
+                    values.Add(FormattableString.Invariant($"{valueToAdd}"));
+                }
+            }
+
+            if (values.Any())
+            {
+                valueSet.Computed = new ValueArray<string>(values);
+            }
+        }
+
+        /// <summary>
+        /// Assigns the new values the <paramref name="valueSet"/> in case of <see cref="ArrayParameterType"/>
+        /// </summary>
+        /// <param name="matlabVariable">The <see cref="MatlabWorkspaceRowViewModel"/></param>
+        /// <param name="valueSet">The <see cref="IValueSet"/> to update</param>
+        private void AssignNewValuesToArray(MatlabWorkspaceRowViewModel matlabVariable, ParameterValueSetBase valueSet)
+        {
+            if (matlabVariable.ArrayValue is not Array arrayValue)
+            {
+                return;
+            }
+
+            var values = new List<string>();
+
+            for (var rowIndex = 0; rowIndex < arrayValue.GetLength(0); rowIndex++)
+            {
+                for (var columnIndex = 0; columnIndex < arrayValue.GetLength(1); columnIndex++)
+                {
+                    values.Add(FormattableString.Invariant($"{arrayValue.GetValue(rowIndex,columnIndex)}"));
+                }
+            }
+
+            if (values.Any())
+            {
+                valueSet.Computed = new ValueArray<string>(values);
+            }
         }
 
         /// <summary>
@@ -217,6 +317,26 @@ namespace DEHPMatlab.MappingRules
 
             initialize?.Invoke(tThingInstance);
             return tThingInstance;
+        }
+
+        /// <summary>
+        /// Adds the <see cref="Parameter"/> and its mapped <see cref="Option"/> and mapped <see cref="ActualFiniteState"/>
+        /// </summary>
+        /// <param name="parameter">The <see cref="Parameter"/></param>
+        /// <param name="matlabVariable">The external identifier: the variable name</param>
+        private void AddParameterToExternalIdentifierMap(ParameterBase parameter, MatlabWorkspaceRowViewModel matlabVariable)
+        {
+            if (parameter.IsOptionDependent)
+            {
+                this.mappingConfigurationService.AddToExternalIdentifierMap(
+                    matlabVariable.SelectedOption.Iid, matlabVariable.Identifier, MappingDirection.FromDstToHub);
+            }
+
+            if (parameter.StateDependence is { })
+            {
+                this.mappingConfigurationService.AddToExternalIdentifierMap(
+                    matlabVariable.SelectedActualFiniteState.Iid, matlabVariable.Identifier, MappingDirection.FromDstToHub);
+            }
         }
     }
 }
