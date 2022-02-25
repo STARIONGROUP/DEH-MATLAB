@@ -192,6 +192,8 @@ invalidUnaryPrefix = --TA;
 
 validUnaryPrefix = --47;
 
+invalidBinary = [-47 --TA];
+invalidBinary = [-47 --15];
 array1 = [0 1 2 3]
 array2 = [0,1,2,3]
 array3 = [0 -2 -5 6]

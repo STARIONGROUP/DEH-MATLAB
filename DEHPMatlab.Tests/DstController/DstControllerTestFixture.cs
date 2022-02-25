@@ -183,7 +183,7 @@ namespace DEHPMatlab.Tests.DstController
             this.dstController.MatlabWorkspaceInputRowViewModels.Add(new MatlabWorkspaceRowViewModel("RE", 0.5));
             this.dstController.LoadScript(Path.Combine(TestContext.CurrentContext.TestDirectory, "Resources", "GNC_Lab4.m"));
             Assert.IsTrue(this.dstController.IsScriptLoaded);
-            Assert.AreEqual(79, this.dstController.MatlabWorkspaceInputRowViewModels.Count);
+            Assert.AreEqual(82, this.dstController.MatlabWorkspaceInputRowViewModels.Count);
 
             Assert.AreEqual(-6370, this.dstController.MatlabWorkspaceInputRowViewModels
                 .First(x => x.Name == "RE").ActualValue);
@@ -208,7 +208,7 @@ namespace DEHPMatlab.Tests.DstController
             this.matlabConnector.Verify(x => x.ExecuteFunction(It.IsAny<string>()), Times.Exactly(3));
 
             this.matlabConnector.Verify(x => x.PutVariable(It.IsAny<MatlabWorkspaceRowViewModel>()),
-                Times.Exactly(26));
+                Times.Exactly(27));
 
             Assert.DoesNotThrow(() => this.dstController.UnloadScript());
             Assert.IsTrue(string.IsNullOrEmpty(this.dstController.LoadedScriptName));

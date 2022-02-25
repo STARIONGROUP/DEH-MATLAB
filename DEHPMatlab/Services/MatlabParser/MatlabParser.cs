@@ -91,12 +91,9 @@ namespace DEHPMatlab.Services.MatlabParser
 
             var childrenNodes = children.Where(x => x.IsNode).ToList();
 
-            if (childrenNodes.Any())
+            if (childrenNodes.Any() && childrenNodes.First().AsNode()!.Kind != TokenKind.IdentifierNameExpression)
             {
-                if (childrenNodes.First().AsNode()!.Kind != TokenKind.IdentifierNameExpression)
-                {
-                    return false;
-                }
+                return false;
             }
 
             var arrayAssignment = childrenNodes.Where(x => x.AsNode()!.Kind == TokenKind.ArrayLiteralExpression).ToList();
@@ -274,7 +271,7 @@ namespace DEHPMatlab.Services.MatlabParser
         /// <returns></returns>
         private double[,] GetArrayLiteralValue(SyntaxNode node, bool mustBeInverted)
         {
-            var charsToRemove = new[] { '[', ']', '\'' };
+            var charsToRemove = new[] { "[", "]", "\'", "--" };
 
             var stringToParse = charsToRemove.Aggregate(node.Text, (current, charToRemove) => current.Replace(charToRemove.ToString(), string.Empty));
 

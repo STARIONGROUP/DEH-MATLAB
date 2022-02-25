@@ -400,7 +400,7 @@ namespace DEHPMatlab.ViewModel.Row
 
                 this.RowColumnSelection = array.GetLength(0) < array.GetLength(1) ? RowColumnSelection.Row : RowColumnSelection.Column;
 
-                this.ActualValue = $"[{array.GetLength(0)}x{array.GetLength(1)}] matrices of {array.GetValue(0, 0).GetType().Name}";
+                this.ActualValue = $"[{array.GetLength(0)}x{array.GetLength(1)}] matrix of {array.GetValue(0, 0).GetType().Name}";
 
                 this.InitialValue ??= this.ActualValue;
             }
