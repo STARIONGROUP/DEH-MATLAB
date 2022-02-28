@@ -307,8 +307,15 @@ namespace DEHPMatlab.DstController
             this.MatlabAllWorkspaceRowViewModels.Clear();
             this.MatlabWorkspaceInputRowViewModels.Clear();
 
-            List<MatlabWorkspaceRowViewModel> detectedInputs = this.matlabParser.ParseMatlabScript(scriptPath,
+            List<MatlabWorkspaceRowViewModel> detectedInputsWrapped = this.matlabParser.ParseMatlabScript(scriptPath,
                 out this.loadedScriptPath);
+
+            List<MatlabWorkspaceRowViewModel> detectedInputs = new();
+
+            foreach (var matlabWorkspaceRowViewModel in detectedInputsWrapped)
+            {
+                detectedInputs.AddRange(matlabWorkspaceRowViewModel.UnwrapVariableRowViewModels());
+            }
 
             this.LoadedScriptName = Path.GetFileName(scriptPath);
             this.IsScriptLoaded = true;
@@ -316,9 +323,10 @@ namespace DEHPMatlab.DstController
             foreach (var detectedInput in detectedInputs)
             {
                 detectedInput.Identifier = $"{this.LoadedScriptName}-{detectedInput.Name}";
-                this.MatlabWorkspaceInputRowViewModels.Add(detectedInput);
                 this.matlabVariableNames.Add(detectedInput.Name);
             }
+
+            this.MatlabWorkspaceInputRowViewModels.AddRange(detectedInputs);
 
             this.LoadMapping();
         }
@@ -599,7 +607,7 @@ namespace DEHPMatlab.DstController
 
             foreach (var matlabWorkspaceInputRowViewModel in this.MatlabWorkspaceInputRowViewModels)
             {
-                if (this.IsSessionOpen)
+                if (this.IsSessionOpen && string.IsNullOrEmpty(matlabWorkspaceInputRowViewModel.ParentName))
                 {
                     Task.Run(() => this.matlabConnector.PutVariable(matlabWorkspaceInputRowViewModel));
                 }
@@ -670,7 +678,7 @@ namespace DEHPMatlab.DstController
             this.WhenAnyValue(x => x.matlabConnector.MatlabConnectorStatus)
                 .Subscribe(this.WhenMatlabConnectionStatusChange);
 
-            this.WhenAnyValue(x => x.MatlabWorkspaceInputRowViewModels.Count)
+            this.MatlabWorkspaceInputRowViewModels.CountChanged
                 .Subscribe(_ => this.UploadMatlabInputs());
 
             this.MatlabWorkspaceInputRowViewModels.ItemChanged
@@ -872,7 +880,28 @@ namespace DEHPMatlab.DstController
                 sender.ActualValue = valueAsDouble;
             }
 
-            this.matlabConnector.PutVariable(sender);
+            if (string.IsNullOrEmpty(sender.ParentName))
+            {
+                this.matlabConnector.PutVariable(sender);
+            }
+            else
+            {
+                var parentRowViewModel = this.MatlabWorkspaceInputRowViewModels.First(x => x.Name == sender.ParentName);
+                var rowIndex = sender.Index[0];
+                var columnIndex = sender.Index[1];
+
+                try
+                {
+                    ((Array)parentRowViewModel.ArrayValue).SetValue(sender.ActualValue, rowIndex, columnIndex);
+                }
+                catch (Exception)
+                {
+                    this.statusBar.Append($"The type of the value '{sender.ActualValue}' is not compatible", StatusBarMessageSeverity.Warning);
+                    sender.ActualValue = ((Array) parentRowViewModel.ArrayValue).GetValue(rowIndex, columnIndex);
+                }
+
+                this.matlabConnector.PutVariable(parentRowViewModel);
+            }
 
             this.IsBusy = false;
         }

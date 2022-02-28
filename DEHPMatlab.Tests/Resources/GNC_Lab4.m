@@ -2,7 +2,7 @@
 %% TASK 1
 
 % Constants 
-RE = 6370;mu = 398600;h_A = 6000;h_B = 15000;
+RE = - 6370;mu = 398600;h_A = 6000;h_B = 15000;
 
 % Initial values
  %Altitude of spacecraft A in km
@@ -186,6 +186,23 @@ subplot(3,1,3)
 plot(t,a(3,:))
 xlabel('Time [s]')
 ylabel('a_z [m/s^2]')
+
+
+invalidUnaryPrefix = --TA;
+
+validUnaryPrefix = --47;
+
+invalidBinary = [-47 --TA];
+invalidBinary = [-47 --15];
+array1 = [0 1 2 3]
+array2 = [0,1,2,3]
+array3 = [0 -2 -5 6]
+array4 = [0,-2 -5,-6]
+array5 = [0 -2 -5 6]'
+array6 = [0,-2,-5,-6]'
+array7 = [0 5 -5 -5; 0 5 -5 -5; 0 5 -5 -5]
+array8 = [0 5 -5 -5; 0 5 -5 -5; 0 5 -5 -5]'
+array9 = [-5 -5 -5 -6 -TA]
 
 
 

@@ -7,6 +7,7 @@
              xmlns:dx="http://schemas.devexpress.com/winfx/2008/xaml/core"
              xmlns:dxmvvm="http://schemas.devexpress.com/winfx/2008/xaml/mvvm"
              xmlns:behaviors="clr-namespace:DEHPCommon.UserInterfaces.Behaviors;assembly=DEHPCommon"
+             xmlns:behaviors1="clr-namespace:DEHPMatlab.Behaviors"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800" >
     <UserControl.Resources>
@@ -26,6 +27,9 @@
             </Grid.RowDefinitions>
             <TextBlock Grid.Row="0" FontSize="12" FontWeight="Black" Text="Inputs" Margin="4"/>
             <dxg:TreeListControl Grid.Row="1" ItemsSource="{Binding InputVariables}">
+                <dxmvvm:Interaction.Behaviors>
+                    <behaviors1:TreeListEditableColumnBehavior/>
+                </dxmvvm:Interaction.Behaviors>
                 <dxg:TreeListControl.View>
                     <dxg:TreeListView Name="InputVariable"
                                       AllowEditing="False"

@@ -183,9 +183,9 @@ namespace DEHPMatlab.Tests.DstController
             this.dstController.MatlabWorkspaceInputRowViewModels.Add(new MatlabWorkspaceRowViewModel("RE", 0.5));
             this.dstController.LoadScript(Path.Combine(TestContext.CurrentContext.TestDirectory, "Resources", "GNC_Lab4.m"));
             Assert.IsTrue(this.dstController.IsScriptLoaded);
-            Assert.AreEqual(6, this.dstController.MatlabWorkspaceInputRowViewModels.Count);
+            Assert.AreEqual(82, this.dstController.MatlabWorkspaceInputRowViewModels.Count);
 
-            Assert.AreEqual(6370, this.dstController.MatlabWorkspaceInputRowViewModels
+            Assert.AreEqual(-6370, this.dstController.MatlabWorkspaceInputRowViewModels
                 .First(x => x.Name == "RE").ActualValue);
 
             this.dstController.MatlabAllWorkspaceRowViewModels.Add(new MatlabWorkspaceRowViewModel("a", 45));
@@ -194,13 +194,21 @@ namespace DEHPMatlab.Tests.DstController
             Assert.AreEqual(45, this.dstController.MatlabAllWorkspaceRowViewModels
                 .First(x => x.Name == "a").ActualValue);
 
+            var arrayVariableElement = this.dstController.MatlabAllWorkspaceRowViewModels.First(x => !string.IsNullOrEmpty(x.ParentName));
+
+            arrayVariableElement.ActualValue = "45";
+            Assert.AreNotEqual("45", arrayVariableElement.ActualValue);
+
+            arrayVariableElement.ActualValue = 45;
+            Assert.AreEqual(45, arrayVariableElement.ActualValue);
+
             this.dstController.MatlabAllWorkspaceRowViewModels.Add(this.dstController.MatlabWorkspaceInputRowViewModels[1]);
             this.dstController.MatlabWorkspaceInputRowViewModels[1].ActualValue = 0;
             Assert.IsTrue(string.IsNullOrEmpty(this.dstController.MatlabWorkspaceInputRowViewModels[1].ParentName));
             this.matlabConnector.Verify(x => x.ExecuteFunction(It.IsAny<string>()), Times.Exactly(3));
 
             this.matlabConnector.Verify(x => x.PutVariable(It.IsAny<MatlabWorkspaceRowViewModel>()),
-                Times.Exactly(24));
+                Times.Exactly(27));
 
             Assert.DoesNotThrow(() => this.dstController.UnloadScript());
             Assert.IsTrue(string.IsNullOrEmpty(this.dstController.LoadedScriptName));
