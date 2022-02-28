@@ -69,7 +69,8 @@ namespace DEHPMatlab.Behaviors
 
             if (e.NewItem is MatlabWorkspaceRowViewModel rowViewModel)
             {
-                this.AssociatedObject.Columns.First(x => x.FieldName == "ActualValue").AllowEditing = rowViewModel.IsManuallyEditable ? DefaultBoolean.True : DefaultBoolean.False;
+                this.AssociatedObject.Columns.First(x => x.FieldName == nameof(rowViewModel.ActualValue)).AllowEditing
+                    = rowViewModel.IsManuallyEditable ? DefaultBoolean.True : DefaultBoolean.False;
             }
         }
     }
