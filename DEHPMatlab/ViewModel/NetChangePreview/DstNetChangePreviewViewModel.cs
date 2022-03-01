@@ -234,7 +234,7 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
         {
             foreach (var copiedVariable in this.InputVariablesCopy.ToList())
             {
-                if (this.InputVariables.Count(x => x.Name == copiedVariable.Name) == 0)
+                if (this.InputVariables.All(x => x.Name != copiedVariable.Name))
                 {
                     this.InputVariablesCopy.Remove(copiedVariable);
                 }
@@ -242,7 +242,7 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
 
             foreach (var inputVariable in this.InputVariables)
             {
-                if (this.InputVariablesCopy.Count(x => x.Name == inputVariable.Name) == 0)
+                if (this.InputVariablesCopy.All(x => x.Name != inputVariable.Name))
                 {
                     this.InputVariablesCopy.Add(new MatlabWorkspaceRowViewModel(inputVariable));
                 }
