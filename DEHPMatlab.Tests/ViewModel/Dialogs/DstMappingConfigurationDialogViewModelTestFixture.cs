@@ -484,7 +484,7 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
             Assert.AreEqual(2, variable.SampledFunctionParameterParameterAssignementRows.Count);
             Assert.AreEqual(RowColumnSelection.Column, variable.RowColumnSelection);
             Assert.IsFalse(variable.SampledFunctionParameterParameterAssignementRows.First().IsDependantParameter);
-            Assert.AreEqual(1, variable.SampledFunctionParameterParameterAssignementRows.Last().Index);
+            Assert.AreEqual("1", variable.SampledFunctionParameterParameterAssignementRows.Last().Index);
 
             variable.RowColumnSelection = RowColumnSelection.Row;
             Assert.AreEqual(3, variable.SampledFunctionParameterParameterAssignementRows.Count);

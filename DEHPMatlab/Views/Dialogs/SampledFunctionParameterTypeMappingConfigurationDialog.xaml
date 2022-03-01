@@ -1,0 +1,65 @@
+﻿<dx:DXDialogWindow x:Class="DEHPMatlab.Views.Dialogs.SampledFunctionParameterTypeMappingConfigurationDialog"
+                   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                   xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                   xmlns:dx="http://schemas.devexpress.com/winfx/2008/xaml/core"
+                   xmlns:dxmvvm="http://schemas.devexpress.com/winfx/2008/xaml/mvvm"
+                   xmlns:behaviors="clr-namespace:DEHPCommon.UserInterfaces.Behaviors;assembly=DEHPCommon"
+                   xmlns:dxlc="http://schemas.devexpress.com/winfx/2008/xaml/layoutcontrol"
+                   xmlns:dxe="http://schemas.devexpress.com/winfx/2008/xaml/editors"
+                   xmlns:dxg="http://schemas.devexpress.com/winfx/2008/xaml/grid"
+                   mc:Ignorable="d"
+                   WindowStartupLocation="CenterScreen" SizeToContent="Height"
+                   Title="Sampled Function Parameter Mapping" MaxHeight="800" Width="400"
+                   Topmost="True">
+    <dxmvvm:Interaction.Behaviors>
+        <behaviors:CloseWindowBehavior/>
+    </dxmvvm:Interaction.Behaviors>
+    <dxlc:LayoutGroup Orientation="Vertical" Padding="10">
+        <dxlc:LayoutItem>
+            <Label FontSize="12" Content="Parameters are split into :"/>
+        </dxlc:LayoutItem>
+        <dxlc:LayoutItem>
+            <dxe:ComboBoxEdit Height="25"
+                              ItemsSource="{Binding RowColumnValues}"
+                              SelectedItem="{Binding Variable.RowColumnSelection}"
+                              Width="Auto" ToolTip="Select Row if the parameters are split by row, Column instead."/>
+        </dxlc:LayoutItem>
+        <dxlc:LayoutItem>
+            <Label FontSize="12">Column Mapping :</Label>
+        </dxlc:LayoutItem>
+        <dxlc:LayoutItem>
+            <dxg:GridControl x:Name="Mapping" Height="190" ItemsSource="{Binding Variable.SampledFunctionParameterParameterAssignementRows}" 
+                             ToolTip="Assign each ParameterAssignment to row or column">
+                <dxg:GridControl.View>
+                    <dxg:TableView HorizontalAlignment="Stretch" VerticalAlignment="Stretch" AllowColumnMoving="True" AllowEditing="False" AllowGrouping="True" AutoWidth="true"
+                                   IsDetailButtonVisibleBinding="{x:Null}"
+                                   RetainSelectionOnClickOutsideCheckBoxSelector="True" ShowCheckBoxSelectorColumn="false" ShowFilterPanelMode="Never" ShowGroupPanel="False" VerticalScrollbarVisibility="Auto" />
+                </dxg:GridControl.View>
+                <dxg:GridControl.Columns>
+                    <dxg:GridColumn FieldName="SelectedParameterTypeAssignmentName" Header="Parameter">
+                    </dxg:GridColumn>
+                    <dxg:GridColumn Header="Index">
+                        <dxg:ColumnBase.CellTemplate>
+                            <DataTemplate>
+                                <dxe:ComboBoxEdit Height="Auto"
+                                                  Margin="5"
+                                                  FontSize="12"
+                                                  ItemsSource="{Binding ElementName=Mapping, Path=DataContext.AvailableIndexes}"
+                                                  SelectedItem="{Binding Path=RowData.Row.Index}"
+                                                  ToolTip="Choose an index to match"
+                                                  NullText="Choose an index to match" 
+                                                  IsTextEditable="False" />
+                            </DataTemplate>
+                        </dxg:ColumnBase.CellTemplate>
+                    </dxg:GridColumn>
+                </dxg:GridControl.Columns>
+            </dxg:GridControl>
+        </dxlc:LayoutItem>
+    </dxlc:LayoutGroup>
+    <dx:DXDialogWindow.FooterButtons>
+        <dx:DialogButton ToolTip="Proceed" Content="Proceed" MinWidth="65" DialogResult="OK" IsEnabled="{Binding IsMappingValid}"/>
+        <dx:DialogButton ToolTip="Cancel" IsDefault="True" Content="Cancel" IsCancel="True" MinWidth="65" DialogResult="Cancel"/>
+    </dx:DXDialogWindow.FooterButtons>
+</dx:DXDialogWindow>

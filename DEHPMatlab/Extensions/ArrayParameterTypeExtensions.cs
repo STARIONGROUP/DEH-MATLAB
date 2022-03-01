@@ -27,6 +27,7 @@ namespace DEHPMatlab.Extensions
     using System;
     using System.Linq;
 
+    using CDP4Common.EngineeringModelData;
     using CDP4Common.SiteDirectoryData;
     using CDP4Common.Validation;
 
@@ -54,7 +55,7 @@ namespace DEHPMatlab.Extensions
                 return false;
             }
 
-            if (!parameterType.HasSingleComponentType)
+            if (!parameterType.HasSingleComponentType || parameterType.Component.First().ParameterType is not QuantityKind)
             {
                 return false;
             }
@@ -71,6 +72,29 @@ namespace DEHPMatlab.Extensions
 
             var validation = parameterType.Component.First().ParameterType.Validate(arrayValue.GetValue(0, 0), scale);
             return validation.ResultKind == ValidationResultKind.Valid;
+        }
+
+        /// <summary>
+        /// Compute the <see cref="IValueSet"/> to generate an <see cref="Array"/>
+        /// </summary>
+        /// <param name="arrayParameterType">The <see cref="ArrayParameterType"/></param>
+        /// <param name="container">The <see cref="IValueSet"/></param>
+        /// <returns>An <see cref="Array"/></returns>
+        public static double[,] ComputeArray(this ArrayParameterType arrayParameterType, IValueSet container)
+        {
+            var array = new double[arrayParameterType.Dimension[0], arrayParameterType.Dimension[1]];
+            var valueSetIndex = 0;
+
+            for (var rowIndex = 0; rowIndex < array.GetLength(0); rowIndex++)
+            {
+                for (var columnIndex = 0; columnIndex < array.GetLength(1); columnIndex++)
+                {
+                    var correspondingValueInsideSet = container.ActualValue[valueSetIndex++];
+                    array.SetValue(double.Parse(correspondingValueInsideSet), rowIndex, columnIndex);
+                }
+            }
+
+            return array;
         }
     }
 }

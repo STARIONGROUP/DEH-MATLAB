@@ -132,6 +132,24 @@ namespace DEHPMatlab.ViewModel.Row
         private bool isManuallyEditable;
 
         /// <summary>
+        /// Backing field for <see cref="ShouldNotifyModification"/>
+        /// </summary>
+        private bool shouldNotifyModification;
+
+        /// <summary>
+        /// Initializes a new <see cref="MatlabWorkspaceRowViewModel"/>
+        /// </summary>
+        /// <param name="matlabVariable">The <see cref="MatlabWorkspaceRowViewModel" /> to copy</param>
+        public MatlabWorkspaceRowViewModel(MatlabWorkspaceRowViewModel matlabVariable) : this(matlabVariable.Name, matlabVariable.ActualValue)
+        {
+            this.Identifier = matlabVariable.Identifier;
+            this.RowColumnSelection = matlabVariable.RowColumnSelection;
+            this.SampledFunctionParameterParameterAssignementRows = matlabVariable.SampledFunctionParameterParameterAssignementRows;
+            this.ArrayValue = matlabVariable.ArrayValue;
+            this.ParentName = matlabVariable.ParentName;
+        }
+
+        /// <summary>
         /// Initializes a new <see cref="MatlabWorkspaceRowViewModel" />
         /// </summary>
         /// <param name="name">The name of the variable</param>
@@ -141,6 +159,7 @@ namespace DEHPMatlab.ViewModel.Row
             this.IsManuallyEditable = true;
             this.Name = name;
             this.ActualValue = actualValue;
+            this.ShouldNotifyModification = true;
 
             if (actualValue is not Array)
             {
@@ -153,7 +172,7 @@ namespace DEHPMatlab.ViewModel.Row
             this.WhenAnyValue(x => x.RowColumnSelection)
                 .Subscribe(_ => this.PopulateSampledFunctionParameters());
 
-            _ = CDPMessageBus.Current.Listen<DstHighlightEvent>()
+            CDPMessageBus.Current.Listen<DstHighlightEvent>()
                 .Where(x => x.TargetThingId.ToString() == this.Identifier)
                 .ObserveOn(RxApp.MainThreadScheduler)
                 .Subscribe(x => this.IsHighlighted = x.ShouldHighlight);
@@ -184,6 +203,15 @@ namespace DEHPMatlab.ViewModel.Row
         {
             get => this.isManuallyEditable;
             set => this.RaiseAndSetIfChanged(ref this.isManuallyEditable, value);
+        }
+
+        /// <summary>
+        /// Asserts if <see cref="DstController"/> should notify the change of this <see cref="ActualValue"/> to MATLAB
+        /// </summary>
+        public bool ShouldNotifyModification
+        {
+            get => this.shouldNotifyModification;
+            set => this.RaiseAndSetIfChanged(ref this.shouldNotifyModification, value);
         }
 
         /// <summary>
@@ -289,12 +317,12 @@ namespace DEHPMatlab.ViewModel.Row
         /// <summary>
         /// Gets or sets the mapping configurations
         /// </summary>
-        public ReactiveList<IdCorrespondence> MappingConfigurations { get; set; } = new();
+        public ReactiveList<IdCorrespondence> MappingConfigurations { get; } = new();
 
         /// <summary>
         /// Gets the collection of <see cref="SampledFunctionParameterParameterAssignementRowViewModel" />
         /// </summary>
-        public ReactiveList<SampledFunctionParameterParameterAssignementRowViewModel> SampledFunctionParameterParameterAssignementRows { get; } = new() { ChangeTrackingEnabled = true };
+        public ReactiveList<SampledFunctionParameterParameterAssignementRowViewModel> SampledFunctionParameterParameterAssignementRows { get; set; } = new() { ChangeTrackingEnabled = true };
 
         /// <summary>
         /// The <see cref="RowColumnSelection" /> value
@@ -330,6 +358,17 @@ namespace DEHPMatlab.ViewModel.Row
         {
             get => this.parentName;
             set => this.RaiseAndSetIfChanged(ref this.parentName, value);
+        }
+
+        /// <summary>
+        /// Update the <see cref="ActualValue"/> without any notifications to MATLAB
+        /// </summary>
+        /// <param name="value">The new value to set</param>
+        public void SilentValueUpdate(object value)
+        {
+            this.ShouldNotifyModification = false;
+            this.ActualValue = value;
+            this.ShouldNotifyModification = true;
         }
 
         /// <summary>
@@ -433,11 +472,15 @@ namespace DEHPMatlab.ViewModel.Row
             }
 
             var parametersCount = this.RowColumnSelection == RowColumnSelection.Column ? arrayValueAsArray.GetLength(1) : arrayValueAsArray.GetLength(0);
+            var rows = new List<SampledFunctionParameterParameterAssignementRowViewModel>();
 
             for (var parameterIndex = 0; parameterIndex < parametersCount; parameterIndex++)
             {
-                this.SampledFunctionParameterParameterAssignementRows.Add(new SampledFunctionParameterParameterAssignementRowViewModel(parameterIndex, parameterIndex != 0));
+                rows.Add(
+                    new SampledFunctionParameterParameterAssignementRowViewModel(parameterIndex.ToString(), parameterIndex != 0));
             }
+
+            this.SampledFunctionParameterParameterAssignementRows.AddRange(rows);
         }
     }
 }

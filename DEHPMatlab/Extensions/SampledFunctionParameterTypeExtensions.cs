@@ -28,6 +28,7 @@ namespace DEHPMatlab.Extensions
     using System.Collections.Generic;
     using System.Linq;
 
+    using CDP4Common.EngineeringModelData;
     using CDP4Common.SiteDirectoryData;
     using CDP4Common.Validation;
 
@@ -77,9 +78,11 @@ namespace DEHPMatlab.Extensions
                     ? parameterType.IndependentParameterType[independantIndex++].MeasurementScale
                     : parameterType.DependentParameterType[dependantIndex++].MeasurementScale;
 
+                var index = int.Parse(parameterDefinition.Index);
+
                 var objectToValidate = rowColumnSelection == RowColumnSelection.Column
-                    ? arrayValue.GetValue(0, parameterDefinition.Index)
-                    : arrayValue.GetValue(parameterDefinition.Index, 0);
+                    ? arrayValue.GetValue(0, index)
+                    : arrayValue.GetValue(index, 0);
 
                 var validate = parameterToValidate.Validate(objectToValidate, scale);
 
@@ -90,6 +93,41 @@ namespace DEHPMatlab.Extensions
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Compute the <see cref="IValueSet"/> to generate an <see cref="Array"/>
+        /// </summary>
+        /// <param name="sampledFunctionParameterType">The <see cref="SampledFunctionParameterType"/></param>
+        /// <param name="container">The <see cref="IValueSet"/></param>
+        /// <param name="rowColumnSelection">The <see cref="RowColumnSelection"/></param>
+        /// <param name="parametersDefinition">A collection of <see cref="parametersDefinition"/></param>
+        /// <returns>An <see cref="Array"/></returns>
+        public static double[,] ComputeArray(this SampledFunctionParameterType sampledFunctionParameterType, IValueSet container,
+            RowColumnSelection rowColumnSelection, List<SampledFunctionParameterParameterAssignementRowViewModel> parametersDefinition)
+        {
+            var numberOfParameters = sampledFunctionParameterType.NumberOfValues;
+            var numberOfValues = container.ActualValue.Count;
+
+            var columnsCount = rowColumnSelection == RowColumnSelection.Column ? numberOfParameters : numberOfValues / numberOfParameters;
+            var rowsCount = rowColumnSelection == RowColumnSelection.Row ? numberOfParameters : numberOfValues / numberOfParameters;
+
+            var array = new double[rowsCount, columnsCount];
+
+            for (var valueSetRowIndex = 0; valueSetRowIndex < numberOfValues / numberOfParameters; valueSetRowIndex++)
+            {
+                for (var valueSetColumnIndex = 0; valueSetColumnIndex < numberOfParameters; valueSetColumnIndex++)
+                {
+                    var correspondingArrayIndex = int.Parse(parametersDefinition[valueSetColumnIndex].Index);
+                    var elementValue = double.Parse(container.ActualValue[(valueSetRowIndex * numberOfParameters) + valueSetColumnIndex]);
+
+                    var arrayRowIndex = rowColumnSelection == RowColumnSelection.Column ? valueSetRowIndex : correspondingArrayIndex;
+                    var arrayColumnIndex = rowColumnSelection == RowColumnSelection.Column ? correspondingArrayIndex : valueSetRowIndex;
+                    array.SetValue(elementValue, arrayRowIndex, arrayColumnIndex);
+                }
+            }
+
+            return array;
         }
     }
 }

@@ -30,6 +30,8 @@ namespace DEHPMatlab.ViewModel.Row
 
     using System;
 
+    using CDP4Common.SiteDirectoryData;
+
     /// <summary>
     /// Represents an association between an <see cref="ElementBase"/> and a <see cref="MatlabWorkspaceRowViewModel"/> for
     /// update the <see cref="MatlabWorkspaceRowViewModel"/> value
@@ -86,7 +88,17 @@ namespace DEHPMatlab.ViewModel.Row
         public ParameterToMatlabVariableMappingRowViewModel(IValueSet valueSet, int valueIndex, ParameterSwitchKind switchKind) : this()
         {
             this.SelectedParameter = (valueSet as ParameterValueSet)?.GetContainerOfType<ParameterOrOverrideBase>();
-            this.SelectedValue = new ValueSetValueRowViewModel(valueSet, valueIndex, switchKind);
+
+            if (this.SelectedParameter is null)
+            {
+                this.SelectedValue = new ValueSetValueRowViewModel(valueSet, valueIndex, switchKind);
+            }
+            else
+            {
+                this.SelectedValue = this.SelectedParameter.ParameterType is ArrayParameterType or SampledFunctionParameterType
+                    ? new ValueSetValueRowViewModel(this.SelectedParameter)
+                    : new ValueSetValueRowViewModel(valueSet, valueIndex, switchKind);
+            }
         }
 
         /// <summary>

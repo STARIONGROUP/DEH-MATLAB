@@ -290,6 +290,62 @@ namespace DEHPMatlab.Tests.ViewModel
 
             this.hubMapResult.Add(toAdd);
             this.dstMapResult.Add(this.element0);
+
+            var arrayParameter = new ArrayParameterType()
+            {
+                Name = "Array3x2",
+                ShortName = "array3x2",
+            };
+
+            arrayParameter.Dimension = new OrderedItemList<int>(arrayParameter) { 3, 2 };
+
+            var simpleQuantityKind = new SimpleQuantityKind()
+            {
+                Name = "aSimpleQuantity",
+                PossibleScale = { scale },
+                DefaultScale = scale
+            };
+
+            for (var i = 0; i < 6; i++)
+            {
+                arrayParameter.Component.Add(new ParameterTypeComponent()
+                {
+                    ParameterType = simpleQuantityKind,
+                    Scale = scale
+                });
+            }
+
+            parameter = new Parameter()
+            {
+                Iid = new Guid(),
+                ParameterType = arrayParameter,
+                Container = new ElementDefinition(new Guid(), null, null),
+                ValueSet =
+                {
+                    new ParameterValueSet
+                    {
+                        Computed = new ValueArray<string>(new []{"1", "2", "3", "4", "5", "6"})
+                    }
+                }
+            };
+
+            parameter.Container = this.element0;
+            this.element0.Parameter.Add(parameter);
+
+            toAdd = new ParameterToMatlabVariableMappingRowViewModel()
+            {
+                SelectedParameter = parameter,
+                SelectedMatlabVariable = new MatlabWorkspaceRowViewModel("a", new object[3, 1]),
+                SelectedValue = new ValueSetValueRowViewModel(this.parameter0.QueryParameterBaseValueSet(null, null), "8", null)
+            };
+
+            this.dstController.Setup(x => x.ParameterVariable).Returns(new Dictionary<ParameterOrOverrideBase, MatlabWorkspaceRowViewModel>()
+            {
+                { parameter, toAdd.SelectedMatlabVariable}
+            });
+
+            this.hubMapResult.Add(toAdd);
+            this.dstMapResult.Add(this.element0);
         }
     }
 }

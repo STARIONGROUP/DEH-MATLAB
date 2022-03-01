@@ -110,6 +110,14 @@ namespace DEHPMatlab.Tests.NetChange
                 IsSelectedForTransfer = true
             };
 
+            var highlightEvent = new DstHighlightEvent("a-a");
+            Assert.IsTrue(highlightEvent.ShouldHighlight);
+            Assert.AreEqual("a-a", highlightEvent.TargetThingId);
+            Assert.DoesNotThrow(() => CDPMessageBus.Current.SendMessage(highlightEvent));
+
+            Assert.IsTrue(variable.IsHighlighted);
+            Assert.IsTrue(variable.IsManuallyEditable);
+
             this.hubMapResult.Add(new ParameterToMatlabVariableMappingRowViewModel()
             {
                 SelectedParameter = this.parameter0,
@@ -155,8 +163,6 @@ namespace DEHPMatlab.Tests.NetChange
             Assert.AreEqual(1, this.viewModel.InputVariablesCopy.Count);
             this.inputVariables.Remove(variable);
             Assert.IsEmpty(this.viewModel.InputVariablesCopy);
-
-            Assert.DoesNotThrow(() => this.viewModel.WhenInputVariableRemoved(new MatlabWorkspaceRowViewModel("bn", 45)));
         }
 
         [Test]

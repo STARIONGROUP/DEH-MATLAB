@@ -29,7 +29,6 @@ namespace DEHPMatlab.Services.MatlabParser
     using System.Data;
     using System.IO;
     using System.Linq;
-    using System.Text.RegularExpressions;
 
     using DEHPMatlab.ViewModel.Row;
 
@@ -322,7 +321,7 @@ namespace DEHPMatlab.Services.MatlabParser
 
             foreach (var inputText in inputsText)
             {
-                originalScript = Regex.Replace(originalScript, $"\\s*{inputText}\\s*;", "\n");
+                originalScript = originalScript.Replace($"{inputText};", "\n");
             }
 
             return originalScript;

@@ -51,11 +51,7 @@ namespace DEHPMatlab.MappingRules
         {
             return input.Select(x =>
             {
-                x.SelectedMatlabVariable = new MatlabWorkspaceRowViewModel(x.SelectedMatlabVariable.Name, x.SelectedMatlabVariable.ActualValue)
-                {
-                    ParentName = x.SelectedMatlabVariable.ParentName,
-                    Identifier = x.SelectedMatlabVariable.Identifier
-                };
+                x.SelectedMatlabVariable = new MatlabWorkspaceRowViewModel(x.SelectedMatlabVariable);
 
                 return x;
             }).ToList();

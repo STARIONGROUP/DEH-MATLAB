@@ -158,22 +158,6 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
         }
 
         /// <summary>
-        /// Occurs when a variable inside the <see cref="DstVariablesControlViewModel.InputVariables" /> is removed
-        /// </summary>
-        /// <param name="matlabVariable">The removed <see cref="MatlabWorkspaceRowViewModel" /></param>
-        public void WhenInputVariableRemoved(MatlabWorkspaceRowViewModel matlabVariable)
-        {
-            var matlabVariableCopy = this.InputVariablesCopy.FirstOrDefault(x => x.Name == matlabVariable.Name);
-
-            if (matlabVariableCopy is null)
-            {
-                return;
-            }
-
-            this.InputVariablesCopy.Remove(matlabVariableCopy);
-        }
-
-        /// <summary>
         /// Adds or removes the <paramref name="mappedElement" /> to/from the
         /// <see cref="IDstController.SelectedHubMapResultToTransfer" />
         /// </summary>
@@ -229,8 +213,7 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
 
             this.DstController.HubMapResult.IsEmptyChanged.Subscribe(this.UpdateTree);
 
-            this.InputVariables.BeforeItemsAdded.Subscribe(this.WhenInputVariableAdded);
-            this.InputVariables.BeforeItemsRemoved.Subscribe(this.WhenInputVariableRemoved);
+            this.InputVariables.CountChanged.Subscribe(_ => this.WhenInputVariablesCountChanged());
             this.InputVariables.ItemChanged.Subscribe(this.WhenInputVariableChanged);
             this.InputVariables.IsEmptyChanged.Where(x => x).Subscribe(_ => this.InputVariablesCopy.Clear());
 
@@ -242,6 +225,28 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
 
             this.DeselectAllCommand = ReactiveCommand.Create();
             this.DeselectAllCommand.Subscribe(_ => this.SelectDeselectAllForTransfer(false));
+        }
+
+        /// <summary>
+        /// Occurs when <see cref="DstVariablesControlViewModel.InputVariables"/> count Changed
+        /// </summary>
+        private void WhenInputVariablesCountChanged()
+        {
+            foreach (var copiedVariable in this.InputVariablesCopy.ToList())
+            {
+                if (this.InputVariables.Count(x => x.Name == copiedVariable.Name) == 0)
+                {
+                    this.InputVariablesCopy.Remove(copiedVariable);
+                }
+            }
+
+            foreach (var inputVariable in this.InputVariables)
+            {
+                if (this.InputVariablesCopy.Count(x => x.Name == inputVariable.Name) == 0)
+                {
+                    this.InputVariablesCopy.Add(new MatlabWorkspaceRowViewModel(inputVariable));
+                }
+            }
         }
 
         /// <summary>
@@ -340,15 +345,6 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
             }
 
             inputVariable.IsSelectedForTransfer = this.DstController.SelectedHubMapResultToTransfer.Contains(mappedElement);
-        }
-
-        /// <summary>
-        /// Occurs when a variable inside the <see cref="DstVariablesControlViewModel.InputVariables" /> is added
-        /// </summary>
-        /// <param name="matlabVariable">The added <see cref="MatlabWorkspaceRowViewModel" /></param>
-        private void WhenInputVariableAdded(MatlabWorkspaceRowViewModel matlabVariable)
-        {
-            this.InputVariablesCopy.Add(new MatlabWorkspaceRowViewModel(matlabVariable.Name, matlabVariable.ActualValue));
         }
 
         /// <summary>
