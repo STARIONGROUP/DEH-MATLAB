@@ -28,6 +28,8 @@ namespace DEHPMatlab.ViewModel.Row
 
     using ReactiveUI;
 
+    using System;
+
     /// <summary>
     /// Used to define the mapping for array to <see cref="SampledFunctionParameterType"/> parameters
     /// </summary>
@@ -36,7 +38,7 @@ namespace DEHPMatlab.ViewModel.Row
         /// <summary>
         /// Backing field for <see cref="Index"/>
         /// </summary>
-        private int index;
+        private string index;
 
         /// <summary>
         /// Backing field for <see cref="IsDependantParameter"/>
@@ -44,20 +46,46 @@ namespace DEHPMatlab.ViewModel.Row
         private bool isDependantParameter;
 
         /// <summary>
+        /// Backing field for <see cref="SelectedParameterTypeAssignment"/>
+        /// </summary>
+        private IParameterTypeAssignment selectedParameterTypeAssignment;
+
+        /// <summary>
+        /// Backing field for <see cref="SelectedParameterTypeAssignmentName"/>
+        /// </summary>
+        private string selectedParameterTypeAssignmentName;
+
+        /// <summary>
         /// Initializes a new <see cref="SampledFunctionParameterParameterAssignementRowViewModel"/>
         /// </summary>
         /// <param name="index">The index</param>
         /// <param name="isDependantParameter">The assert</param>
-        public SampledFunctionParameterParameterAssignementRowViewModel(int index, bool isDependantParameter)
+        public SampledFunctionParameterParameterAssignementRowViewModel(string index, bool isDependantParameter)
         {
             this.Index = index;
             this.IsDependantParameter = isDependantParameter;
+
+            this.WhenAnyValue(x => x.SelectedParameterTypeAssignment)
+                .Subscribe(_ => this.SetName());
+        }
+
+        /// <summary>
+        /// Sets the <see cref="SelectedParameterTypeAssignmentName"/> property
+        /// </summary>
+        private void SetName()
+        {
+            if (this.SelectedParameterTypeAssignment is null)
+            {
+                return;
+            }
+
+            this.SelectedParameterTypeAssignmentName = this.SelectedParameterTypeAssignment.ParameterType.Name;
         }
 
         /// <summary>
         /// The index of the current Row or Column to define
         /// </summary>
-        public int Index
+        public string Index
         {
             get => this.index;
             set => this.RaiseAndSetIfChanged(ref this.index, value);
@@ -70,6 +98,24 @@ namespace DEHPMatlab.ViewModel.Row
         {
             get => this.isDependantParameter;
             set => this.RaiseAndSetIfChanged(ref this.isDependantParameter, value);
+        }
+
+        /// <summary>
+        /// Gets or sets the <see cref="IParameterTypeAssignment"/>
+        /// </summary>
+        public IParameterTypeAssignment SelectedParameterTypeAssignment
+        {
+            get => this.selectedParameterTypeAssignment;
+            set => this.RaiseAndSetIfChanged(ref this.selectedParameterTypeAssignment, value);
+        }
+
+        /// <summary>
+        /// Gets or sets the ShortName of the <see cref="SelectedParameterTypeAssignment"/>
+        /// </summary>
+        public string SelectedParameterTypeAssignmentName
+        {
+            get => this.selectedParameterTypeAssignmentName;
+            set => this.RaiseAndSetIfChanged(ref this.selectedParameterTypeAssignmentName, value);
         }
     }
 }

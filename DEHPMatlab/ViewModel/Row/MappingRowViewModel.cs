@@ -95,11 +95,15 @@ namespace DEHPMatlab.ViewModel.Row
             if (parameter.ParameterType is SampledFunctionParameterType)
             {
                 var cols = parameter.ParameterType.NumberOfValues;
-                value = $"[{valueSet.Computed.Count / cols}x{cols}]";
+                value = $"[{valueSet.ActualValue.Count / cols}x{cols}]";
+            }
+            else if (parameter.ParameterType is ArrayParameterType arrayParameterType)
+            {
+                value = $"[{arrayParameterType.Dimension[0]}x{arrayParameterType.Dimension[1]}]";
             }
             else
             {
-                value = valueSet.Computed[0] ?? "-";
+                value = valueSet.ActualValue[0] ?? "-";
             }
 
             this.HubThing = new MappedThing

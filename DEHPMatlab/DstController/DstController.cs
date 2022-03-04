@@ -34,6 +34,7 @@ namespace DEHPMatlab.DstController
     using CDP4Common;
     using CDP4Common.CommonData;
     using CDP4Common.EngineeringModelData;
+    using CDP4Common.SiteDirectoryData;
     using CDP4Common.Types;
 
     using CDP4Dal;
@@ -51,6 +52,7 @@ namespace DEHPMatlab.DstController
 
     using DEHPMatlab.Enumerator;
     using DEHPMatlab.Events;
+    using DEHPMatlab.Extensions;
     using DEHPMatlab.Services.MappingConfiguration;
     using DEHPMatlab.Services.MatlabConnector;
     using DEHPMatlab.Services.MatlabParser;
@@ -307,8 +309,15 @@ namespace DEHPMatlab.DstController
             this.MatlabAllWorkspaceRowViewModels.Clear();
             this.MatlabWorkspaceInputRowViewModels.Clear();
 
-            List<MatlabWorkspaceRowViewModel> detectedInputs = this.matlabParser.ParseMatlabScript(scriptPath,
+            List<MatlabWorkspaceRowViewModel> detectedInputsWrapped = this.matlabParser.ParseMatlabScript(scriptPath,
                 out this.loadedScriptPath);
+
+            List<MatlabWorkspaceRowViewModel> detectedInputs = new();
+
+            foreach (var matlabWorkspaceRowViewModel in detectedInputsWrapped)
+            {
+                detectedInputs.AddRange(matlabWorkspaceRowViewModel.UnwrapVariableRowViewModels());
+            }
 
             this.LoadedScriptName = Path.GetFileName(scriptPath);
             this.IsScriptLoaded = true;
@@ -316,9 +325,10 @@ namespace DEHPMatlab.DstController
             foreach (var detectedInput in detectedInputs)
             {
                 detectedInput.Identifier = $"{this.LoadedScriptName}-{detectedInput.Name}";
-                this.MatlabWorkspaceInputRowViewModels.Add(detectedInput);
                 this.matlabVariableNames.Add(detectedInput.Name);
             }
+
+            this.MatlabWorkspaceInputRowViewModels.AddRange(detectedInputs);
 
             this.LoadMapping();
         }
@@ -389,6 +399,17 @@ namespace DEHPMatlab.DstController
         {
             if (this.mappingEngine.Map(hubElementDefitions) is List<ParameterToMatlabVariableMappingRowViewModel> variables && variables.Any())
             {
+                foreach (var parameterToMatlabVariableMappingRowViewModel in variables)
+                {
+                    var paremeterAlreadyMapped = this.HubMapResult
+                        .FirstOrDefault(x => x.SelectedParameter.Iid == parameterToMatlabVariableMappingRowViewModel.SelectedParameter.Iid);
+
+                    if (paremeterAlreadyMapped != null)
+                    {
+                        this.HubMapResult.Remove(paremeterAlreadyMapped);
+                    }
+                }
+
                 this.HubMapResult.AddRange(variables);
             }
 
@@ -401,6 +422,8 @@ namespace DEHPMatlab.DstController
         /// <returns>A <see cref="Task" /></returns>
         public async Task TransferMappedThingsToHub()
         {
+            this.IsBusy = true;
+
             try
             {
                 var (iterationClone, transaction) = this.GetIterationTransaction();
@@ -460,9 +483,12 @@ namespace DEHPMatlab.DstController
                 this.LoadMapping();
 
                 CDPMessageBus.Current.SendMessage(new UpdateObjectBrowserTreeEvent(true));
+
+                this.IsBusy = false;
             }
             catch (Exception e)
             {
+                this.IsBusy = false;
                 this.logger.Error(e);
                 throw;
             }
@@ -474,6 +500,8 @@ namespace DEHPMatlab.DstController
         /// <returns>A <see cref="Task" /></returns>
         public async Task TransferMappedThingsToDst()
         {
+            this.IsBusy = true;
+
             foreach (var mappedElement in this.SelectedHubMapResultToTransfer.ToList())
             {
                 var variable = this.MatlabWorkspaceInputRowViewModels
@@ -481,7 +509,15 @@ namespace DEHPMatlab.DstController
 
                 if (variable != null)
                 {
-                    variable.ActualValue = mappedElement.SelectedValue.Value;
+                    if (mappedElement.SelectedParameter.ParameterType is ArrayParameterType or SampledFunctionParameterType)
+                    {
+                        this.AssignNewArrayValue(mappedElement);
+                    }
+                    else
+                    {
+                        variable.ActualValue = mappedElement.SelectedValue.Value;
+                    }
+
                     CDPMessageBus.Current.SendMessage(new DstHighlightEvent(variable.Identifier, false));
                 }
 
@@ -506,6 +542,8 @@ namespace DEHPMatlab.DstController
             this.LoadMapping();
 
             CDPMessageBus.Current.SendMessage(new UpdateDstVariableTreeEvent(true));
+
+            this.IsBusy = false;
         }
 
         /// <summary>
@@ -599,7 +637,7 @@ namespace DEHPMatlab.DstController
 
             foreach (var matlabWorkspaceInputRowViewModel in this.MatlabWorkspaceInputRowViewModels)
             {
-                if (this.IsSessionOpen)
+                if (this.IsSessionOpen && string.IsNullOrEmpty(matlabWorkspaceInputRowViewModel.ParentName))
                 {
                     Task.Run(() => this.matlabConnector.PutVariable(matlabWorkspaceInputRowViewModel));
                 }
@@ -618,6 +656,64 @@ namespace DEHPMatlab.DstController
             }
 
             this.IsBusy = false;
+        }
+
+        /// <summary>
+        /// Transfer all values from the <see cref="IValueSet" /> of a <see cref="ParameterOrOverrideBase" /> of type
+        /// <see cref="SampledFunctionParameterType" />
+        /// or of type <see cref="ArrayParameterType" />to DST
+        /// </summary>
+        /// <param name="mappedElement">The <see cref="ParameterToMatlabVariableMappingRowViewModel" /></param>
+        private void AssignNewArrayValue(ParameterToMatlabVariableMappingRowViewModel mappedElement)
+        {
+            var variable = mappedElement.SelectedMatlabVariable;
+
+            switch (mappedElement.SelectedParameter.ParameterType)
+            {
+                case SampledFunctionParameterType sampledFunctionParameterType:
+                    variable.ActualValue = sampledFunctionParameterType.ComputeArray(mappedElement.SelectedValue.Container, variable.RowColumnSelection,
+                        variable.SampledFunctionParameterParameterAssignementRows.ToList());
+
+                    break;
+                case ArrayParameterType arrayParameterType:
+                    variable.ActualValue = arrayParameterType.ComputeArray(mappedElement.SelectedValue.Container);
+                    break;
+                default:
+                    return;
+            }
+
+            var unwrappedVariables = variable.UnwrapVariableRowViewModels();
+            var newVariableToAdd = new List<MatlabWorkspaceRowViewModel>();
+
+            var variableChildren = this.MatlabWorkspaceInputRowViewModels.Where(x => x.ParentName == variable.Name);
+
+            foreach (var variableChild in variableChildren.ToList())
+            {
+                if (unwrappedVariables.FirstOrDefault(x => x.Name == variableChild.Name) is null)
+                {
+                    this.MatlabAllWorkspaceRowViewModels.Remove(variableChild);
+                    this.MatlabWorkspaceInputRowViewModels.Remove(variableChild);
+                }
+            }
+
+            foreach (var unwrappedVariable in unwrappedVariables)
+            {
+                var variableAlreadyInWorkspace = this.MatlabWorkspaceInputRowViewModels.FirstOrDefault(x => x.Name == unwrappedVariable.Name);
+
+                if (variableAlreadyInWorkspace == null)
+                {
+                    unwrappedVariable.Identifier = $"{this.LoadedScriptName}-{unwrappedVariable.Name}";
+                    newVariableToAdd.Add(new MatlabWorkspaceRowViewModel(unwrappedVariable));
+                }
+                else
+                {
+                    variableAlreadyInWorkspace.SilentValueUpdate(unwrappedVariable.ActualValue);
+                }
+            }
+
+            this.MatlabWorkspaceInputRowViewModels.AddRange(newVariableToAdd);
+
+            this.matlabConnector.PutVariable(variable);
         }
 
         /// <summary>
@@ -670,31 +766,12 @@ namespace DEHPMatlab.DstController
             this.WhenAnyValue(x => x.matlabConnector.MatlabConnectorStatus)
                 .Subscribe(this.WhenMatlabConnectionStatusChange);
 
-            this.WhenAnyValue(x => x.MatlabWorkspaceInputRowViewModels.Count)
+            this.MatlabWorkspaceInputRowViewModels.CountChanged
                 .Subscribe(_ => this.UploadMatlabInputs());
 
             this.MatlabWorkspaceInputRowViewModels.ItemChanged
                 .ObserveOn(RxApp.MainThreadScheduler)
                 .Subscribe(this.UpdateVariable);
-        }
-
-        /// <summary>
-        /// Loads the saved mapping to the dst
-        /// </summary>
-        /// <returns>The number of mapped things loaded</returns>
-        private int LoadMappingFromHubToDst()
-        {
-            if (this.mappingConfigurationService.LoadMappingFromHubToDst(this.MatlabWorkspaceInputRowViewModels) is not { } mappedElements 
-                || !mappedElements.Any())
-            {
-                return 0;
-            }
-
-            mappedElements.ForEach(x => x.VerifyValidity());
-            var validMappedElements = mappedElements.Where(x => x.IsValid).ToList();
-            this.Map(validMappedElements);
-
-            return validMappedElements.Count;
         }
 
         /// <summary>
@@ -719,6 +796,25 @@ namespace DEHPMatlab.DstController
             this.Map(validMappedVariables);
 
             return validMappedVariables.Count;
+        }
+
+        /// <summary>
+        /// Loads the saved mapping to the dst
+        /// </summary>
+        /// <returns>The number of mapped things loaded</returns>
+        private int LoadMappingFromHubToDst()
+        {
+            if (this.mappingConfigurationService.LoadMappingFromHubToDst(this.MatlabWorkspaceInputRowViewModels) is not { } mappedElements
+                || !mappedElements.Any())
+            {
+                return 0;
+            }
+
+            mappedElements.ForEach(x => x.VerifyValidity());
+            var validMappedElements = mappedElements.Where(x => x.IsValid).ToList();
+            this.Map(validMappedElements);
+
+            return validMappedElements.Count;
         }
 
         /// <summary>
@@ -859,7 +955,7 @@ namespace DEHPMatlab.DstController
         /// <param name="matlabWorkspaceRowViewModel">The <see cref="IReactivePropertyChangedEventArgs{TSender}" /></param>
         private void UpdateVariable(IReactivePropertyChangedEventArgs<MatlabWorkspaceRowViewModel> matlabWorkspaceRowViewModel)
         {
-            if (matlabWorkspaceRowViewModel.PropertyName != "ActualValue" || !this.isSessionOpen)
+            if (matlabWorkspaceRowViewModel.PropertyName != "ActualValue" || !this.IsSessionOpen || !matlabWorkspaceRowViewModel.Sender.ShouldNotifyModification)
             {
                 return;
             }
@@ -872,7 +968,28 @@ namespace DEHPMatlab.DstController
                 sender.ActualValue = valueAsDouble;
             }
 
-            this.matlabConnector.PutVariable(sender);
+            if (string.IsNullOrEmpty(sender.ParentName))
+            {
+                this.matlabConnector.PutVariable(sender);
+            }
+            else
+            {
+                var parentRowViewModel = this.MatlabWorkspaceInputRowViewModels.First(x => x.Name == sender.ParentName);
+                var rowIndex = sender.Index[0];
+                var columnIndex = sender.Index[1];
+
+                try
+                {
+                    ((Array) parentRowViewModel.ArrayValue).SetValue(sender.ActualValue, rowIndex, columnIndex);
+                }
+                catch (Exception)
+                {
+                    this.statusBar.Append($"The type of the value '{sender.ActualValue}' is not compatible", StatusBarMessageSeverity.Warning);
+                    sender.ActualValue = ((Array) parentRowViewModel.ArrayValue).GetValue(rowIndex, columnIndex);
+                }
+
+                this.matlabConnector.PutVariable(parentRowViewModel);
+            }
 
             this.IsBusy = false;
         }

@@ -158,7 +158,7 @@ namespace DEHPMatlab.Services.MatlabConnector
         {
             try
             {
-                this.MatlabApp.PutWorkspaceData(matlabWorkspaceRowViewModel.Name, WorkspaceName, matlabWorkspaceRowViewModel.ActualValue);
+                this.MatlabApp.PutWorkspaceData(matlabWorkspaceRowViewModel.Name, WorkspaceName, matlabWorkspaceRowViewModel.ArrayValue ?? matlabWorkspaceRowViewModel.ActualValue);
             }
             catch (COMException ex)
             {

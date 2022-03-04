@@ -27,6 +27,7 @@ namespace DEHPMatlab.Tests.Services.MatlabParser
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
 
     using DEHPMatlab.Services.MatlabParser;
     using DEHPMatlab.ViewModel.Row;
@@ -50,11 +51,17 @@ namespace DEHPMatlab.Tests.Services.MatlabParser
             string modifiedScriptFilePath;
             Assert.Throws<FileNotFoundException>(()=> this.parser.ParseMatlabScript("anInvalidPath", out modifiedScriptFilePath));
 
-            List<MatlabWorkspaceRowViewModel> matlabWorkspaceViewModels = this.parser.ParseMatlabScript(Path.Combine(TestContext.CurrentContext.TestDirectory, "Resources", "GNC_Lab4.m"), 
-                out modifiedScriptFilePath);
+            List<MatlabWorkspaceRowViewModel> matlabWorkspaceViewModels = this.parser.ParseMatlabScript(Path.Combine(TestContext.CurrentContext.TestDirectory,
+                "Resources", "GNC_Lab4.m"), out modifiedScriptFilePath);
 
-            Assert.AreEqual(6, matlabWorkspaceViewModels.Count);
+            Assert.AreEqual(20, matlabWorkspaceViewModels.Count);
+            Assert.IsTrue((double)matlabWorkspaceViewModels.First().ActualValue < 0);
+            Assert.AreEqual(-6370, matlabWorkspaceViewModels.First().ActualValue);
             Assert.IsTrue(File.Exists(modifiedScriptFilePath));
+            var lastMatlabVariable = matlabWorkspaceViewModels.Last();
+            var arrayValue = (Array) lastMatlabVariable.ActualValue;
+            Assert.AreEqual(4, arrayValue.GetLength(0));
+            Assert.AreEqual(3, arrayValue.GetLength(1));
             File.Delete(modifiedScriptFilePath);
         }
     }

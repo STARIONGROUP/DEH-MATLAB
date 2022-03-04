@@ -50,6 +50,7 @@ namespace DEHPMatlab.Tests.DstController
     using DEHPCommon.UserInterfaces.Views;
 
     using DEHPMatlab.DstController;
+    using DEHPMatlab.Enumerator;
     using DEHPMatlab.Services.MappingConfiguration;
     using DEHPMatlab.Services.MatlabConnector;
     using DEHPMatlab.Services.MatlabParser;
@@ -183,9 +184,9 @@ namespace DEHPMatlab.Tests.DstController
             this.dstController.MatlabWorkspaceInputRowViewModels.Add(new MatlabWorkspaceRowViewModel("RE", 0.5));
             this.dstController.LoadScript(Path.Combine(TestContext.CurrentContext.TestDirectory, "Resources", "GNC_Lab4.m"));
             Assert.IsTrue(this.dstController.IsScriptLoaded);
-            Assert.AreEqual(6, this.dstController.MatlabWorkspaceInputRowViewModels.Count);
+            Assert.AreEqual(82, this.dstController.MatlabWorkspaceInputRowViewModels.Count);
 
-            Assert.AreEqual(6370, this.dstController.MatlabWorkspaceInputRowViewModels
+            Assert.AreEqual(-6370, this.dstController.MatlabWorkspaceInputRowViewModels
                 .First(x => x.Name == "RE").ActualValue);
 
             this.dstController.MatlabAllWorkspaceRowViewModels.Add(new MatlabWorkspaceRowViewModel("a", 45));
@@ -194,13 +195,21 @@ namespace DEHPMatlab.Tests.DstController
             Assert.AreEqual(45, this.dstController.MatlabAllWorkspaceRowViewModels
                 .First(x => x.Name == "a").ActualValue);
 
+            var arrayVariableElement = this.dstController.MatlabAllWorkspaceRowViewModels.First(x => !string.IsNullOrEmpty(x.ParentName));
+
+            arrayVariableElement.ActualValue = "45";
+            Assert.AreNotEqual("45", arrayVariableElement.ActualValue);
+
+            arrayVariableElement.ActualValue = 45;
+            Assert.AreEqual(45, arrayVariableElement.ActualValue);
+
             this.dstController.MatlabAllWorkspaceRowViewModels.Add(this.dstController.MatlabWorkspaceInputRowViewModels[1]);
             this.dstController.MatlabWorkspaceInputRowViewModels[1].ActualValue = 0;
             Assert.IsTrue(string.IsNullOrEmpty(this.dstController.MatlabWorkspaceInputRowViewModels[1].ParentName));
             this.matlabConnector.Verify(x => x.ExecuteFunction(It.IsAny<string>()), Times.Exactly(3));
 
             this.matlabConnector.Verify(x => x.PutVariable(It.IsAny<MatlabWorkspaceRowViewModel>()),
-                Times.Exactly(24));
+                Times.Exactly(27));
 
             Assert.DoesNotThrow(() => this.dstController.UnloadScript());
             Assert.IsTrue(string.IsNullOrEmpty(this.dstController.LoadedScriptName));
@@ -238,11 +247,17 @@ namespace DEHPMatlab.Tests.DstController
                 .Returns(new List<ParameterToMatlabVariableMappingRowViewModel>
                 {
                     new()
+                    {
+                        SelectedParameter = new Parameter()
+                    }
                 });
 
             this.dstController.Map(new List<ParameterToMatlabVariableMappingRowViewModel>
             {
                 new()
+                {
+                    SelectedParameter = new Parameter()
+                }
             });
 
             Assert.AreEqual(1, this.dstController.HubMapResult.Count);
@@ -474,6 +489,181 @@ namespace DEHPMatlab.Tests.DstController
             });
 
             Assert.DoesNotThrow(() => this.dstController.LoadMapping());
+        }
+
+        [Test]
+        public void VerifySampledFunctionTransferToDst()
+        {
+            var independentParameter = new SimpleQuantityKind()
+            {
+                Name = "time"
+            };
+
+            var dependentParameter = new SpecializedQuantityKind()
+            {
+                Name = "position"
+            };
+
+            var sampledFunction = new SampledFunctionParameterType()
+            {
+                IndependentParameterType =
+                {
+                    new IndependentParameterTypeAssignment()
+                    {
+                        ParameterType = independentParameter
+                    }
+                },
+                DependentParameterType =
+                {
+                    new DependentParameterTypeAssignment()
+                    {
+                        ParameterType = dependentParameter
+                    }
+                }
+            };
+
+            var parameter = new Parameter()
+            {
+                ParameterType = sampledFunction,
+                Container = new ElementDefinition(new Guid(), null, null),
+                ValueSet =
+                {
+                    new ParameterValueSet
+                    {
+                        Computed = new ValueArray<string>(new []{"1", "2", "3", "4", "5", "6"})
+                    }
+                }
+            };
+
+            var arrayValue = new double[2, 2];
+
+            for (var rowIndex = 0; rowIndex < arrayValue.GetLength(0); rowIndex++)
+            {
+                for (var columnIndex = 0; columnIndex < arrayValue.GetLength(1); columnIndex++)
+                {
+                    arrayValue.SetValue(0, rowIndex,columnIndex);
+                }
+            }
+
+            var variable = new MatlabWorkspaceRowViewModel("anArrayVariable", arrayValue)
+            {
+                Identifier = "anArrayVariable-a"
+            };
+
+            this.dstController.MatlabAllWorkspaceRowViewModels.Clear();
+
+            this.dstController.MatlabWorkspaceInputRowViewModels.AddRange(variable.UnwrapVariableRowViewModels());
+            variable = this.dstController.MatlabWorkspaceInputRowViewModels.First(x => x.Name == "anArrayVariable");
+
+            variable.SampledFunctionParameterParameterAssignementRows[0].SelectedParameterTypeAssignment = sampledFunction.IndependentParameterType[0];
+            variable.SampledFunctionParameterParameterAssignementRows[1].SelectedParameterTypeAssignment = sampledFunction.DependentParameterType[0];
+
+            var mappedElement = new ParameterToMatlabVariableMappingRowViewModel(parameter.ValueSet.First(), 0, ParameterSwitchKind.COMPUTED)
+            {
+                SelectedMatlabVariable = variable
+            };
+
+            this.dstController.SelectedHubMapResultToTransfer.Add(mappedElement);
+            Assert.AreEqual(5, this.dstController.MatlabAllWorkspaceRowViewModels.Count);
+            Assert.DoesNotThrowAsync(() => this.dstController.TransferMappedThingsToDst());
+
+            var variableAfterTransfer = this.dstController.MatlabWorkspaceInputRowViewModels.First(x => x.Name == "anArrayVariable");
+            Assert.AreEqual(7, this.dstController.MatlabAllWorkspaceRowViewModels.Count);
+            var array = (Array) variableAfterTransfer.ArrayValue;
+            Assert.AreEqual(3, array.GetLength(0));
+
+            variable.RowColumnSelection = RowColumnSelection.Row;
+            variable.SampledFunctionParameterParameterAssignementRows[0].SelectedParameterTypeAssignment = sampledFunction.IndependentParameterType[0];
+            variable.SampledFunctionParameterParameterAssignementRows[1].SelectedParameterTypeAssignment = sampledFunction.DependentParameterType[0];
+
+            this.dstController.SelectedHubMapResultToTransfer.Add(mappedElement);
+
+            Assert.DoesNotThrowAsync(() => this.dstController.TransferMappedThingsToDst());
+            variableAfterTransfer = this.dstController.MatlabWorkspaceInputRowViewModels.First(x => x.Name == "anArrayVariable");
+            Assert.AreEqual(7, this.dstController.MatlabAllWorkspaceRowViewModels.Count);
+            array = (Array)variableAfterTransfer.ArrayValue;
+            Assert.AreEqual(3, array.GetLength(1));
+
+            this.dstController.IsSessionOpen = true;
+            var children = this.dstController.MatlabWorkspaceInputRowViewModels.First(x => x.ParentName == "anArrayVariable");
+            children.ActualValue = "a";
+            Assert.AreNotEqual("a", children.ActualValue);
+        }
+
+        [Test]
+        public void VerifyArrayParameterTypeTransfer()
+        {
+            var scale = new RatioScale() { NumberSet = NumberSetKind.REAL_NUMBER_SET };
+
+            var arrayParameter = new ArrayParameterType()
+            {
+                Name = "Array3x2",
+                ShortName = "array3x2",
+            };
+
+            arrayParameter.Dimension = new OrderedItemList<int>(arrayParameter) { 3, 2 };
+
+            var simpleQuantityKind = new SimpleQuantityKind()
+            {
+                Name = "aSimpleQuantity",
+                PossibleScale = { scale },
+                DefaultScale = scale
+            };
+
+            for (var i = 0; i < 6; i++)
+            {
+                arrayParameter.Component.Add(new ParameterTypeComponent()
+                {
+                    ParameterType = simpleQuantityKind,
+                    Scale = scale
+                });
+            }
+
+            var parameter = new Parameter()
+            {
+                Iid = new Guid(),
+                ParameterType = arrayParameter,
+                Container = new ElementDefinition(new Guid(), null, null),
+                ValueSet =
+                {
+                    new ParameterValueSet
+                    {
+                        Computed = new ValueArray<string>(new []{"1", "2", "3", "4", "5", "6"})
+                    }
+                }
+            };
+
+            var arrayValue = new object[3, 2];
+
+            for (var i = 0; i < arrayValue.GetLength(0); i++)
+            {
+                for (var j = 0; j < arrayValue.GetLength(1); j++)
+                {
+                    arrayValue.SetValue(0, i, j);
+                }
+            }
+
+            var variable = new MatlabWorkspaceRowViewModel("anArrayVariable", arrayValue)
+            {
+                Identifier = "anArrayVariable-a"
+            };
+
+            this.dstController.MatlabWorkspaceInputRowViewModels.Clear();
+
+            this.dstController.MatlabWorkspaceInputRowViewModels.AddRange(variable.UnwrapVariableRowViewModels());
+
+            var mappedElement = new ParameterToMatlabVariableMappingRowViewModel(parameter.ValueSet.First(), 0, ParameterSwitchKind.COMPUTED)
+            {
+                SelectedMatlabVariable = variable
+            };
+
+            this.dstController.SelectedHubMapResultToTransfer.Add(mappedElement);
+
+            Assert.DoesNotThrowAsync(() => this.dstController.TransferMappedThingsToDst());
+            var variableAfterTransfer = this.dstController.MatlabWorkspaceInputRowViewModels.First(x => x.Name == "anArrayVariable");
+            Assert.AreEqual(7, this.dstController.MatlabAllWorkspaceRowViewModels.Count);
+            var array = (Array)variableAfterTransfer.ArrayValue;
+            Assert.AreEqual(6, array.GetValue(2,1));
         }
     }
 }
