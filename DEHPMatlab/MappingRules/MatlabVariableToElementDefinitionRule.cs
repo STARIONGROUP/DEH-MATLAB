@@ -266,7 +266,10 @@ namespace DEHPMatlab.MappingRules
             {
                 foreach (var index in indexOrder)
                 {
-                    var valueToAdd = matlabVariable.RowColumnSelection == RowColumnSelection.Column ? arrayValue.GetValue(lengthIndex, index): arrayValue.GetValue(index, lengthIndex);
+                    var valueToAdd = matlabVariable.RowColumnSelection == RowColumnSelection.Column
+                        ? arrayValue.GetValue(lengthIndex, int.Parse(index))
+                        : arrayValue.GetValue(int.Parse(index), lengthIndex);
+
                     values.Add(FormattableString.Invariant($"{valueToAdd}"));
                 }
             }

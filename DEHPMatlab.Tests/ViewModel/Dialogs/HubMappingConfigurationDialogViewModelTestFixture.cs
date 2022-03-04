@@ -40,6 +40,7 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
 
     using DEHPCommon.Enumerators;
     using DEHPCommon.HubController.Interfaces;
+    using DEHPCommon.Services.NavigationService;
     using DEHPCommon.UserInterfaces.ViewModels;
     using DEHPCommon.UserInterfaces.ViewModels.Interfaces;
     using DEHPCommon.UserInterfaces.ViewModels.Rows.ElementDefinitionTreeRows;
@@ -47,6 +48,7 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
     using DEHPMatlab.DstController;
     using DEHPMatlab.ViewModel.Dialogs;
     using DEHPMatlab.ViewModel.Row;
+    using DEHPMatlab.Views.Dialogs;
 
     using Moq;
 
@@ -61,6 +63,7 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
         private Mock<IHubController> hubController;
         private Mock<IDstController> dstController;
         private Mock<IStatusBarControlViewModel> statusBar;
+        private Mock<INavigationService> navigationService;
         private Mock<ISession> session;
         private List<ElementDefinitionRowViewModel> elementDefinitionRows;
         private Iteration iteration;
@@ -143,14 +146,14 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
             this.dstController.Setup(x => x.MatlabWorkspaceInputRowViewModels)
                 .Returns(new ReactiveList<MatlabWorkspaceRowViewModel>()
                 {
-                    new MatlabWorkspaceRowViewModel("a", 0),
-                    new MatlabWorkspaceRowViewModel("b", 5)
+                    new ("a", 0),
+                    new ("b", 5)
                 });
 
             this.dstController.Setup(x => x.HubMapResult)
                 .Returns(new ReactiveList<ParameterToMatlabVariableMappingRowViewModel>()
                 {
-                    new ParameterToMatlabVariableMappingRowViewModel()
+                    new ()
                     {
                         SelectedParameter = this.parameter4
                     }
@@ -174,14 +177,16 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
             this.session.Setup(x => x.OpenIterations).Returns(new ConcurrentDictionary<Iteration, Tuple<DomainOfExpertise, Participant>>(
                 new List<KeyValuePair<Iteration, Tuple<DomainOfExpertise, Participant>>>
                 {
-                    new KeyValuePair<Iteration, Tuple<DomainOfExpertise, Participant>>(this.iteration, new Tuple<DomainOfExpertise, Participant>(this.domain, new Participant()))
+                    new(this.iteration, new Tuple<DomainOfExpertise, Participant>(this.domain, new Participant()))
                 }));
 
             var browser = new ElementDefinitionsBrowserViewModel(this.iteration, this.session.Object);
             this.elementDefinitionRows = new List<ElementDefinitionRowViewModel>();
             this.elementDefinitionRows.AddRange(browser.ContainedRows.OfType<ElementDefinitionRowViewModel>());
 
-            this.viewModel = new HubMappingConfigurationDialogViewModel(this.hubController.Object, this.dstController.Object, this.statusBar.Object);
+            this.navigationService = new Mock<INavigationService>();
+
+            this.viewModel = new HubMappingConfigurationDialogViewModel(this.hubController.Object, this.dstController.Object, this.statusBar.Object, this.navigationService.Object);
         }
 
         private void SetupElements()
@@ -372,6 +377,7 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
             Assert.IsNull(this.viewModel.SelectedState);
             Assert.IsNull(this.viewModel.SelectedThing);
             Assert.IsFalse(this.viewModel.DeleteMappedRowCommand.CanExecute(null));
+            this.viewModel.AvailableVariables = new ReactiveList<MatlabWorkspaceRowViewModel>();
         }
 
         [Test]
@@ -487,6 +493,173 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
             var rowViewModel = new ParameterStateRowViewModel(this.parameter1, this.option1, this.stateList.ActualState.First(), this.session.Object, row.Object);
             this.viewModel.SelectedThing = rowViewModel;
             Assert.AreEqual(this.parameter1, this.viewModel.SelectedMappedElement.SelectedParameter);
+        }
+
+        [Test]
+        public void VerifyArrayParameterTypeCompatibility()
+        {
+            var scale = new RatioScale() { NumberSet = NumberSetKind.REAL_NUMBER_SET };
+
+            var arrayParameter = new ArrayParameterType()
+            {
+                Name = "Array3x2",
+                ShortName = "array3x2",
+            };
+
+            arrayParameter.Dimension = new OrderedItemList<int>(arrayParameter) { 3, 2 };
+
+            var simpleQuantityKind = new SimpleQuantityKind()
+            {
+                Name = "aSimpleQuantity",
+                PossibleScale = { scale },
+                DefaultScale = scale
+            };
+
+            for (var i = 0; i < 6; i++)
+            {
+                arrayParameter.Component.Add(new ParameterTypeComponent()
+                {
+                    ParameterType = simpleQuantityKind,
+                    Scale = scale
+                });
+            }
+
+            var parameter = new Parameter()
+            {
+                Iid = new Guid(),
+                ParameterType = arrayParameter,
+                Container = new ElementDefinition(new Guid(), null, null),
+                ValueSet =
+                {
+                    new ParameterValueSet
+                    {
+                        Computed = new ValueArray<string>(new []{"1", "2", "3", "4", "5", "6"})
+                    }
+                }
+            };
+
+            var matlabVariable = new MatlabWorkspaceRowViewModel("a", 45);
+
+            this.viewModel.SetsSelectedMappedElement(parameter);
+            this.viewModel.SelectedVariable = matlabVariable;
+
+            Assert.IsNull(this.viewModel.SelectedMappedElement.SelectedMatlabVariable);
+            matlabVariable.ActualValue = new double[,] { {1} };
+            matlabVariable.UnwrapVariableRowViewModels();
+            
+            this.viewModel.SelectedVariable = matlabVariable;
+            Assert.IsNull(this.viewModel.SelectedMappedElement.SelectedMatlabVariable);
+
+            var arrayValue = new double[3, 2];
+            
+            for (var i = 0; i < arrayValue.GetLength(0); i++)
+            {
+                for (var j = 0; j < arrayValue.GetLength(1); j++)
+                {
+                    arrayValue.SetValue(0, i, j);
+                }
+            }
+
+            matlabVariable.ActualValue = arrayValue;
+            matlabVariable.UnwrapVariableRowViewModels();
+            this.viewModel.SelectedVariable = matlabVariable;
+
+            Assert.AreEqual(matlabVariable, this.viewModel.SelectedMappedElement.SelectedMatlabVariable);
+        }
+
+        [Test]
+        public void VerifySampledFunctionParameterTypeCompatiblity()
+        {
+            var independentParameter = new SimpleQuantityKind()
+            {
+                Name = "time"
+            };
+
+            var dependentParameter = new SpecializedQuantityKind()
+            {
+                Name = "position"
+            };
+
+            var sampledFunction = new SampledFunctionParameterType()
+            {
+                IndependentParameterType =
+                {
+                    new IndependentParameterTypeAssignment()
+                    {
+                        ParameterType = independentParameter
+                    }
+                },
+                DependentParameterType =
+                {
+                    new DependentParameterTypeAssignment()
+                    {
+                        ParameterType = dependentParameter
+                    }
+                }
+            };
+
+            var parameter = new Parameter()
+            {
+                ParameterType = sampledFunction,
+                Container = new ElementDefinition(new Guid(), null, null),
+                ValueSet =
+                {
+                    new ParameterValueSet
+                    {
+                        Computed = new ValueArray<string>(new []{"1", "2", "3", "4", "5", "6"})
+                    }
+                }
+            };
+
+            this.viewModel.SetsSelectedMappedElement(parameter);
+
+            var variable = new MatlabWorkspaceRowViewModel("a", 45);
+            
+            this.viewModel.SelectedVariable = variable;
+            Assert.IsNull(this.viewModel.SelectedMappedElement.SelectedMatlabVariable);
+
+            var arrayValue = new double[3, 3];
+
+            for (var i = 0; i < arrayValue.GetLength(0); i++)
+            {
+                for (var j = 0; j < arrayValue.GetLength(1); j++)
+                {
+                    arrayValue.SetValue(0, i, j);
+                }
+            }
+
+            variable.ActualValue = arrayValue;
+            variable.UnwrapVariableRowViewModels();
+
+            this.viewModel.SelectedVariable = variable;
+            Assert.IsNull(this.viewModel.SelectedMappedElement.SelectedMatlabVariable);
+
+            arrayValue = new double[2, 3];
+
+            for (var i = 0; i < arrayValue.GetLength(0); i++)
+            {
+                for (var j = 0; j < arrayValue.GetLength(1); j++)
+                {
+                    arrayValue.SetValue(0, i, j);
+                }
+            }
+
+            variable.ActualValue = arrayValue;
+            variable.UnwrapVariableRowViewModels();
+
+            this.navigationService.Setup(x =>
+                x.ShowDxDialog<SampledFunctionParameterTypeMappingConfigurationDialog, SampledFunctionParameterTypeMappingConfigurationDialogViewModel>
+                    (It.IsAny<SampledFunctionParameterTypeMappingConfigurationDialogViewModel>())).Returns(false);
+
+            this.viewModel.SelectedVariable = variable;
+            Assert.IsNull(this.viewModel.SelectedMappedElement.SelectedMatlabVariable);
+
+            this.navigationService.Setup(x =>
+                x.ShowDxDialog<SampledFunctionParameterTypeMappingConfigurationDialog, SampledFunctionParameterTypeMappingConfigurationDialogViewModel>
+                    (It.IsAny<SampledFunctionParameterTypeMappingConfigurationDialogViewModel>())).Returns(true);
+
+            this.viewModel.SelectedVariable = variable;
+            Assert.IsNotNull(this.viewModel.SelectedMappedElement.SelectedMatlabVariable);
         }
     }
 }

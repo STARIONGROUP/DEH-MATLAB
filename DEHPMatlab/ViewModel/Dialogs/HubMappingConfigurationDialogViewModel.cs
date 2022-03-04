@@ -37,12 +37,15 @@ namespace DEHPMatlab.ViewModel.Dialogs
 
     using DEHPCommon.Enumerators;
     using DEHPCommon.HubController.Interfaces;
+    using DEHPCommon.Services.NavigationService;
     using DEHPCommon.UserInterfaces.ViewModels.Interfaces;
     using DEHPCommon.UserInterfaces.ViewModels.Rows.ElementDefinitionTreeRows;
 
     using DEHPMatlab.DstController;
+    using DEHPMatlab.Extensions;
     using DEHPMatlab.ViewModel.Dialogs.Interfaces;
     using DEHPMatlab.ViewModel.Row;
+    using DEHPMatlab.Views.Dialogs;
 
     using ReactiveUI;
 
@@ -51,6 +54,11 @@ namespace DEHPMatlab.ViewModel.Dialogs
     /// </summary>
     public class HubMappingConfigurationDialogViewModel : MappingConfigurationDialogViewModel, IHubMappingConfigurationDialogViewModel
     {
+        /// <summary>
+        /// The <see cref="INavigationService" />
+        /// </summary>
+        private readonly INavigationService navigationService;
+
         /// <summary>
         /// Backing field for <see cref="SelectedThing"/>
         /// </summary>
@@ -89,12 +97,14 @@ namespace DEHPMatlab.ViewModel.Dialogs
         /// <summary>
         /// Initializes a new <see cref="HubMappingConfigurationDialogViewModel"/>
         /// </summary>
-        /// <param name="hubController"></param>
-        /// <param name="dstController"></param>
-        /// <param name="statusBar"></param>
+        /// <param name="hubController">The <see cref="IHubController"/></param>
+        /// <param name="dstController">The <see cref="IDstController"/></param>
+        /// <param name="statusBar">The <see cref="IStatusBarControlViewModel"/></param>
+        /// <param name="navigationService">The <see cref="INavigationService"/></param>
         public HubMappingConfigurationDialogViewModel(IHubController hubController, IDstController dstController,
-            IStatusBarControlViewModel statusBar) : base(hubController, dstController, statusBar)
+            IStatusBarControlViewModel statusBar, INavigationService navigationService) : base(hubController, dstController, statusBar)
         {
+            this.navigationService = navigationService;
             this.InitializesCommandsAndObservables();
             this.UpdateProperties();
         }
@@ -319,8 +329,8 @@ namespace DEHPMatlab.ViewModel.Dialogs
             }
             else
             {
-                var selectedValue = parameter.ParameterType is SampledFunctionParameterType
-                    ? null
+                var selectedValue = parameter.ParameterType is SampledFunctionParameterType or ArrayParameterType
+                    ? new ValueSetValueRowViewModel(parameter)
                     : parameter.ValueSets.SelectMany(x => this.ComputesValueRow(x, x.ActualValue, null)).FirstOrDefault();
 
                 element = new ParameterToMatlabVariableMappingRowViewModel()
@@ -400,25 +410,73 @@ namespace DEHPMatlab.ViewModel.Dialogs
                 Message = string.Empty
             };
 
-            if (parameter.ParameterType is not SampledFunctionParameterType)
+            switch (parameter.ParameterType)
             {
-                validationResult = parameter.ParameterType.Validate(variable.ActualValue, parameter.Scale);
-                this.SelectedMappedElement.SelectedParameter = parameter;
-                this.SelectedMappedElement.SelectedMatlabVariable = variable;
-                this.SelectedMappedElement.VerifyValidity();
+                case ArrayParameterType arrayParameterType:
+                    validationResult.ResultKind = arrayParameterType.Validate(variable.ArrayValue) ? ValidationResultKind.Valid : ValidationResultKind.Invalid;
+                    break;
+                case SampledFunctionParameterType:
+                    validationResult.ResultKind = this.ValidateSampledFunctionCompatibility(variable, parameter);
+                    break;
+                default:
+                    validationResult = parameter.ParameterType.Validate(variable.ActualValue, parameter.Scale);
+                    break;
             }
 
-            if (validationResult.ResultKind == ValidationResultKind.Invalid)
+            switch (validationResult.ResultKind)
             {
-                this.StatusBar.Append($"Unable to map the {parameter.ParameterType.Name} with {variable.Name} \n\r {validationResult.Message}",
-                    StatusBarMessageSeverity.Error);
+                case ValidationResultKind.Valid:
+                    this.SelectedMappedElement.SelectedParameter = parameter;
+                    this.SelectedMappedElement.SelectedMatlabVariable = variable;
+                    this.SelectedMappedElement.VerifyValidity();
+                    break;
+                case ValidationResultKind.Invalid:
+                    this.StatusBar.Append($"Unable to map the {parameter.ParameterType.Name} with {variable.Name} \n\r {validationResult.Message}",
+                        StatusBarMessageSeverity.Error);
 
-                this.SelectedMappedElement.SelectedMatlabVariable = null;
+                    this.SelectedMappedElement.SelectedMatlabVariable = null;
+                    break;
+                default:
+                    this.SelectedMappedElement.SelectedMatlabVariable = null;
+                    break;
             }
 
             this.SelectedParameter = null;
             this.SelectedVariable = null;
             this.CheckCanExecute();
+        }
+
+        /// <summary>
+        /// Determines if a <see cref="ParameterOrOverrideBase"/> of type <see cref="SampledFunctionParameterType"/> is compatible with a <see cref="MatlabWorkspaceRowViewModel"/> and
+        /// lets the user mapped each Independent and Dependent Parameters to each row or column of the <see cref="MatlabWorkspaceRowViewModel"/>
+        /// </summary>
+        /// <param name="variable">The <see cref="MatlabWorkspaceRowViewModel"/></param>
+        /// <param name="parameter">The <see cref="ParameterBase"/></param>
+        /// <returns>A <see cref="ValidationResultKind"/></returns>
+        private ValidationResultKind ValidateSampledFunctionCompatibility(MatlabWorkspaceRowViewModel variable, ParameterBase parameter)
+        {
+            if (variable.ArrayValue is not Array arrayValue)
+            {
+                return ValidationResultKind.Invalid;
+            }
+
+            var sampledFunctionParameterType = (SampledFunctionParameterType) parameter.ParameterType; 
+            var parametersCount = sampledFunctionParameterType.NumberOfValues;
+
+            if (parametersCount != arrayValue.GetLength(0) && parametersCount != arrayValue.GetLength(1))
+            {
+                return ValidationResultKind.Invalid;
+            }
+
+            var viewModel = new SampledFunctionParameterTypeMappingConfigurationDialogViewModel(variable, sampledFunctionParameterType);
+
+            if (this.navigationService.ShowDxDialog<SampledFunctionParameterTypeMappingConfigurationDialog, SampledFunctionParameterTypeMappingConfigurationDialogViewModel>(viewModel)
+                != true)
+            {
+                return ValidationResultKind.InConclusive;
+            }
+
+            return ValidationResultKind.Valid;
         }
 
         /// <summary>

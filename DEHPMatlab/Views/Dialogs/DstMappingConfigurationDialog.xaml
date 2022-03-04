@@ -101,7 +101,7 @@
                             <dxe:ComboBoxEdit Grid.Row="0" Grid.Column="1" Margin="5" Height="25"
                                               ItemsSource="{Binding RowColumnValues}"
                                               SelectedItem="{Binding SelectedThing.RowColumnSelection}"
-                                              Width="Auto" ToolTip="Select Row if the array is a [2xX] array, Column if the array is a [Xx2] array."/>
+                                              Width="Auto" ToolTip="Select Row if the parameters are split by row, Column instead."/>
                             <dxg:GridControl Grid.Row="1" Grid.ColumnSpan="2" Grid.Column="0" Margin="5"
                                              Height="190" ItemsSource="{Binding SelectedThing.SampledFunctionParameterParameterAssignementRows}" 
                                              ToolTip="Assign each row or column to the correct type of dependant or independant parameter type">

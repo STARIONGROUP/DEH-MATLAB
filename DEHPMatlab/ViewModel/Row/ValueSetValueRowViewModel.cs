@@ -25,6 +25,7 @@
 namespace DEHPMatlab.ViewModel.Row
 {
     using System;
+    using System.Linq;
 
     using CDP4Common.EngineeringModelData;
     using CDP4Common.SiteDirectoryData;
@@ -62,6 +63,33 @@ namespace DEHPMatlab.ViewModel.Row
         /// Backing field for <see cref="Value" />
         /// </summary>
         private string value;
+
+        /// <summary>
+        /// Initialize a new <see cref="ValueSetValueRowViewModel"/>
+        /// </summary>
+        /// <param name="parameter">The parameter to get value from</param>
+        public ValueSetValueRowViewModel(ParameterBase parameter)
+        {
+            this.Container = parameter.ValueSets.First();
+            this.Option = this.Container.ActualOption;
+            this.ActualState = this.Container.ActualState;
+
+            switch (parameter.ParameterType)
+            {
+                case ArrayParameterType arrayParameter:
+                    this.Value = $"[{arrayParameter.Dimension[0]}x{arrayParameter.Dimension[1]}]";
+                    break;
+                case SampledFunctionParameterType sampledFunction:
+                {
+                    var cols = sampledFunction.NumberOfValues;
+                    this.Value = $"[{this.Container.ActualValue.Count / cols}x{cols}]";
+                    break;
+                }
+                default:
+                    this.Value = this.Container.ActualValue[0];
+                    break;
+            }
+        }
 
         /// <summary>
         /// Initializes a new <see cref="ValueSetValueRowViewModel" />
@@ -134,7 +162,7 @@ namespace DEHPMatlab.ViewModel.Row
                                         $"{this.Value} [{(this.Scale is null ? "-" : this.Scale.ShortName)}]";
 
         /// <summary>
-        /// gets or sets the represented value
+        /// Gets or sets the represented value
         /// </summary>
         public string Value
         {
@@ -177,6 +205,11 @@ namespace DEHPMatlab.ViewModel.Row
         /// <param name="parameterSwitchKind">The <see cref="ParameterSwitchKind" /></param>
         private void SetValueFromValueIndex(int valueIndex, ParameterSwitchKind parameterSwitchKind)
         {
+            if (valueIndex < 0 || valueIndex >= this.Container.ActualValue.Count)
+            {
+                return;
+            }
+
             var collection = parameterSwitchKind switch
             {
                 ParameterSwitchKind.REFERENCE => this.Container.Reference,
