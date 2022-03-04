@@ -1,5 +1,5 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="MappingValidationErrorDialog.xaml.cs" company="RHEA System S.A.">
+// <copyright file="Difference.xaml.cs" company="RHEA System S.A.">
 // Copyright (c) 2020-2022 RHEA System S.A.
 // 
 // Author: Sam Gerené, Alex Vorobiev, Alexander van Delft, Nathanael Smiechowski, Antoine Théate.
@@ -22,20 +22,20 @@
 // </copyright>
 // --------------------------------------------------------------------------------------------------------------------
 
-namespace DEHPMatlab.Views.Dialogs
+namespace DEHPMatlab.Views
 {
     using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
-    /// Interaction logic for MappingValidationErrorDialog.xaml
+    /// Interaction logic for Difference.xaml
     /// </summary>
-    public partial class MappingValidationErrorDialog
+    public partial class Difference
     {
         /// <summary>
-        /// Initializes a new <see cref="MappingValidationErrorDialog"/>
+        /// Initializes a new <see cref="Difference"/>
         /// </summary>
         [ExcludeFromCodeCoverage]
-        public MappingValidationErrorDialog()
+        public Difference()
         {
             this.InitializeComponent();
         }

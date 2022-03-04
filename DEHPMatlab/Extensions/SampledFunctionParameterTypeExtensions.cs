@@ -96,7 +96,7 @@ namespace DEHPMatlab.Extensions
         }
 
         /// <summary>
-        /// Compute the <see cref="IValueSet"/> to generate an <see cref="Array"/>
+        /// Compute the <see cref="IValueSet"/> to generate an <see cref="Array"/> of double
         /// </summary>
         /// <param name="sampledFunctionParameterType">The <see cref="SampledFunctionParameterType"/></param>
         /// <param name="container">The <see cref="IValueSet"/></param>
@@ -128,6 +128,47 @@ namespace DEHPMatlab.Extensions
             }
 
             return array;
+        }
+
+        /// <summary>
+        /// Compute the <see cref="IValueSet"/> to generate an <see cref="Array"/> of string
+        /// </summary>
+        /// <param name="sampledFunctionParameterType">The <see cref="SampledFunctionParameterType"/></param>
+        /// <param name="container">The <see cref="IValueSet"/></param>
+        /// <returns>An <see cref="Array"/></returns>
+        public static string[,] ComputeArray(this SampledFunctionParameterType sampledFunctionParameterType, IValueSet container)
+        {
+            if (container is null)
+            {
+                return null;
+            }
+
+            var columnsCount = sampledFunctionParameterType.NumberOfValues;
+            var rowsCount = container.ActualValue.Count / columnsCount;
+
+            var array = new string[rowsCount, columnsCount];
+
+            for (var rowIndex = 0; rowIndex < rowsCount; rowIndex++)
+            {
+                for (var columnIndex = 0; columnIndex < columnsCount; columnIndex++)
+                {
+                    var value = container.ActualValue[(rowIndex * columnsCount)+ columnIndex];
+                    array.SetValue(value, rowIndex, columnIndex);
+                }
+            }
+
+            return array;
+        }
+
+        /// <summary>
+        /// Gets a collection of all parameters of the <see cref="SampledFunctionParameterType"/>
+        /// </summary>
+        /// <param name="sampledFunctionParameterType">The <see cref="SampledFunctionParameterType"/></param>
+        /// <returns>The collection of parameters name</returns>
+        public static IEnumerable<string> ParametersName(this SampledFunctionParameterType sampledFunctionParameterType)
+        {
+            return sampledFunctionParameterType.IndependentParameterType.Select(x => x.ParameterType.Name)
+                .Union(sampledFunctionParameterType.DependentParameterType.Select(x => x.ParameterType.Name));
         }
     }
 }

@@ -1,5 +1,5 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="MappingValidationErrorDialog.xaml.cs" company="RHEA System S.A.">
+// <copyright file="MatrixContentComparisonBehavior.cs" company="RHEA System S.A.">
 // Copyright (c) 2020-2022 RHEA System S.A.
 // 
 // Author: Sam Gerené, Alex Vorobiev, Alexander van Delft, Nathanael Smiechowski, Antoine Théate.
@@ -22,22 +22,17 @@
 // </copyright>
 // --------------------------------------------------------------------------------------------------------------------
 
-namespace DEHPMatlab.Views.Dialogs
+namespace DEHPMatlab.Behaviors
 {
-    using System.Diagnostics.CodeAnalysis;
+    using System.Windows.Controls;
+
+    using DevExpress.Mvvm.UI.Interactivity;
 
     /// <summary>
-    /// Interaction logic for MappingValidationErrorDialog.xaml
+    /// Handle the visual comparison of two matrices
     /// </summary>
-    public partial class MappingValidationErrorDialog
+    public class MatrixContentComparisonBehavior : Behavior<Grid>
     {
-        /// <summary>
-        /// Initializes a new <see cref="MappingValidationErrorDialog"/>
-        /// </summary>
-        [ExcludeFromCodeCoverage]
-        public MappingValidationErrorDialog()
-        {
-            this.InitializeComponent();
-        }
+        
     }
 }

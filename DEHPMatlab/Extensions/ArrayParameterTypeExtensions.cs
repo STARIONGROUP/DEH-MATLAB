@@ -80,9 +80,36 @@ namespace DEHPMatlab.Extensions
         /// <param name="arrayParameterType">The <see cref="ArrayParameterType"/></param>
         /// <param name="container">The <see cref="IValueSet"/></param>
         /// <returns>An <see cref="Array"/></returns>
-        public static double[,] ComputeArray(this ArrayParameterType arrayParameterType, IValueSet container)
+        public static double[,] ComputeArrayOfDouble(this ArrayParameterType arrayParameterType, IValueSet container)
         {
-            var array = new double[arrayParameterType.Dimension[0], arrayParameterType.Dimension[1]];
+            var stringArray = arrayParameterType.ComputeArray(container);
+            var arrayDouble = new double[stringArray.GetLength(0), stringArray.GetLength(1)];
+
+            for (var rowIndex = 0; rowIndex < arrayDouble.GetLength(0); rowIndex++)
+            {
+                for (var columnIndex = 0; columnIndex < arrayDouble.GetLength(1); columnIndex++)
+                {
+                    if (!double.TryParse(stringArray.GetValue(rowIndex, columnIndex).ToString(), out var doubleValue))
+                    {
+                        return null;
+                    }
+
+                    arrayDouble.SetValue(doubleValue, rowIndex, columnIndex);
+                }
+            }
+
+            return arrayDouble;
+        }
+
+        /// <summary>
+        /// Compute the <see cref="IValueSet"/> to generate an <see cref="Array"/>
+        /// </summary>
+        /// <param name="arrayParameterType">The <see cref="ArrayParameterType"/></param>
+        /// <param name="container">The <see cref="IValueSet"/></param>
+        /// <returns>An <see cref="Array"/></returns>
+        public static string[,] ComputeArray(this ArrayParameterType arrayParameterType, IValueSet container)
+        {
+            var array = new string[arrayParameterType.Dimension[0], arrayParameterType.Dimension[1]];
             var valueSetIndex = 0;
 
             for (var rowIndex = 0; rowIndex < array.GetLength(0); rowIndex++)
@@ -90,7 +117,7 @@ namespace DEHPMatlab.Extensions
                 for (var columnIndex = 0; columnIndex < array.GetLength(1); columnIndex++)
                 {
                     var correspondingValueInsideSet = container.ActualValue[valueSetIndex++];
-                    array.SetValue(double.Parse(correspondingValueInsideSet), rowIndex, columnIndex);
+                    array.SetValue(correspondingValueInsideSet, rowIndex, columnIndex);
                 }
             }
 

@@ -433,11 +433,7 @@ namespace DEHPMatlab.ViewModel.Dialogs
                 case ValidationResultKind.Invalid:
                     this.StatusBar.Append($"Unable to map the {parameter.ParameterType.Name} with {variable.Name} \n\r {validationResult.Message}",
                         StatusBarMessageSeverity.Error);
-
-                    this.SelectedMappedElement.SelectedMatlabVariable = null;
-                    break;
-                default:
-                    this.SelectedMappedElement.SelectedMatlabVariable = null;
+                    
                     break;
             }
 
