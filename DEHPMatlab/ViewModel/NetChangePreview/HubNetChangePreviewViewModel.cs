@@ -132,6 +132,11 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
             foreach (var element in this.dstController.DstMapResult)
             {
                 this.AddOrRemoveToSelectedThingsToTransfer(element, areSelected);
+
+                if (element is ElementDefinition elementDefinition)
+                {
+                    CDPMessageBus.Current.SendMessage(new DifferenceEvent<ElementDefinition>(areSelected, elementDefinition));
+                }
             }
         }
 

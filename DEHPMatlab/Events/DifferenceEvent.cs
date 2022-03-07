@@ -35,7 +35,7 @@ namespace DEHPMatlab.Events
     /// Event for displaying <see cref="ParameterDifferenceRowViewModel"/> on MainWindow, Value Diff, An event for <see cref="CDPMessageBus"/>
     /// </summary>
     /// <typeparam name="TThing">can be a ElementDefinition or a ParameterOrOverrideBase</typeparam>
-    public class DifferenceEvent<TThing> where TThing : Thing
+    public class DifferenceEvent<TThing> where TThing : class
     {
         /// <summary>
         /// Has selection been modified

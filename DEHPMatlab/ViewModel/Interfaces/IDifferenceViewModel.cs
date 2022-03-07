@@ -34,8 +34,8 @@ namespace DEHPMatlab.ViewModel.Interfaces
     public interface IDifferenceViewModel
     {
         /// <summary>
-        /// List of <see cref="ParameterDifferenceRowViewModel"/>
+        /// List of <see cref="DifferenceRowViewModel"/>
         /// </summary>
-        ReactiveList<ParameterDifferenceRowViewModel> Parameters { get; set; }
+        ReactiveList<DifferenceRowViewModel> Parameters { get; set; }
     }
 }

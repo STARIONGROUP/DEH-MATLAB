@@ -401,12 +401,12 @@ namespace DEHPMatlab.DstController
             {
                 foreach (var parameterToMatlabVariableMappingRowViewModel in variables)
                 {
-                    var paremeterAlreadyMapped = this.HubMapResult
+                    var parameterAlreadyMapped = this.HubMapResult
                         .FirstOrDefault(x => x.SelectedParameter.Iid == parameterToMatlabVariableMappingRowViewModel.SelectedParameter.Iid);
 
-                    if (paremeterAlreadyMapped != null)
+                    if (parameterAlreadyMapped != null)
                     {
-                        this.HubMapResult.Remove(paremeterAlreadyMapped);
+                        this.HubMapResult.Remove(parameterAlreadyMapped);
                     }
                 }
 
@@ -529,7 +529,7 @@ namespace DEHPMatlab.DstController
                 this.exchangeHistory.Append($"Value [{mappedElement.SelectedValue.Representation}] from {mappedElement.SelectedParameter.ModelCode()} " +
                                             $"has been transfered to {mappedElement.SelectedMatlabVariable.Name}");
             }
-
+            
             var (iteration, transaction) = this.GetIterationTransaction();
             this.mappingConfigurationService.PersistExternalIdentifierMap(transaction, iteration);
             transaction.CreateOrUpdate(iteration);
@@ -562,13 +562,23 @@ namespace DEHPMatlab.DstController
 
                 var workspaceVariable = this.matlabConnector.GetVariable(uniqueVariable);
 
+                if (workspaceVariable is null)
+                {
+                    return;
+                }
+
                 await Task.Run(() =>
                     {
                         if (workspaceVariable.ActualValue is object[,] allVariables)
                         {
                             foreach (var variable in allVariables)
                             {
-                                variables.Add(this.matlabConnector.GetVariable(variable.ToString()));
+                                var newVariable = this.matlabConnector.GetVariable(variable.ToString());
+
+                                if (newVariable is not null)
+                                {
+                                    variables.Add(newVariable);
+                                }
                             }
                         }
                     }
@@ -676,7 +686,7 @@ namespace DEHPMatlab.DstController
 
                     break;
                 case ArrayParameterType arrayParameterType:
-                    variable.ActualValue = arrayParameterType.ComputeArray(mappedElement.SelectedValue.Container);
+                    variable.ActualValue = arrayParameterType.ComputeArrayOfDouble(mappedElement.SelectedValue.Container);
                     break;
                 default:
                     return;
@@ -714,6 +724,8 @@ namespace DEHPMatlab.DstController
             this.MatlabWorkspaceInputRowViewModels.AddRange(newVariableToAdd);
 
             this.matlabConnector.PutVariable(variable);
+
+            this.MatlabWorkspaceInputRowViewModels.First(x => x.Name == variable.Name).ArrayValue = variable.ArrayValue;
         }
 
         /// <summary>

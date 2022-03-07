@@ -29,6 +29,7 @@ namespace DEHPMatlab.ViewModel.Row
     using ReactiveUI;
 
     using System;
+    using System.Linq;
 
     using CDP4Common.SiteDirectoryData;
 
@@ -161,6 +162,11 @@ namespace DEHPMatlab.ViewModel.Row
         public void VerifyValidity()
         {
             this.IsValid = this.SelectedValue != null && this.SelectedValue.Value != "-" && this.SelectedMatlabVariable != null;
+
+            if (this.IsValid && this.SelectedParameter?.ParameterType is SampledFunctionParameterType or ArrayParameterType)
+            {
+                this.IsValid = this.SelectedValue!.Container.ActualValue.All(x => x != "-");
+            }
         }
     }
 }

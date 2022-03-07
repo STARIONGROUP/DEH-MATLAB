@@ -31,6 +31,7 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
 
     using CDP4Common.CommonData;
     using CDP4Common.EngineeringModelData;
+    using CDP4Common.SiteDirectoryData;
 
     using CDP4Dal;
 
@@ -43,6 +44,7 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
 
     using DEHPMatlab.DstController;
     using DEHPMatlab.Events;
+    using DEHPMatlab.Extensions;
     using DEHPMatlab.ViewModel.NetChangePreview.Interfaces;
     using DEHPMatlab.ViewModel.Row;
 
@@ -127,16 +129,26 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
                     matlabWorkspaceRowViewModel.IsHighlighted = false;
                 }
 
-                foreach (var matlabCopy in this.InputVariablesCopy)
+                foreach (var matlabCopy in this.InputVariablesCopy.ToList())
                 {
-                    matlabCopy.ActualValue = this.InputVariables.First(x => matlabCopy.Name == x.Name).ActualValue;
+                    var matlabVariable = this.InputVariables.FirstOrDefault(x => matlabCopy.Name == x.Name);
+
+                    if (matlabVariable is null)
+                    {
+                        this.InputVariablesCopy.Remove(matlabCopy);
+                        this.InputVariablesCopy.RemoveAll(this.InputVariablesCopy.Where(x => x.ParentName == matlabCopy.Name));
+                    }
+                    else
+                    {
+                        matlabCopy.ActualValue = matlabVariable.ActualValue;
+                        matlabCopy.ArrayValue = matlabVariable.ArrayValue;
+                    }
                 }
             }
             else
             {
                 this.IsBusy = true;
                 this.ComputeValues();
-                this.IsBusy = false;
             }
         }
 
@@ -175,6 +187,9 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
 
             variable.IsSelectedForTransfer = shouldSelect;
 
+            CDPMessageBus.Current.SendMessage(new DifferenceEvent<MatlabWorkspaceRowViewModel>(variable.IsSelectedForTransfer,
+                this.InputVariablesCopy.First(x => x.Name == variable.Name)));
+
             if (this.DstController.SelectedHubMapResultToTransfer
                     .FirstOrDefault(x => x.SelectedMatlabVariable.Name == variable.Name) is { } element)
             {
@@ -196,6 +211,8 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
             {
                 this.UpdateVariableRow(mappedElement);
             }
+
+            this.IsBusy = false;
         }
 
         /// <summary>
@@ -255,11 +272,37 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
         /// <param name="selection">The collection of selected <see cref="ElementDefinitionRowViewModel" /> </param>
         private void UpdateTreeBasedOnSelection(IEnumerable<object> selection)
         {
-            this.UpdateTree(true);
+            if (!this.previousSelection.Any())
+            {
+                this.UpdateTree(true);
+            }
 
+            var selectionAsList = selection.ToList();
+
+            var newMappedElements = this.GetMappedElements(selectionAsList.Where(x => !this.previousSelection.Contains(x)));
+            var removedMappedElements = this.GetMappedElements(this.previousSelection.Where(x => !selectionAsList.Contains(x)));
+
+            foreach (var mappedElement in newMappedElements.Where(mappedElement => mappedElement is { }))
+            {
+                this.UpdateVariableRow(mappedElement);
+            }
+
+            foreach (var mappedElement in removedMappedElements.Where(mappedElement => mappedElement is { }))
+            {
+                this.UpdateVariableRow(mappedElement,false);
+            }
+        }
+
+        /// <summary>
+        /// Retrieve all mapped element from a collection of <see cref="IRowViewModelBase{T}"/>
+        /// </summary>
+        /// <param name="objects">The collection</param>
+        /// <returns>A collection of <see cref="ParameterToMatlabVariableMappingRowViewModel"/></returns>
+        private List<ParameterToMatlabVariableMappingRowViewModel> GetMappedElements(IEnumerable<object> objects)
+        {
             var mappedElements = new List<ParameterToMatlabVariableMappingRowViewModel>();
 
-            foreach (var selectedObject in selection)
+            foreach (var selectedObject in objects)
             {
                 switch (selectedObject)
                 {
@@ -285,13 +328,7 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
                 }
             }
 
-            foreach (var mappedElement in mappedElements)
-            {
-                if (mappedElement is { })
-                {
-                    this.UpdateVariableRow(mappedElement);
-                }
-            }
+            return mappedElements;
         }
 
         /// <summary>
@@ -306,17 +343,18 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
             }
 
             this.IsBusy = true;
-            this.previousSelection.Clear();
 
             if (!selection.Any())
             {
+                this.previousSelection.Clear();
                 this.ComputeValues();
             }
 
             else if (selection.Any())
             {
-                this.previousSelection.AddRange(selection);
                 this.UpdateTreeBasedOnSelection(selection);
+                this.previousSelection.Clear();
+                this.previousSelection.AddRange(selection);
             }
 
             this.IsBusy = false;
@@ -326,8 +364,14 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
         /// Updates the the corresponding variable according mapped by the <paramref name="mappedElement" />
         /// </summary>
         /// <param name="mappedElement">The source <see cref="ParameterToMatlabVariableMappingRowViewModel" /></param>
-        private void UpdateVariableRow(ParameterToMatlabVariableMappingRowViewModel mappedElement)
+        /// <param name="isNewElementInSelection">Asserts if the element is a new one in the selection</param>
+        private void UpdateVariableRow(ParameterToMatlabVariableMappingRowViewModel mappedElement, bool isNewElementInSelection = true)
         {
+            if (mappedElement is null)
+            {
+                return;
+            }
+
             var inputVariable = this.InputVariables.FirstOrDefault(x => x.Name == mappedElement.SelectedMatlabVariable.Name);
 
             if (inputVariable is null)
@@ -335,16 +379,132 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
                 return;
             }
 
-            CDPMessageBus.Current.SendMessage(new DstHighlightEvent(inputVariable.Identifier));
+            CDPMessageBus.Current.SendMessage(new DstHighlightEvent(inputVariable.Identifier, isNewElementInSelection));
 
             var inputVariableCopy = this.InputVariablesCopy.FirstOrDefault(x => x.Name == mappedElement.SelectedMatlabVariable.Name);
 
             if (inputVariableCopy is not null)
             {
-                inputVariableCopy.ActualValue = mappedElement.SelectedValue.Value;
+                this.UpdateCopiedVariable(mappedElement, isNewElementInSelection, inputVariable, inputVariableCopy);
             }
 
             inputVariable.IsSelectedForTransfer = this.DstController.SelectedHubMapResultToTransfer.Contains(mappedElement);
+        }
+
+        /// <summary>
+        /// Update the <see cref="MatlabWorkspaceRowViewModel"/> from the <see cref="InputVariablesCopy"/>
+        /// </summary>
+        /// <param name="mappedElement">The <see cref="ParameterToMatlabVariableMappingRowViewModel"/></param>
+        /// <param name="isNewElementInSelection">Asserts if the element is new inside the selection</param>
+        /// <param name="inputVariable">The original <see cref="MatlabWorkspaceRowViewModel"/></param>
+        /// <param name="inputVariableCopy">The <see cref="MatlabWorkspaceRowViewModel"/> to update</param>
+        private void UpdateCopiedVariable(ParameterToMatlabVariableMappingRowViewModel mappedElement, bool isNewElementInSelection,
+            MatlabWorkspaceRowViewModel inputVariable, MatlabWorkspaceRowViewModel inputVariableCopy)
+        {
+            if (mappedElement.SelectedParameter.ParameterType is ArrayParameterType or SampledFunctionParameterType)
+            {
+                if (isNewElementInSelection)
+                {
+                    this.ComputeArray(mappedElement);
+                }
+                else
+                {
+                    this.ResetArray(inputVariable, inputVariableCopy);
+                }
+            }
+            else
+            {
+                inputVariableCopy.ActualValue = isNewElementInSelection ? mappedElement.SelectedValue.Value : inputVariable.ActualValue;
+            }
+        }
+
+        /// <summary>
+        /// Reset the value of the Array and reset all children of the <see cref="MatlabWorkspaceRowViewModel"/>
+        /// </summary>
+        /// <param name="inputVariable">The original <see cref="MatlabWorkspaceRowViewModel"/></param>
+        /// <param name="inputVariableCopy">The <see cref="MatlabTransferControlViewModel"/> to reset</param>
+        private void ResetArray(MatlabWorkspaceRowViewModel inputVariable, MatlabWorkspaceRowViewModel inputVariableCopy)
+        {
+            inputVariableCopy.ActualValue = inputVariable.ActualValue;
+            var allChildren = this.InputVariablesCopy.Where(x => x.ParentName == inputVariableCopy.Name).ToList();
+
+            foreach (var child in allChildren)
+            {
+                var childInsideInput = this.InputVariables.FirstOrDefault(x => x.Name == child.Name);
+
+                if (childInsideInput is null)
+                {
+                    this.InputVariablesCopy.Remove(child);
+                }
+                else
+                {
+                    child.ActualValue = childInsideInput.ActualValue;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Computes the Array contained inside the Parameter of type <see cref="ArrayParameterType"/> of <see cref="SampledFunctionParameterType"/>
+        /// to preview the modification
+        /// </summary>
+        /// <param name="mappedElement">The <see cref="ParameterToMatlabVariableMappingRowViewModel"/></param>
+        private void ComputeArray(ParameterToMatlabVariableMappingRowViewModel mappedElement)
+        {
+            var variable = mappedElement.SelectedMatlabVariable;
+
+            switch (mappedElement.SelectedParameter.ParameterType)
+            {
+                case SampledFunctionParameterType sampledFunctionParameterType:
+                    variable.ActualValue = sampledFunctionParameterType.ComputeArray(mappedElement.SelectedValue.Container, variable.RowColumnSelection,
+                        variable.SampledFunctionParameterParameterAssignementRows.ToList());
+
+                    break;
+                case ArrayParameterType arrayParameterType:
+                    variable.ActualValue = arrayParameterType.ComputeArrayOfDouble(mappedElement.SelectedValue.Container);
+                    break;
+                default:
+                    return;
+            }
+
+            var unwrappedVariables = variable.UnwrapVariableRowViewModels();
+            var newVariableToAdd = new List<MatlabWorkspaceRowViewModel>();
+
+            var variableCopy = this.InputVariablesCopy.First(x => x.Name == variable.Name);
+            variableCopy.ActualValue = variable.ActualValue;
+            variableCopy.ArrayValue = variable.ArrayValue;
+
+            var variableChildren = this.InputVariablesCopy.Where(x => x.ParentName == variable.Name);
+
+            foreach (var variableChild in variableChildren.ToList())
+            {
+                if (unwrappedVariables.FirstOrDefault(x => x.Name == variableChild.Name) is null)
+                {
+                    this.InputVariablesCopy.Remove(variableChild);
+                }
+            }
+
+            foreach (var unwrappedVariable in unwrappedVariables)
+            {
+                var variableAlreadyPresent = this.InputVariablesCopy.FirstOrDefault(x => x.Name == unwrappedVariable.Name);
+
+                if (variableAlreadyPresent == null)
+                {
+                    unwrappedVariable.Identifier = variable.Identifier.Split('-')[0] + "-" + unwrappedVariable.Name;
+
+                    var newVariable = new MatlabWorkspaceRowViewModel(unwrappedVariable)
+                    {
+                        InitialValue = "-"
+                    };
+
+                    newVariableToAdd.Add(newVariable);
+                }
+                else
+                {
+                    variableAlreadyPresent.SilentValueUpdate(unwrappedVariable.ActualValue);
+                }
+            }
+
+            this.InputVariablesCopy.AddRange(newVariableToAdd);
         }
 
         /// <summary>

@@ -40,6 +40,7 @@ namespace DEHPMatlab.Tests.MappingRules
     using DEHPCommon;
     using DEHPCommon.HubController.Interfaces;
 
+    using DEHPMatlab.Enumerator;
     using DEHPMatlab.MappingRules;
     using DEHPMatlab.Services.MappingConfiguration;
     using DEHPMatlab.ViewModel.Row;
@@ -414,6 +415,7 @@ namespace DEHPMatlab.Tests.MappingRules
             Assert.DoesNotThrow(() => this.rule.UpdateValueSet(variable, parameter));
             
             variable.UnwrapVariableRowViewModels();
+            variable.RowColumnSelection = RowColumnSelection.Row;
             variable.SampledFunctionParameterParameterAssignementRows.First().IsDependantParameter = true;
             variable.SampledFunctionParameterParameterAssignementRows.Last().IsDependantParameter = false;
             Assert.DoesNotThrow(() => this.rule.UpdateValueSet(variable, parameter));

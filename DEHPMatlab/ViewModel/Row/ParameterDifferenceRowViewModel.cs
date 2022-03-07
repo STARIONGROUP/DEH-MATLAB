@@ -24,114 +24,68 @@
 
 namespace DEHPMatlab.ViewModel.Row
 {
-    using CDP4Common.EngineeringModelData;
+    using System.Linq;
 
-    using ReactiveUI;
+    using CDP4Common.EngineeringModelData;
+    using CDP4Common.SiteDirectoryData;
+
+    using DEHPMatlab.Extensions;
 
     /// <summary>
-    /// Object to display on MainWindow, Value Diff
+    /// Object to display <see cref="Parameter"/> difference on MainWindow, Value Diff
     /// </summary>
-    public class ParameterDifferenceRowViewModel : ReactiveObject
+    public class ParameterDifferenceRowViewModel : DifferenceRowViewModel
     {
-        /// <summary>
-        /// Difference, positive or negative, of the two value <see cref="NewValue" /> and <see cref="OldValue" />
-        /// </summary>
-        private string difference;
-
-        /// <summary>
-        /// Name of the Value
-        /// </summary>
-        private string name;
-
-        /// <summary>
-        /// The new value from Matlab
-        /// </summary>
-        private string newValue;
-
-        /// <summary>
-        /// The value the data hub had
-        /// </summary>
-        private string oldValue;
-
-        /// <summary>
-        /// Difference, positive or negative, of the two value <see cref="NewValue" /> and <see cref="OldValue" />
-        /// </summary>
-        private string percentDiff;
-
         /// <summary>
         /// Object to display on MainWindow, Value Diff
         /// </summary>
-        /// <param name="oldThing"><see cref="OldThing" /></param>
+        /// <param name="oldThing">The old <see cref="Parameter"/></param>
         /// <param name="newThing"><see cref="NewThing" /></param>
         /// <param name="name">Name of the data, with options aand/or states if applicable</param>
         /// <param name="oldValue">number or dataset</param>
         /// <param name="newValue">number or dataset</param>
         /// <param name="difference">number, positive or negative</param>
         /// <param name="percentDiff">percentage, positive or negative</param>
-        public ParameterDifferenceRowViewModel(Parameter oldThing, Parameter newThing, object name, object oldValue, object newValue, object difference, object percentDiff)
+        public ParameterDifferenceRowViewModel(Parameter oldThing, Parameter newThing, object name, object oldValue, object newValue, object difference, object percentDiff) :
+            base(name, oldValue, newValue, difference, percentDiff)
         {
-            this.OldThing = oldThing;
             this.NewThing = newThing;
-            this.Name = name.ToString();
-            this.OldValue = oldValue?.ToString();
-            this.NewValue = newValue.ToString();
-            this.Difference = difference.ToString();
-            this.PercentDiff = percentDiff.ToString();
+            this.OldThing = oldThing;
+
+            if (this.NewThing.ParameterType is ArrayParameterType or SampledFunctionParameterType)
+            {
+                this.GenerateArrays();
+                this.ContextMenuEnable = true;
+            }
         }
 
         /// <summary>
-        /// The Thing already on the data hub
+        /// Generate the <see cref="DifferenceRowViewModel.OldArray"/> and <see cref="DifferenceRowViewModel.NewArray"/>
         /// </summary>
-        public Parameter OldThing { get; set; }
+        private void GenerateArrays()
+        {
+            switch (this.NewThing.ParameterType)
+            {
+                case SampledFunctionParameterType sampledFunctionParameterType:
+                    this.ColumnsName = sampledFunctionParameterType.ParametersName().ToArray();
+                    this.OldArray = this.OldThing == null ? null : sampledFunctionParameterType.ComputeArray(this.OldThing.ValueSet.FirstOrDefault());
+                    this.NewArray = sampledFunctionParameterType.ComputeArray(this.NewThing.ValueSet.FirstOrDefault());
+                    break;
+                case ArrayParameterType arrayParameterType:
+                    this.OldArray = this.OldThing == null ? null : arrayParameterType.ComputeArray(this.OldThing.ValueSet.FirstOrDefault());
+                    this.NewArray = arrayParameterType.ComputeArray(this.NewThing.ValueSet.FirstOrDefault());
+                    break;
+            }
+        }
 
         /// <summary>
-        /// The thing from Matlab
+        /// The new <see cref="Parameter"/>
         /// </summary>
         public Parameter NewThing { get; set; }
 
         /// <summary>
-        /// The value the data hub had
+        /// The old <see cref="Parameter"/>
         /// </summary>
-        public string OldValue
-        {
-            get => this.oldValue;
-            set => this.RaiseAndSetIfChanged(ref this.oldValue, value);
-        }
-
-        /// <summary>
-        /// The new value from Matlab
-        /// </summary>
-        public string NewValue
-        {
-            get => this.newValue;
-            set => this.RaiseAndSetIfChanged(ref this.newValue, value);
-        }
-
-        /// <summary>
-        /// Name of the Value
-        /// </summary>
-        public string Name
-        {
-            get => this.name;
-            set => this.RaiseAndSetIfChanged(ref this.name, value);
-        }
-
-        /// <summary>
-        /// Difference, positive or negative, of the two value <see cref="NewValue" /> and <see cref="OldValue" />
-        /// </summary>
-        public string Difference
-        {
-            get => this.difference;
-            set => this.RaiseAndSetIfChanged(ref this.difference, value);
-        }
-
-        /// <summary>
-        /// Difference, positive or negative, of the two value <see cref="NewValue" /> and <see cref="OldValue" />
-        /// </summary>
-        public string PercentDiff
-        {
-            get => this.percentDiff;
-            set => this.RaiseAndSetIfChanged(ref this.percentDiff, value);
-        }
+        public Parameter OldThing { get; set; }
     }
 }
