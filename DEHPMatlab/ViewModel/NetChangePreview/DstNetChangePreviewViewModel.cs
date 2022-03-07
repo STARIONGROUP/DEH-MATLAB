@@ -385,39 +385,52 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
 
             if (inputVariableCopy is not null)
             {
-                if (mappedElement.SelectedParameter.ParameterType is ArrayParameterType or SampledFunctionParameterType)
-                {
-                    if (isNewElementInSelection)
-                    {
-                        this.ComputeArray(mappedElement);
-                    }
-                    else
-                    {
-                        inputVariableCopy.ActualValue = inputVariable.ActualValue;
-                        var allChildren = this.InputVariablesCopy.Where(x => x.ParentName == inputVariableCopy.Name).ToList();
-
-                        foreach (var child in allChildren)
-                        {
-                            var childInsideInput = this.InputVariables.FirstOrDefault(x => x.Name == child.Name);
-
-                            if (childInsideInput is null)
-                            {
-                                this.InputVariablesCopy.Remove(child);
-                            }
-                            else
-                            {
-                                child.ActualValue = childInsideInput.ActualValue;
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    inputVariableCopy.ActualValue = isNewElementInSelection ? mappedElement.SelectedValue.Value : inputVariable.ActualValue;
-                }
+                this.UpdateCopiedVariable(mappedElement, isNewElementInSelection, inputVariable, inputVariableCopy);
             }
 
             inputVariable.IsSelectedForTransfer = this.DstController.SelectedHubMapResultToTransfer.Contains(mappedElement);
+        }
+
+        /// <summary>
+        /// Update the <see cref="MatlabWorkspaceRowViewModel"/> from the <see cref="InputVariablesCopy"/>
+        /// </summary>
+        /// <param name="mappedElement">The <see cref="ParameterToMatlabVariableMappingRowViewModel"/></param>
+        /// <param name="isNewElementInSelection">Asserts if the element is new inside the selection</param>
+        /// <param name="inputVariable">The original <see cref="MatlabWorkspaceRowViewModel"/></param>
+        /// <param name="inputVariableCopy">The <see cref="MatlabWorkspaceRowViewModel"/> to update</param>
+        private void UpdateCopiedVariable(ParameterToMatlabVariableMappingRowViewModel mappedElement, bool isNewElementInSelection,
+            MatlabWorkspaceRowViewModel inputVariable, MatlabWorkspaceRowViewModel inputVariableCopy)
+        {
+            if (mappedElement.SelectedParameter.ParameterType is ArrayParameterType or SampledFunctionParameterType)
+            {
+                if (isNewElementInSelection)
+                {
+                    this.ComputeArray(mappedElement);
+                }
+                else
+                {
+                    inputVariableCopy.ActualValue = inputVariable.ActualValue;
+                    var allChildren = this.InputVariablesCopy.Where(x => x.ParentName == inputVariableCopy.Name).ToList();
+
+                    foreach (var child in allChildren)
+                    {
+                        var childInsideInput = this.InputVariables.FirstOrDefault(x => x.Name == child.Name);
+
+                        if (childInsideInput is null)
+                        {
+                            this.InputVariablesCopy.Remove(child);
+                        }
+                        else
+                        {
+                            child.ActualValue = childInsideInput.ActualValue;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                inputVariableCopy.ActualValue = isNewElementInSelection ? mappedElement.SelectedValue.Value : inputVariable.ActualValue;
+            }
         }
 
         /// <summary>

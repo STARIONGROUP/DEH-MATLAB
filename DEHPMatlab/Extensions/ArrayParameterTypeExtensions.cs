@@ -91,7 +91,7 @@ namespace DEHPMatlab.Extensions
                 {
                     if (!double.TryParse(stringArray.GetValue(rowIndex, columnIndex).ToString(), out var doubleValue))
                     {
-                        return null;
+                        return new double[stringArray.GetLength(0), stringArray.GetLength(1)];
                     }
 
                     arrayDouble.SetValue(doubleValue, rowIndex, columnIndex);

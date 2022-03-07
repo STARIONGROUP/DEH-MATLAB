@@ -138,11 +138,6 @@ namespace DEHPMatlab.Extensions
         /// <returns>An <see cref="Array"/></returns>
         public static string[,] ComputeArray(this SampledFunctionParameterType sampledFunctionParameterType, IValueSet container)
         {
-            if (container is null)
-            {
-                return null;
-            }
-
             var columnsCount = sampledFunctionParameterType.NumberOfValues;
             var rowsCount = container.ActualValue.Count / columnsCount;
 
