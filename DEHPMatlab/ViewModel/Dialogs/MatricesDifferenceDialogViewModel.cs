@@ -27,6 +27,7 @@ namespace DEHPMatlab.ViewModel.Dialogs
     using System;
     using System.Data;
 
+    using DEHPMatlab.ViewModel.Row;
     using DEHPMatlab.Views.Dialogs;
 
     using ReactiveUI;
@@ -67,8 +68,8 @@ namespace DEHPMatlab.ViewModel.Dialogs
         {
             this.TitleName = $"Matrix Diff : {name}";
             this.columnsName = columnsNameDefinition;
-            this.OldMatrixDataTable = this.CreateDataTableFromArray(oldMatrix, "oldMatrix");
-            this.NewMatrixDataTable = this.CreateDataTableFromArray(newMatrix, "newMatrix");
+            this.OldMatrixDataTable = this.CreateDataTableFromArray(oldMatrix, "oldMatrix", false);
+            this.NewMatrixDataTable = this.CreateDataTableFromArray(newMatrix, "newMatrix", true);
         }
 
         /// <summary>
@@ -102,14 +103,15 @@ namespace DEHPMatlab.ViewModel.Dialogs
         /// Generate a new <see cref="DataColumn" />
         /// </summary>
         /// <param name="columnName">The name of the <see cref="DataColumn" /></param>
+        /// <param name="type">The type of the column</param>
         /// <returns>A new <see cref="DataColumn" /></returns>
-        private DataColumn CreateColumn(string columnName)
+        private DataColumn CreateColumn(string columnName, Type type)
         {
             var column = new DataColumn();
             column.ColumnName = columnName;
             column.ReadOnly = true;
             column.Unique = false;
-            column.DataType = typeof(string);
+            column.DataType = type;
             return column;
         }
 
@@ -118,8 +120,9 @@ namespace DEHPMatlab.ViewModel.Dialogs
         /// </summary>
         /// <param name="matrix">The <see cref="Array" /> to represents</param>
         /// <param name="tableName">The name of the <see cref="DataTable" /></param>
+        /// <param name="shouldCompare">Asserts if the <see cref="Array"/> should be compared to the other</param>
         /// <returns>A <see cref="DataTable" /></returns>
-        private DataTable CreateDataTableFromArray(Array matrix, string tableName)
+        private DataTable CreateDataTableFromArray(Array matrix, string tableName, bool shouldCompare)
         {
             if (matrix is null)
             {
@@ -127,12 +130,12 @@ namespace DEHPMatlab.ViewModel.Dialogs
             }
 
             var dataTable = new DataTable(tableName);
-            dataTable.Columns.Add(this.CreateColumn("index"));
+            dataTable.Columns.Add(this.CreateColumn("index", typeof(string)));
 
             for (var columnIndex = 0; columnIndex < matrix.GetLength(1); columnIndex++)
             {
                 var columnName = this.columnsName is null ? columnIndex.ToString() : this.columnsName[columnIndex];
-                dataTable.Columns.Add(this.CreateColumn(columnName));
+                dataTable.Columns.Add(this.CreateColumn(columnName, shouldCompare ? typeof(MatrixDifferenceCellRowViewModel) : typeof(string)));
             }
 
             for (var rowIndex = 0; rowIndex < matrix.GetLength(0); rowIndex++)
@@ -143,13 +146,35 @@ namespace DEHPMatlab.ViewModel.Dialogs
                 for (var columnIndex = 0; columnIndex < matrix.GetLength(1); columnIndex++)
                 {
                     var columnName = this.columnsName is null ? columnIndex.ToString() : this.columnsName[columnIndex];
-                    dataRow[columnName] = matrix.GetValue(rowIndex, columnIndex).ToString();
+                    var valueInsideMatrix = matrix.GetValue(rowIndex, columnIndex).ToString();
+
+                    dataRow[columnName] = !shouldCompare
+                        ? valueInsideMatrix
+                        : new MatrixDifferenceCellRowViewModel(valueInsideMatrix, this.CompareValueToOtherMatrix(valueInsideMatrix, rowIndex, columnIndex));
                 }
 
                 dataTable.Rows.Add(dataRow);
             }
 
             return dataTable;
+        }
+
+        /// <summary>
+        /// Compare the element to the corresponding element inside the other matrix
+        /// </summary>
+        /// <param name="valueInsideMatrix">The value to compare</param>
+        /// <param name="rowIndex">The row index of the element</param>
+        /// <param name="columnIndex">The column index of the element</param>
+        /// <returns>null if out of bounds, otherwise the comparison </returns>
+        private bool? CompareValueToOtherMatrix(string valueInsideMatrix, int rowIndex, int columnIndex)
+        {
+            if (this.OldMatrixDataTable is null || rowIndex >= this.OldMatrixDataTable.Rows.Count || columnIndex >= this.OldMatrixDataTable.Columns.Count - 1)
+            {
+                return null;
+            }
+
+            var otherValue = this.oldMatrixDataTable.Rows[rowIndex].ItemArray[columnIndex + 1].ToString();
+            return valueInsideMatrix == otherValue;
         }
     }
 }

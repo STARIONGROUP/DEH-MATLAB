@@ -724,6 +724,8 @@ namespace DEHPMatlab.DstController
             this.MatlabWorkspaceInputRowViewModels.AddRange(newVariableToAdd);
 
             this.matlabConnector.PutVariable(variable);
+
+            this.MatlabWorkspaceInputRowViewModels.First(x => x.Name == variable.Name).ArrayValue = variable.ArrayValue;
         }
 
         /// <summary>

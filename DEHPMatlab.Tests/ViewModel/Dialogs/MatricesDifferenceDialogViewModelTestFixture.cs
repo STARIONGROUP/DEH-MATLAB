@@ -24,7 +24,10 @@
 
 namespace DEHPMatlab.Tests.ViewModel.Dialogs
 {
+    using System.Linq;
+
     using DEHPMatlab.ViewModel.Dialogs;
+    using DEHPMatlab.ViewModel.Row;
 
     using NUnit.Framework;
 
@@ -53,14 +56,21 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
             Assert.AreEqual("0", this.viewModel.NewMatrixDataTable.Columns[1].ColumnName);
 
             oldMatrix = new[,] { { "a", "b", "c" } };
-            newMatrix = new[,] { { "a" ,  "b" ,  "d" } };
+            newMatrix = new[,] { { "a" ,  "b" ,  "d", "e" } };
 
             Assert.DoesNotThrow(() => this.viewModel.InitializeViewModel(oldMatrix, newMatrix, "aName", null));
             Assert.AreEqual(4, this.viewModel.OldMatrixDataTable.Columns.Count);
-            Assert.AreEqual(4, this.viewModel.NewMatrixDataTable.Columns.Count);
+            Assert.AreEqual(5, this.viewModel.NewMatrixDataTable.Columns.Count);
 
-            Assert.DoesNotThrow(() => this.viewModel.InitializeViewModel(oldMatrix, newMatrix, "aName", new[]{ "column1", "column2", "column3"} ));
+            Assert.DoesNotThrow(() => this.viewModel.InitializeViewModel(oldMatrix, newMatrix, "aName", new[]{ "column1", "column2", "column3", "column4" } ));
             Assert.AreEqual("column1", this.viewModel.OldMatrixDataTable.Columns[1].ColumnName);
+
+            var differenceCells = this.viewModel.NewMatrixDataTable.Rows[0].ItemArray.OfType<MatrixDifferenceCellRowViewModel>().ToList();
+
+            Assert.IsNull(differenceCells.Last().IsDifferent);
+            Assert.IsTrue(differenceCells.First().IsDifferent);
+            Assert.IsFalse(differenceCells[2].IsDifferent);
+            Assert.AreEqual("a", differenceCells.First().Value);
         }
     }
 }
