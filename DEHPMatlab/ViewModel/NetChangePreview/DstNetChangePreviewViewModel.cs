@@ -409,27 +409,37 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
                 }
                 else
                 {
-                    inputVariableCopy.ActualValue = inputVariable.ActualValue;
-                    var allChildren = this.InputVariablesCopy.Where(x => x.ParentName == inputVariableCopy.Name).ToList();
-
-                    foreach (var child in allChildren)
-                    {
-                        var childInsideInput = this.InputVariables.FirstOrDefault(x => x.Name == child.Name);
-
-                        if (childInsideInput is null)
-                        {
-                            this.InputVariablesCopy.Remove(child);
-                        }
-                        else
-                        {
-                            child.ActualValue = childInsideInput.ActualValue;
-                        }
-                    }
+                    this.ResetArray(inputVariable, inputVariableCopy);
                 }
             }
             else
             {
                 inputVariableCopy.ActualValue = isNewElementInSelection ? mappedElement.SelectedValue.Value : inputVariable.ActualValue;
+            }
+        }
+
+        /// <summary>
+        /// Reset the value of the Array and reset all children of the <see cref="MatlabWorkspaceRowViewModel"/>
+        /// </summary>
+        /// <param name="inputVariable">The original <see cref="MatlabWorkspaceRowViewModel"/></param>
+        /// <param name="inputVariableCopy">The <see cref="MatlabTransferControlViewModel"/> to reset</param>
+        private void ResetArray(MatlabWorkspaceRowViewModel inputVariable, MatlabWorkspaceRowViewModel inputVariableCopy)
+        {
+            inputVariableCopy.ActualValue = inputVariable.ActualValue;
+            var allChildren = this.InputVariablesCopy.Where(x => x.ParentName == inputVariableCopy.Name).ToList();
+
+            foreach (var child in allChildren)
+            {
+                var childInsideInput = this.InputVariables.FirstOrDefault(x => x.Name == child.Name);
+
+                if (childInsideInput is null)
+                {
+                    this.InputVariablesCopy.Remove(child);
+                }
+                else
+                {
+                    child.ActualValue = childInsideInput.ActualValue;
+                }
             }
         }
 
