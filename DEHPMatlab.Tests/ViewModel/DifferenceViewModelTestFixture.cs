@@ -477,6 +477,13 @@ namespace DEHPMatlab.Tests.ViewModel
 
             Assert.IsTrue(this.viewModel.CanExecute);
             Assert.DoesNotThrow(() => this.viewModel.MatricesDifferenceCommand.Execute(null));
+
+            this.inputVariables.First().ArrayValue = variable.ArrayValue;
+            Assert.DoesNotThrow(() => CDPMessageBus.Current.SendMessage(new DifferenceEvent<MatlabWorkspaceRowViewModel>(true, variable)));
+            this.viewModel.SelectedThing = this.viewModel.Parameters.First();
+
+            Assert.IsTrue(this.viewModel.CanExecute);
+            Assert.DoesNotThrow(() => this.viewModel.MatricesDifferenceCommand.Execute(null));
            
             this.navigationService.Verify(x => 
                 x.ShowDxDialog<MatricesDifferenceDialog, MatricesDifferenceDialogViewModel>(It.IsAny<MatricesDifferenceDialogViewModel>()), Times.Once);

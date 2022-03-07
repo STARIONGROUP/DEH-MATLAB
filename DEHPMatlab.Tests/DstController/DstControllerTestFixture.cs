@@ -308,7 +308,7 @@ namespace DEHPMatlab.Tests.DstController
                 }
             };
 
-            this.dstController.SelectedDstMapResultToTransfer.Add(elementDefinition);
+            this.dstController.SelectedDstMapResultToTransfer.Add(parameter);
 
             var parameterOverride = new ParameterOverride(Guid.NewGuid(), null, null)
             {
@@ -320,21 +320,16 @@ namespace DEHPMatlab.Tests.DstController
                         Computed = new ValueArray<string>(new[] { "654321" }),
                         ValueSwitch = ParameterSwitchKind.COMPUTED
                     }
-                }
+                },
+                Container = new ElementUsage()
             };
 
-            this.dstController.SelectedDstMapResultToTransfer.Add(new ElementUsage
-            {
-                ElementDefinition = elementDefinition,
-                ParameterOverride =
-                {
-                    parameterOverride
-                }
-            });
+            this.dstController.SelectedDstMapResultToTransfer.Add(parameterOverride);
 
             var param = new Parameter()
             {
-                ParameterType = new BooleanParameterType()
+                ParameterType = new BooleanParameterType(),
+                Container = new ElementDefinition()
             };
 
             var variable = new MatlabWorkspaceRowViewModel("a", 0)

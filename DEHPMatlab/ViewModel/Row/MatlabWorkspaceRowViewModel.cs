@@ -401,6 +401,11 @@ namespace DEHPMatlab.ViewModel.Row
             var result = (this.SelectedParameter != null || this.SelectedParameterType != null && this.SelectedParameter is null)
                          && (this.SelectedElementUsages.IsEmpty || this.SelectedElementDefinition != null && this.SelectedParameter != null);
 
+            if (this.SelectedParameterType is QuantityKind && this.SelectedScale is null)
+            {
+                result = false;
+            }
+
             this.IsVariableMappingValid = result ? this.IsParameterTypeValid() : default(bool?);
 
             return this.IsVariableMappingValid.HasValue && result && this.IsVariableMappingValid.Value;

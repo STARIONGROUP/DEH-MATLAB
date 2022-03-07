@@ -254,9 +254,9 @@ namespace DEHPMatlab.DstController
         public Dictionary<ParameterOrOverrideBase, MatlabWorkspaceRowViewModel> ParameterVariable { get; } = new();
 
         /// <summary>
-        /// Gets the colection of <see cref="ElementBase" /> that are selected to be transfered
+        /// Gets the colection of <see cref="ParameterOrOverrideBase" /> that are selected to be transfered
         /// </summary>
-        public ReactiveList<ElementBase> SelectedDstMapResultToTransfer { get; } = new();
+        public ReactiveList<ParameterOrOverrideBase> SelectedDstMapResultToTransfer { get; } = new();
 
         /// <summary>
         /// Gets the collection of <see cref="ParameterToMatlabVariableMappingRowViewModel" /> that are selected to be transfered
@@ -433,7 +433,19 @@ namespace DEHPMatlab.DstController
                     return;
                 }
 
+                var elementBasesToUpdate = new Dictionary<Thing, List<ParameterOrOverrideBase>>();
+
                 foreach (var element in this.SelectedDstMapResultToTransfer.ToList())
+                {
+                    if(!elementBasesToUpdate.ContainsKey(element.Container))
+                    {
+                        elementBasesToUpdate[element.Container] = new List<ParameterOrOverrideBase>();
+                    }
+
+                    elementBasesToUpdate[element.Container].Add(element);
+                }
+
+                foreach (var element in elementBasesToUpdate.Keys.ToList())
                 {
                     switch (element)
                     {
@@ -441,9 +453,9 @@ namespace DEHPMatlab.DstController
                         {
                             var elementClone = this.CreateOrUpdateTransaction(transaction, elementDefinition, iterationClone.Element);
 
-                            foreach (var parameter in elementDefinition.Parameter)
+                            foreach (var parameter in elementBasesToUpdate[element])
                             {
-                                this.CreateOrUpdateTransaction(transaction, parameter, elementClone.Parameter);
+                                this.CreateOrUpdateTransaction(transaction, (Parameter) parameter, elementClone.Parameter);
                             }
 
                             break;
@@ -453,9 +465,9 @@ namespace DEHPMatlab.DstController
                             var elementUsageClone = elementUsage.Clone(false);
                             transaction.CreateOrUpdate(elementUsageClone);
 
-                            foreach (var parameterOverride in elementUsage.ParameterOverride)
+                            foreach (var parameterOverride in elementBasesToUpdate[element])
                             {
-                                this.CreateOrUpdateTransaction(transaction, parameterOverride, elementUsageClone.ParameterOverride);
+                                    this.CreateOrUpdateTransaction(transaction,(ParameterOverride) parameterOverride, elementUsageClone.ParameterOverride);
                             }
 
                             break;
@@ -893,8 +905,8 @@ namespace DEHPMatlab.DstController
         {
             var (iterationClone, transaction) = this.GetIterationTransaction();
 
-            this.UpdateParametersValueSets(transaction, this.SelectedDstMapResultToTransfer.OfType<ElementDefinition>().SelectMany(x => x.Parameter));
-            this.UpdateParametersValueSets(transaction, this.SelectedDstMapResultToTransfer.OfType<ElementUsage>().SelectMany(x => x.ParameterOverride));
+            this.UpdateParametersValueSets(transaction, this.SelectedDstMapResultToTransfer.OfType<Parameter>());
+            this.UpdateParametersValueSets(transaction, this.SelectedDstMapResultToTransfer.OfType<ParameterOverride>());
 
             transaction.CreateOrUpdate(iterationClone);
 

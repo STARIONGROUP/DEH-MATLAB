@@ -229,10 +229,16 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
         {
             Assert.IsFalse(this.viewModel.CanContinue);
 
-            this.viewModel.Variables.Add(new MatlabWorkspaceRowViewModel("aValidVariable", 5.5d)
+            var variable = new MatlabWorkspaceRowViewModel("aValidVariable", 5.5d)
             {
-                SelectedParameterType = this.quantityKindParameterType
-            });
+                SelectedParameterType = this.quantityKindParameterType,
+            };
+
+            Assert.IsFalse(variable.IsValid());
+            variable.SelectedScale = this.scale;
+            Assert.IsTrue(variable.IsValid());
+
+            this.viewModel.Variables.Add(variable);
 
             Assert.IsTrue(this.viewModel.CanContinue);
             Assert.AreEqual(2, this.viewModel.Variables.Count);

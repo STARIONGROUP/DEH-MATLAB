@@ -93,9 +93,9 @@ namespace DEHPMatlab.DstController
         Dictionary<ParameterOrOverrideBase, MatlabWorkspaceRowViewModel> ParameterVariable { get; }
 
         /// <summary>
-        /// Gets the collection of <see cref="ElementBase"/> that are selected to be transfered
+        /// Gets the collection of <see cref="ParameterOrOverrideBase"/> that are selected to be transfered
         /// </summary>
-        ReactiveList<ElementBase> SelectedDstMapResultToTransfer { get; }
+        ReactiveList<ParameterOrOverrideBase> SelectedDstMapResultToTransfer { get; }
 
         /// <summary>
         /// Gets the collection of <see cref="ParameterToMatlabVariableMappingRowViewModel"/> that are selected to be transfered

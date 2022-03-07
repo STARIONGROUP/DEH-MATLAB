@@ -243,7 +243,7 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
 
                     foreach (var parameterRow in definitionViewModel.ContainedRows.OfType<ParameterRowViewModel>())
                     {
-                        parameterRow.IsSelectedForTransfer = areSelected;
+                        parameterRow.IsSelectedForTransfer = areSelected && this.IsThingTransferable(parameterRow);
                     }
 
                     this.AddOrRemoveToSelectedThingsToTransfer(definitionViewModel);
@@ -260,9 +260,9 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
 
                     usageViewModel.IsSelectedForTransfer = areSelected;
 
-                    foreach (var parameterRow in usageViewModel.ContainedRows.OfType<ParameterRowViewModel>())
+                    foreach (var parameterRow in usageViewModel.ContainedRows.OfType<ParameterOverrideRowViewModel>())
                     {
-                        parameterRow.IsSelectedForTransfer = areSelected;
+                        parameterRow.IsSelectedForTransfer = areSelected && this.IsThingTransferable(parameterRow);
                     }
 
                     this.AddOrRemoveToSelectedThingsToTransfer(usageViewModel);
@@ -326,14 +326,6 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
                     this.AddOrRemoveToSelectedThingsToTransfer(elementViewModel, elementUsage.ParameterOverride, parameterOverridesToAdd);
                     break;
             }
-
-            this.dstController.SelectedDstMapResultToTransfer.Remove(
-                this.dstController.SelectedDstMapResultToTransfer.FirstOrDefault(x => x.Iid == mappedElement.Iid && x.ShortName == mappedElement.ShortName));
-
-            if (elementViewModel.IsSelectedForTransfer)
-            {
-                this.dstController.SelectedDstMapResultToTransfer.Add(mappedElement);
-            }
         }
 
         /// <summary>
@@ -353,6 +345,11 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
                 .Where(x => x is { })
                 .ToList();
 
+            foreach (var parameter in parameters)
+            {
+                this.dstController.SelectedDstMapResultToTransfer.Remove(parameter);
+            }
+
             parametersToAdd.RemoveAll(p => selectedParameters.FirstOrDefault(x => x.ParameterType.Iid == p.ParameterType.Iid) is { });
 
             parametersToAdd.AddRange(selectedParameters);
@@ -360,6 +357,8 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
             parameters.Clear();
 
             parameters.AddRange(parametersToAdd);
+
+            this.dstController.SelectedDstMapResultToTransfer.AddRange(selectedParameters.Where(x => !this.dstController.SelectedDstMapResultToTransfer.Contains(x)));
         }
 
         /// <summary>
