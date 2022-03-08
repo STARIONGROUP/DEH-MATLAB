@@ -51,7 +51,7 @@ namespace DEHPMatlab.Tests.ViewModel
         private Mock<IDstController> dstController;
         private Mock<IStatusBarControlViewModel> statusBar;
         private Mock<IExchangeHistoryService> exchangeHistory;
-        private ReactiveList<ElementBase> selectedDstMapResult;
+        private ReactiveList<ParameterOrOverrideBase> selectedDstMapResult;
         private ReactiveList<ParameterToMatlabVariableMappingRowViewModel> selectedHubMapResult;
 
         [SetUp]
@@ -63,7 +63,7 @@ namespace DEHPMatlab.Tests.ViewModel
             this.statusBar = new Mock<IStatusBarControlViewModel>();
             this.exchangeHistory = new Mock<IExchangeHistoryService>();
 
-            this.selectedDstMapResult = new ReactiveList<ElementBase>();
+            this.selectedDstMapResult = new ReactiveList<ParameterOrOverrideBase>();
             this.selectedHubMapResult = new ReactiveList<ParameterToMatlabVariableMappingRowViewModel>();
 
             this.dstController.Setup(x => x.SelectedDstMapResultToTransfer).Returns(this.selectedDstMapResult);
@@ -108,17 +108,18 @@ namespace DEHPMatlab.Tests.ViewModel
         [Test]
         public void VerifyTransferCommand()
         {
-            this.selectedDstMapResult.AddRange(new List<ElementBase>()
+            var elementDefinition = new ElementDefinition
             {
-                new ElementDefinition
-                {
-                    Parameter = { new Parameter() }
-                },
-                new ElementUsage
-                {
-                    ParameterOverride = { new ParameterOverride() }
-                }
-            });
+                Parameter = { new Parameter() }
+            };
+
+            var elementUsage = new ElementUsage
+            {
+                ParameterOverride = { new ParameterOverride() }
+            };
+             
+            this.selectedDstMapResult.AddRange(elementDefinition.Parameter);
+            this.selectedDstMapResult.AddRange(elementUsage.ParameterOverride);
             
             this.selectedHubMapResult.Add(new ParameterToMatlabVariableMappingRowViewModel());
 

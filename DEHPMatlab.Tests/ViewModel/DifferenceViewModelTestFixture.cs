@@ -27,6 +27,7 @@ namespace DEHPMatlab.Tests.ViewModel
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Reactive.Concurrency;
 
     using CDP4Common.EngineeringModelData;
     using CDP4Common.SiteDirectoryData;
@@ -83,6 +84,8 @@ namespace DEHPMatlab.Tests.ViewModel
         [SetUp]
         public void SetUp()
         {
+            RxApp.MainThreadScheduler = Scheduler.CurrentThread;
+            
             this.hubController = new Mock<IHubController>();
             this.dstController = new Mock<IDstController>();
             this.inputVariables = new ReactiveList<MatlabWorkspaceRowViewModel>();
@@ -477,9 +480,16 @@ namespace DEHPMatlab.Tests.ViewModel
 
             Assert.IsTrue(this.viewModel.CanExecute);
             Assert.DoesNotThrow(() => this.viewModel.MatricesDifferenceCommand.Execute(null));
+
+            this.inputVariables.First().ArrayValue = variable.ArrayValue;
+            Assert.DoesNotThrow(() => CDPMessageBus.Current.SendMessage(new DifferenceEvent<MatlabWorkspaceRowViewModel>(true, variable)));
+            this.viewModel.SelectedThing = this.viewModel.Parameters.First();
+
+            Assert.IsTrue(this.viewModel.CanExecute);
+            Assert.DoesNotThrow(() => this.viewModel.MatricesDifferenceCommand.Execute(null));
            
             this.navigationService.Verify(x => 
-                x.ShowDxDialog<MatricesDifferenceDialog, MatricesDifferenceDialogViewModel>(It.IsAny<MatricesDifferenceDialogViewModel>()), Times.Once);
+                x.ShowDxDialog<MatricesDifferenceDialog, MatricesDifferenceDialogViewModel>(It.IsAny<MatricesDifferenceDialogViewModel>()), Times.Exactly(2));
         }
 
         [Test]
