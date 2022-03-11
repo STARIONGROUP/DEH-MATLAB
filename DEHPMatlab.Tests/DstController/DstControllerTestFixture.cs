@@ -549,9 +549,17 @@ namespace DEHPMatlab.Tests.DstController
 
             this.dstController.MatlabWorkspaceInputRowViewModels.AddRange(variable.UnwrapVariableRowViewModels());
             variable = this.dstController.MatlabWorkspaceInputRowViewModels.First(x => x.Name == "anArrayVariable");
+            variable.SampledFunctionParameterParameterAssignementToDstRows.Clear();
+            
+            variable.SampledFunctionParameterParameterAssignementToDstRows.Add(new SampledFunctionParameterParameterAssignementRowViewModel("0")
+            {
+                SelectedParameterTypeAssignment = sampledFunction.IndependentParameterType[0]
+            });
 
-            variable.SampledFunctionParameterParameterAssignementRows[0].SelectedParameterTypeAssignment = sampledFunction.IndependentParameterType[0];
-            variable.SampledFunctionParameterParameterAssignementRows[1].SelectedParameterTypeAssignment = sampledFunction.DependentParameterType[0];
+            variable.SampledFunctionParameterParameterAssignementToDstRows.Add(new SampledFunctionParameterParameterAssignementRowViewModel("1")
+            {
+                SelectedParameterTypeAssignment = sampledFunction.DependentParameterType[0]
+            });
 
             var mappedElement = new ParameterToMatlabVariableMappingRowViewModel(parameter.ValueSet.First(), 0, ParameterSwitchKind.COMPUTED)
             {
@@ -567,9 +575,18 @@ namespace DEHPMatlab.Tests.DstController
             var array = (Array) variableAfterTransfer.ArrayValue;
             Assert.AreEqual(3, array.GetLength(0));
 
-            variable.RowColumnSelection = RowColumnSelection.Row;
-            variable.SampledFunctionParameterParameterAssignementRows[0].SelectedParameterTypeAssignment = sampledFunction.IndependentParameterType[0];
-            variable.SampledFunctionParameterParameterAssignementRows[1].SelectedParameterTypeAssignment = sampledFunction.DependentParameterType[0];
+            variable.RowColumnSelectionToDst = RowColumnSelection.Row;
+            variable.SampledFunctionParameterParameterAssignementToDstRows.Clear();
+
+            variable.SampledFunctionParameterParameterAssignementToDstRows.Add(new SampledFunctionParameterParameterAssignementRowViewModel("0")
+            {
+                SelectedParameterTypeAssignment = sampledFunction.IndependentParameterType[0]
+            });
+
+            variable.SampledFunctionParameterParameterAssignementToDstRows.Add(new SampledFunctionParameterParameterAssignementRowViewModel("1")
+            {
+                SelectedParameterTypeAssignment = sampledFunction.DependentParameterType[0]
+            });
 
             this.dstController.SelectedHubMapResultToTransfer.Add(mappedElement);
 

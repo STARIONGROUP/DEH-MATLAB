@@ -16,6 +16,20 @@
     <dxmvvm:Interaction.Behaviors>
         <behaviors:CloseWindowBehavior/>
     </dxmvvm:Interaction.Behaviors>
+    <dx:DXDialogWindow.Resources>
+        <ResourceDictionary>
+            <Style TargetType="dxg:LightweightCellEditorBase" x:Key="EnableEditing">
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding Path=RowData.Row.CanBeTimeTagged}" Value="False">
+                        <Setter Property="IsEnabled" Value="False"/>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding Path=RowData.Row.CanBeTimeTagged}" Value="True">
+                        <Setter Property="IsEnabled" Value="True"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </ResourceDictionary>
+    </dx:DXDialogWindow.Resources>
     <dxlc:LayoutGroup Orientation="Vertical" Padding="10">
         <dxlc:LayoutItem>
             <Label FontSize="12" Content="Parameters are split into :"/>
@@ -23,24 +37,23 @@
         <dxlc:LayoutItem>
             <dxe:ComboBoxEdit Height="25"
                               ItemsSource="{Binding RowColumnValues}"
-                              SelectedItem="{Binding Variable.RowColumnSelection}"
+                              SelectedItem="{Binding SelectedRowColumnSelection}"
                               Width="Auto" ToolTip="Select Row if the parameters are split by row, Column instead."/>
         </dxlc:LayoutItem>
         <dxlc:LayoutItem>
             <Label FontSize="12">Column Mapping :</Label>
         </dxlc:LayoutItem>
         <dxlc:LayoutItem>
-            <dxg:GridControl x:Name="Mapping" Height="190" ItemsSource="{Binding Variable.SampledFunctionParameterParameterAssignementRows}" 
-                             ToolTip="Assign each ParameterAssignment to row or column">
+            <dxg:GridControl x:Name="Mapping" Height="190" ItemsSource="{Binding SampledFunctionParameterParameterAssignementRows}" 
+                             ToolTip="Assign each ParameterAssignment to row or column&#x0a;Remarks: a DependentParameterTypeAssignment can not contains timesteps">
                 <dxg:GridControl.View>
                     <dxg:TableView HorizontalAlignment="Stretch" VerticalAlignment="Stretch" AllowColumnMoving="True" AllowEditing="False" AllowGrouping="True" AutoWidth="true"
-                                   IsDetailButtonVisibleBinding="{x:Null}"
+                                   IsDetailButtonVisibleBinding="{x:Null}" EnableImmediatePosting="True"
                                    RetainSelectionOnClickOutsideCheckBoxSelector="True" ShowCheckBoxSelectorColumn="false" ShowFilterPanelMode="Never" ShowGroupPanel="False" VerticalScrollbarVisibility="Auto" />
                 </dxg:GridControl.View>
                 <dxg:GridControl.Columns>
-                    <dxg:GridColumn FieldName="SelectedParameterTypeAssignmentName" Header="Parameter">
-                    </dxg:GridColumn>
-                    <dxg:GridColumn Header="Index">
+                    <dxg:GridColumn FieldName="SelectedParameterTypeAssignmentName" Header="Parameter" Width="100"/>
+                    <dxg:GridColumn Header="Index" Width="70">
                         <dxg:ColumnBase.CellTemplate>
                             <DataTemplate>
                                 <dxe:ComboBoxEdit Height="Auto"
@@ -54,12 +67,17 @@
                             </DataTemplate>
                         </dxg:ColumnBase.CellTemplate>
                     </dxg:GridColumn>
+                    <dxg:GridColumn AllowEditing="True" Header="Contains timesteps" UnboundType="Boolean" FieldName="IsTimeTaggedParameter" Visible="{Binding IsTimeTaggedVisible}">
+                        <dxg:GridColumn.CellStyle>
+                            <StaticResource ResourceKey="EnableEditing"/>
+                        </dxg:GridColumn.CellStyle>
+                    </dxg:GridColumn>
                 </dxg:GridControl.Columns>
             </dxg:GridControl>
         </dxlc:LayoutItem>
     </dxlc:LayoutGroup>
     <dx:DXDialogWindow.FooterButtons>
-        <dx:DialogButton ToolTip="Proceed" Content="Proceed" MinWidth="65" DialogResult="OK" IsEnabled="{Binding IsMappingValid}"/>
+        <dx:DialogButton ToolTip="Proceed" Content="Proceed" MinWidth="65" DialogResult="OK" Command="{Binding ProceedSampledFunctionParameterParameterAssignementRowsCommand}"/>
         <dx:DialogButton ToolTip="Cancel" IsDefault="True" Content="Cancel" IsCancel="True" MinWidth="65" DialogResult="Cancel"/>
     </dx:DXDialogWindow.FooterButtons>
 </dx:DXDialogWindow>

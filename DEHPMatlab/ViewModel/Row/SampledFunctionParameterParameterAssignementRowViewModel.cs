@@ -29,6 +29,7 @@ namespace DEHPMatlab.ViewModel.Row
     using ReactiveUI;
 
     using System;
+    using System.Reactive.Linq;
 
     /// <summary>
     /// Used to define the mapping for array to <see cref="SampledFunctionParameterType"/> parameters
@@ -41,11 +42,6 @@ namespace DEHPMatlab.ViewModel.Row
         private string index;
 
         /// <summary>
-        /// Backing field for <see cref="IsDependantParameter"/>
-        /// </summary>
-        private bool isDependantParameter;
-
-        /// <summary>
         /// Backing field for <see cref="SelectedParameterTypeAssignment"/>
         /// </summary>
         private IParameterTypeAssignment selectedParameterTypeAssignment;
@@ -56,23 +52,34 @@ namespace DEHPMatlab.ViewModel.Row
         private string selectedParameterTypeAssignmentName;
 
         /// <summary>
+        /// Backing field for <see cref="IsTimeTaggedParameter" />
+        /// </summary>
+        private bool isTimeTaggedParameter;
+
+        /// <summary>
+        /// Backing field for <see cref="CanBeTimeTagged"/>
+        /// </summary>
+        private bool canBeTimeTagged;
+
+        /// <summary>
         /// Initializes a new <see cref="SampledFunctionParameterParameterAssignementRowViewModel"/>
         /// </summary>
         /// <param name="index">The index</param>
-        /// <param name="isDependantParameter">The assert</param>
-        public SampledFunctionParameterParameterAssignementRowViewModel(string index, bool isDependantParameter)
+        public SampledFunctionParameterParameterAssignementRowViewModel(string index)
         {
             this.Index = index;
-            this.IsDependantParameter = isDependantParameter;
 
             this.WhenAnyValue(x => x.SelectedParameterTypeAssignment)
-                .Subscribe(_ => this.SetName());
+                .Subscribe(_ => this.SetProperties());
+
+            this.WhenAnyValue(x => x.IsTimeTaggedParameter).Where(x => x)
+                .Subscribe(x => this.IsTimeTaggedParameter = x && this.CanBeTimeTagged);
         }
 
         /// <summary>
-        /// Sets the <see cref="SelectedParameterTypeAssignmentName"/> property
+        /// Sets some properties of this view model
         /// </summary>
-        private void SetName()
+        private void SetProperties()
         {
             if (this.SelectedParameterTypeAssignment is null)
             {
@@ -80,6 +87,7 @@ namespace DEHPMatlab.ViewModel.Row
             }
 
             this.SelectedParameterTypeAssignmentName = this.SelectedParameterTypeAssignment.ParameterType.Name;
+            this.CanBeTimeTagged = this.SelectedParameterTypeAssignment is IndependentParameterTypeAssignment;
         }
 
         /// <summary>
@@ -89,15 +97,6 @@ namespace DEHPMatlab.ViewModel.Row
         {
             get => this.index;
             set => this.RaiseAndSetIfChanged(ref this.index, value);
-        }
-
-        /// <summary>
-        /// Asserts if the corrent Row or Column represents a DependantParameter or not
-        /// </summary>
-        public bool IsDependantParameter
-        {
-            get => this.isDependantParameter;
-            set => this.RaiseAndSetIfChanged(ref this.isDependantParameter, value);
         }
 
         /// <summary>
@@ -116,6 +115,24 @@ namespace DEHPMatlab.ViewModel.Row
         {
             get => this.selectedParameterTypeAssignmentName;
             set => this.RaiseAndSetIfChanged(ref this.selectedParameterTypeAssignmentName, value);
+        }
+
+        /// <summary>
+        /// Asserts if the <see cref="IParameterTypeAssignment"/> correspondant to a Time tagged Parameter
+        /// </summary>
+        public bool IsTimeTaggedParameter
+        {
+            get => this.isTimeTaggedParameter;
+            set => this.RaiseAndSetIfChanged(ref this.isTimeTaggedParameter, value);
+        }
+
+        /// <summary>
+        /// Asserts if the <see cref="IParameterTypeAssignment"/> can be a Time tagged Parameter
+        /// </summary>
+        public bool CanBeTimeTagged
+        {
+            get => this.canBeTimeTagged;
+            set => this.RaiseAndSetIfChanged(ref this.canBeTimeTagged, value);
         }
     }
 }

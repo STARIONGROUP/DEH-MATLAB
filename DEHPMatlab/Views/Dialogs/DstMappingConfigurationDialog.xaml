@@ -9,6 +9,9 @@
         xmlns:converters="clr-namespace:DEHPCommon.Converters;assembly=DEHPCommon"
         xmlns:dxg="http://schemas.devexpress.com/winfx/2008/xaml/grid"
         xmlns:dxe="http://schemas.devexpress.com/winfx/2008/xaml/editors"
+        xmlns:behaviors1="clr-namespace:DEHPMatlab.Behaviors"
+        xmlns:system="clr-namespace:System;assembly=mscorlib"
+        xmlns:dialogs="clr-namespace:DEHPMatlab.Views.Dialogs"
         Title="Mapping Configuration Dialog" MinWidth="800"
         WindowStartupLocation="CenterScreen"
         MinHeight="600" mc:Ignorable="d" Topmost="True">
@@ -32,8 +35,11 @@
                 <dxg:TreeListControl ItemsSource="{Binding Variables}" SelectedItem="{Binding SelectedThing}">
                     <dxg:TreeListControl.View>
                         <dxg:TreeListView Name="View" AllowEditing="False" AutoWidth="False" ExpandCollapseNodesOnNavigation="True" ExpandStateFieldName="IsExpanded" FixedLineWidth="0" HorizontalScrollbarVisibility="Auto"
-                                          NavigationStyle="Cell" ShowHorizontalLines="False" ShowIndicator="False" ShowNodeImages="False" ShowVerticalLines="False" TreeDerivationMode="HierarchicalDataTemplate"
+                                          NavigationStyle="Cell" ShowHorizontalLines="False" ShowIndicator="False" ShowVerticalLines="False" AllowSorting="True"
                                           TreeLineStyle="Solid" VerticalScrollbarVisibility="Auto">
+                            <dxmvvm:Interaction.Behaviors>
+                                <behaviors1:TreeListSortingBehavior />
+                            </dxmvvm:Interaction.Behaviors>
                             <dxg:TreeListView.RowStyle>
                                 <Style TargetType="{x:Type dxg:RowControl}">
                                     <Style.Triggers>
@@ -75,8 +81,8 @@
                             </dxg:TreeListColumn.DisplayTemplate>
                         </dxg:TreeListColumn>
                         <dxg:TreeListColumn AllowEditing="False" FieldName="Name" Fixed="Left" />
-                        <dxg:TreeListColumn AllowEditing="False" FieldName="ActualValue" />
-                        <dxg:TreeListColumn AllowEditing="False" FieldName="InitialValue" />
+                        <dxg:TreeListColumn AllowEditing="False" FieldName="ActualValue" SortMode="Custom" AllowSorting="True"/>
+                        <dxg:TreeListColumn AllowEditing="False" FieldName="InitialValue" SortMode="Custom" AllowSorting="True"/>
                     </dxg:TreeListControl.Columns>
                 </dxg:TreeListControl>
             </GroupBox>
@@ -85,37 +91,66 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-
-                    <Grid Grid.Column="0" Margin="5">
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <Label Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Height="25" HorizontalAlignment="Left" Content="Parameters are split into :" />
-                            <dxe:ComboBoxEdit Grid.Row="0" Grid.Column="1" Margin="5" Height="25"
-                                              ItemsSource="{Binding RowColumnValues}"
-                                              SelectedItem="{Binding SelectedThing.RowColumnSelection}"
-                                              Width="Auto" ToolTip="Select Row if the parameters are split by row, Column instead."/>
-                            <dxg:GridControl Grid.Row="1" Grid.ColumnSpan="2" Grid.Column="0" Margin="5"
-                                             Height="190" ItemsSource="{Binding SelectedThing.SampledFunctionParameterParameterAssignementRows}" 
-                                             ToolTip="Assign each row or column to the correct type of dependant or independant parameter type">
-                                <dxg:GridControl.View>
-                                    <dxg:TableView VerticalScrollbarVisibility="Auto"/>
-                                </dxg:GridControl.View>
-                                <dxg:GridControl.Columns>
-                                    <dxg:GridColumn AllowEditing="False" FieldName="Index" UnboundType="Integer"/>
-                                    <dxg:GridColumn AllowEditing="True"  FieldName="IsDependantParameter" UnboundType="Boolean"/>
-                                </dxg:GridControl.Columns>
-                            </dxg:GridControl>
-                        </Grid>
-                    </Grid>
                     <Grid Grid.Column="1" Margin="5">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Grid Margin="1" HorizontalAlignment="Stretch">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="7*" />
+                                <ColumnDefinition Width="30*"/>
+                                <ColumnDefinition Width="74*" />
+                                <ColumnDefinition Width="55*" />
+                                <ColumnDefinition Width="55*" />
+                            </Grid.ColumnDefinitions>
+                            <Label Content="Timestep: " Grid.ColumnSpan="2" />
+                            <dxe:SpinEdit Grid.Column="2" Margin="2" HorizontalAlignment="Stretch" CausesValidation="False"
+                                          EditValue="{Binding SelectedThing.SelectedTimeStep, UpdateSourceTrigger=PropertyChanged}"
+                                          EditValueType="{x:Type system:Double}" ToolTip="Defines the time step"
+                                          MinValue="0" ValidateOnEnterKeyPressed="False" ValidateOnTextInput="False" />
+                            <Button ToolTip="Applies the defined step" Grid.Column="4" Margin="2,2,10,2" HorizontalAlignment="Stretch" Command="{Binding ApplyTimeStepOnSelectionCommand}">Apply</Button>
+                        </Grid>
+                        <dxg:GridControl Grid.Row="1" ItemsSource="{Binding SelectedThing.TimeTaggedValues}" 
+                                         SelectedItems="{Binding SelectedThing.SelectedValues, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         SelectionMode="Row"
+                                         ToolTip="The representation of all time tagged values" AutoGenerateColumns="None">
+                            
+                            <dxg:GridControl.View>
+                                <dxg:TableView HorizontalAlignment="Stretch" VerticalAlignment="Stretch" AllowColumnMoving="False" 
+                                               AllowGrouping="False" IsDetailButtonVisibleBinding="{x:Null}" RetainSelectionOnClickOutsideCheckBoxSelector="True" 
+                                               ShowCheckBoxSelectorColumn="True" ShowFilterPanelMode="Never" 
+                                               ShowGroupPanel="False" VerticalScrollbarVisibility="Auto"
+                                               AllowEditing="False" AllowSorting="False" AllowFilterEditor="False"
+                                               HorizontalScrollbarVisibility="Auto" >
+                                <dxg:TableView.CheckBoxSelectorColumnHeaderTemplate>
+                                    <DataTemplate>
+                                        <dx:MeasurePixelSnapper HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                                            <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                                                <CheckBox Command="{Binding RelativeSource={RelativeSource FindAncestor, 
+                                                            AncestorType={x:Type dialogs:DstMappingConfigurationDialog}},
+                                                            Path=DataContext.SelectAllValuesCommand}"/>
+                                            </Grid>
+                                        </dx:MeasurePixelSnapper>
+                                    </DataTemplate>
+                                    </dxg:TableView.CheckBoxSelectorColumnHeaderTemplate>
+                                </dxg:TableView>
+                            </dxg:GridControl.View>
+                            <dxg:GridControl.Columns>
+                                <dxg:GridColumn FieldName="TimeStep"/>
+                                <dxg:GridColumn FieldName="Value" >
+                                    <dxg:GridColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <dxe:ComboBoxEdit ItemsSource="{Binding RowData.Row.Values}" IsTextEditable="False" SelectedIndex="0"/>
+                                        </DataTemplate>
+                                    </dxg:GridColumn.CellTemplate>
+                                </dxg:GridColumn>
+                            </dxg:GridControl.Columns>
+                        </dxg:GridControl>
+                    </Grid>
+                    <Grid Grid.Column="2" Margin="5">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="4*" />
                             <ColumnDefinition Width="6*" />

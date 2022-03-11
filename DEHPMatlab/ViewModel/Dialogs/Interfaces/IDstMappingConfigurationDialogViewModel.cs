@@ -24,6 +24,8 @@
 
 namespace DEHPMatlab.ViewModel.Dialogs.Interfaces
 {
+    using System;
+
     using CDP4Common.EngineeringModelData;
     using CDP4Common.SiteDirectoryData;
 
@@ -134,5 +136,10 @@ namespace DEHPMatlab.ViewModel.Dialogs.Interfaces
         /// Update the <see cref="AvailableOptions"/> collection
         /// </summary>
         void UpdateAvailableOptions();
+
+        /// <summary>
+        /// Dispose all <see cref="IDisposable" /> of the viewmodel
+        /// </summary>
+        void Dispose();
     }
 }

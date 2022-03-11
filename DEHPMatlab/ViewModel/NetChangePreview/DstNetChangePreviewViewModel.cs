@@ -455,8 +455,8 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
             switch (mappedElement.SelectedParameter.ParameterType)
             {
                 case SampledFunctionParameterType sampledFunctionParameterType:
-                    variable.ActualValue = sampledFunctionParameterType.ComputeArray(mappedElement.SelectedValue.Container, variable.RowColumnSelection,
-                        variable.SampledFunctionParameterParameterAssignementRows.ToList());
+                    variable.ActualValue = sampledFunctionParameterType.ComputeArray(mappedElement.SelectedValue.Container, variable.RowColumnSelectionToDst,
+                        variable.SampledFunctionParameterParameterAssignementToDstRows.ToList());
 
                     break;
                 case ArrayParameterType arrayParameterType:

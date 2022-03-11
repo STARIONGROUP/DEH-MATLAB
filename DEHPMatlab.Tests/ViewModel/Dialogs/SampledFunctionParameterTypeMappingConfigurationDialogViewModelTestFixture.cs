@@ -24,10 +24,14 @@
 
 namespace DEHPMatlab.Tests.ViewModel.Dialogs
 {
+    using System.Linq;
+
     using CDP4Common.SiteDirectoryData;
 
+    using DEHPCommon.Enumerators;
     using DEHPCommon.UserInterfaces.Behaviors;
 
+    using DEHPMatlab.Enumerator;
     using DEHPMatlab.ViewModel.Dialogs;
     using DEHPMatlab.ViewModel.Row;
 
@@ -38,7 +42,8 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
     [TestFixture]
     public class SampledFunctionParameterTypeMappingConfigurationDialogViewModelTestFixture
     {
-        private SampledFunctionParameterTypeMappingConfigurationDialogViewModel viewModel;
+        private SampledFunctionParameterTypeMappingConfigurationDialogViewModel viewModelToHub;
+        private SampledFunctionParameterTypeMappingConfigurationDialogViewModel viewModelToDst;
         private MatlabWorkspaceRowViewModel variable;
         private SampledFunctionParameterType sampledFunctionParameterType;
 
@@ -76,27 +81,172 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
                 }
             };
 
-            this.viewModel = new SampledFunctionParameterTypeMappingConfigurationDialogViewModel(this.variable, this.sampledFunctionParameterType);
+            this.viewModelToHub = new SampledFunctionParameterTypeMappingConfigurationDialogViewModel(this.variable, this.sampledFunctionParameterType, MappingDirection.FromDstToHub);
+            this.viewModelToDst = new SampledFunctionParameterTypeMappingConfigurationDialogViewModel(this.variable, this.sampledFunctionParameterType, MappingDirection.FromHubToDst);
         }
 
         [Test]
         public void VerifyProperties()
         {
-            Assert.AreEqual(2,this.viewModel.AvailableIndexes.Count);
-            Assert.AreEqual(2, this.viewModel.RowColumnValues.Count);
-            Assert.IsNull(this.viewModel.CloseWindowBehavior);
-            Assert.IsTrue(this.viewModel.IsMappingValid);
-            this.viewModel.CloseWindowBehavior = new Mock<ICloseWindowBehavior>().Object;
-            Assert.IsNotNull(this.viewModel.CloseWindowBehavior);
+            Assert.AreEqual(2,this.viewModelToHub.AvailableIndexes.Count);
+            Assert.AreEqual(2, this.viewModelToHub.RowColumnValues.Count);
+            Assert.AreEqual(RowColumnSelection.Column, this.viewModelToHub.SelectedRowColumnSelection);
+            Assert.IsNull(this.viewModelToHub.CloseWindowBehavior);
+            Assert.IsTrue(this.viewModelToHub.IsMappingValid);
+            this.viewModelToHub.CloseWindowBehavior = new Mock<ICloseWindowBehavior>().Object;
+            Assert.IsNotNull(this.viewModelToHub.CloseWindowBehavior);
+            Assert.IsFalse(this.viewModelToDst.IsTimeTaggedVisible);
+            Assert.IsTrue(this.viewModelToHub.IsTimeTaggedVisible);
+            Assert.IsNotNull(this.viewModelToHub.SampledFunctionParameterParameterAssignementRows);
+            Assert.IsNotNull(this.viewModelToHub.ProceedSampledFunctionParameterParameterAssignementRowsCommand);
+            Assert.AreEqual("time", this.viewModelToHub.SampledFunctionParameterParameterAssignementRows.First().SelectedParameterTypeAssignmentName);
         }
 
         [Test]
-        public void VerifiyObservablesChanges()
+        public void VerifyExecuteCommand()
         {
-            this.variable.SampledFunctionParameterParameterAssignementRows[0].Index = "1";
-            Assert.IsFalse(this.viewModel.IsMappingValid);
-            this.variable.SampledFunctionParameterParameterAssignementRows[1].Index = "0";
-            Assert.IsTrue(this.viewModel.IsMappingValid);
+            this.viewModelToDst.SampledFunctionParameterParameterAssignementRows.First().Index = "1";
+            Assert.IsFalse(this.viewModelToDst.ProceedSampledFunctionParameterParameterAssignementRowsCommand.CanExecute(null));
+
+            this.viewModelToDst.SampledFunctionParameterParameterAssignementRows.First().Index = "0";
+            Assert.IsTrue(this.viewModelToDst.ProceedSampledFunctionParameterParameterAssignementRowsCommand.CanExecute(null));
+            Assert.IsEmpty(this.viewModelToDst.Variable.SampledFunctionParameterParameterAssignementToDstRows);
+            Assert.DoesNotThrow(() => this.viewModelToDst.ProceedSampledFunctionParameterParameterAssignementRowsCommand.Execute(null));
+            Assert.AreEqual(2,this.variable.SampledFunctionParameterParameterAssignementToDstRows.Count);
+
+            Assert.IsTrue(this.viewModelToHub.ProceedSampledFunctionParameterParameterAssignementRowsCommand.CanExecute(null));
+            Assert.IsEmpty(this.viewModelToHub.Variable.SampledFunctionParameterParameterAssignementToHubRows);
+            Assert.DoesNotThrow(() => this.viewModelToHub.ProceedSampledFunctionParameterParameterAssignementRowsCommand.Execute(null));
+            Assert.AreEqual(2, this.variable.SampledFunctionParameterParameterAssignementToHubRows.Count);
+        }
+
+        [Test]
+        public void VerifyVariableWithPreviousMapping()
+        {
+            this.variable.SampledFunctionParameterParameterAssignementToDstRows.Add(new SampledFunctionParameterParameterAssignementRowViewModel("1")
+            {
+                SelectedParameterTypeAssignment = this.sampledFunctionParameterType.IndependentParameterType.First()
+            });
+
+            this.variable.SampledFunctionParameterParameterAssignementToDstRows.Add(new SampledFunctionParameterParameterAssignementRowViewModel("0")
+            {
+                SelectedParameterTypeAssignment = this.sampledFunctionParameterType.DependentParameterType.First()
+            });
+
+            this.variable.SampledFunctionParameterParameterAssignementToHubRows.Add(new SampledFunctionParameterParameterAssignementRowViewModel("1")
+            {
+                SelectedParameterTypeAssignment = this.sampledFunctionParameterType.IndependentParameterType.First()
+            });
+
+            this.variable.SampledFunctionParameterParameterAssignementToHubRows.Add(new SampledFunctionParameterParameterAssignementRowViewModel("0")
+            {
+                SelectedParameterTypeAssignment = this.sampledFunctionParameterType.DependentParameterType.First()
+            });
+
+            this.viewModelToHub = new SampledFunctionParameterTypeMappingConfigurationDialogViewModel(this.variable, this.sampledFunctionParameterType, MappingDirection.FromDstToHub);
+            this.viewModelToDst = new SampledFunctionParameterTypeMappingConfigurationDialogViewModel(this.variable, this.sampledFunctionParameterType, MappingDirection.FromHubToDst);
+
+            Assert.AreEqual("1", this.viewModelToDst.SampledFunctionParameterParameterAssignementRows[0].Index);
+            Assert.AreEqual("1", this.viewModelToHub.SampledFunctionParameterParameterAssignementRows[0].Index);
+
+            this.variable.SampledFunctionParameterParameterAssignementToDstRows.Clear();
+            this.variable.SampledFunctionParameterParameterAssignementToHubRows.Clear();
+
+            this.variable.SampledFunctionParameterParameterAssignementToDstRows.Add(new SampledFunctionParameterParameterAssignementRowViewModel("1")
+            {
+                SelectedParameterTypeAssignment = this.sampledFunctionParameterType.IndependentParameterType.First()
+            });
+
+            this.variable.SampledFunctionParameterParameterAssignementToDstRows.Add(new SampledFunctionParameterParameterAssignementRowViewModel("0")
+            {
+                SelectedParameterTypeAssignment = new DependentParameterTypeAssignment()
+                {
+                    ParameterType = new SimpleQuantityKind()
+                    {
+                        Name = "a"
+                    }
+                }
+            });
+
+            this.variable.SampledFunctionParameterParameterAssignementToHubRows.Add(new SampledFunctionParameterParameterAssignementRowViewModel("1")
+            {
+                SelectedParameterTypeAssignment = new IndependentParameterTypeAssignment()
+                {
+                    ParameterType = new SimpleQuantityKind()
+                    {
+                        Name = "b"
+                    }
+                }
+            });
+
+            this.variable.SampledFunctionParameterParameterAssignementToHubRows.Add(new SampledFunctionParameterParameterAssignementRowViewModel("0")
+            {
+                SelectedParameterTypeAssignment = this.sampledFunctionParameterType.DependentParameterType.First()
+            });
+
+            this.viewModelToHub = new SampledFunctionParameterTypeMappingConfigurationDialogViewModel(this.variable, this.sampledFunctionParameterType, MappingDirection.FromDstToHub);
+            this.viewModelToDst = new SampledFunctionParameterTypeMappingConfigurationDialogViewModel(this.variable, this.sampledFunctionParameterType, MappingDirection.FromHubToDst);
+
+            Assert.AreEqual("0", this.viewModelToDst.SampledFunctionParameterParameterAssignementRows[0].Index);
+            Assert.AreEqual("0", this.viewModelToHub.SampledFunctionParameterParameterAssignementRows[0].Index);
+
+            this.variable.SampledFunctionParameterParameterAssignementToDstRows.Clear();
+            this.variable.SampledFunctionParameterParameterAssignementToHubRows.Clear();
+
+            this.variable.SampledFunctionParameterParameterAssignementToDstRows.Add(new SampledFunctionParameterParameterAssignementRowViewModel("1")
+            {
+                SelectedParameterTypeAssignment = new IndependentParameterTypeAssignment()
+                {
+                    ParameterType = new SimpleQuantityKind()
+                    {
+                        Name = "b"
+                    }
+                }
+            });
+
+            this.variable.SampledFunctionParameterParameterAssignementToDstRows.Add(new SampledFunctionParameterParameterAssignementRowViewModel("0")
+            {
+                SelectedParameterTypeAssignment = this.sampledFunctionParameterType.DependentParameterType.First()
+            });
+
+            this.variable.SampledFunctionParameterParameterAssignementToHubRows.Add(new SampledFunctionParameterParameterAssignementRowViewModel("1")
+            {
+                SelectedParameterTypeAssignment = this.sampledFunctionParameterType.IndependentParameterType.First()
+            });
+
+            this.variable.SampledFunctionParameterParameterAssignementToHubRows.Add(new SampledFunctionParameterParameterAssignementRowViewModel("0")
+            {
+                SelectedParameterTypeAssignment = new DependentParameterTypeAssignment()
+                {
+                    ParameterType = new SimpleQuantityKind()
+                    {
+                        Name = "a"
+                    }
+                }
+            });
+
+            this.viewModelToHub = new SampledFunctionParameterTypeMappingConfigurationDialogViewModel(this.variable, this.sampledFunctionParameterType, MappingDirection.FromDstToHub);
+            this.viewModelToDst = new SampledFunctionParameterTypeMappingConfigurationDialogViewModel(this.variable, this.sampledFunctionParameterType, MappingDirection.FromHubToDst);
+
+            Assert.AreEqual("0", this.viewModelToDst.SampledFunctionParameterParameterAssignementRows[0].Index);
+            Assert.AreEqual("0", this.viewModelToHub.SampledFunctionParameterParameterAssignementRows[0].Index);
+
+            this.viewModelToDst.SelectedRowColumnSelection = RowColumnSelection.Row;
+            Assert.AreEqual("0", this.viewModelToDst.SampledFunctionParameterParameterAssignementRows[0].Index);
+            Assert.AreEqual("0", this.viewModelToHub.SampledFunctionParameterParameterAssignementRows[0].Index);
+        }
+
+        [Test]
+        public void VerifyOnlyOneIsTimeTagged()
+        {
+            Assert.AreEqual(0, this.viewModelToDst.SampledFunctionParameterParameterAssignementRows.Count(x => x.IsTimeTaggedParameter));
+            this.viewModelToDst.SampledFunctionParameterParameterAssignementRows[0].IsTimeTaggedParameter = true;
+            Assert.AreEqual(1, this.viewModelToDst.SampledFunctionParameterParameterAssignementRows.Count(x => x.IsTimeTaggedParameter));
+            this.viewModelToDst.SampledFunctionParameterParameterAssignementRows[1].IsTimeTaggedParameter = true;
+            Assert.AreEqual(1, this.viewModelToDst.SampledFunctionParameterParameterAssignementRows.Count(x => x.IsTimeTaggedParameter));
+            Assert.IsTrue(this.viewModelToDst.SampledFunctionParameterParameterAssignementRows[0].IsTimeTaggedParameter);
+            Assert.IsTrue(this.viewModelToDst.SampledFunctionParameterParameterAssignementRows[0].CanBeTimeTagged);
+            Assert.IsFalse(this.viewModelToDst.SampledFunctionParameterParameterAssignementRows[1].IsTimeTaggedParameter);
         }
     }
 }

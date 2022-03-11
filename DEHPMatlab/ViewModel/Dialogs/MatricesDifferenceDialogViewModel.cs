@@ -107,12 +107,10 @@ namespace DEHPMatlab.ViewModel.Dialogs
         /// <returns>A new <see cref="DataColumn" /></returns>
         private DataColumn CreateColumn(string columnName, Type type)
         {
-            var column = new DataColumn();
-            column.ColumnName = columnName;
-            column.ReadOnly = true;
-            column.Unique = false;
-            column.DataType = type;
-            return column;
+            return new DataColumn(columnName, type)
+            {
+                ReadOnly = true
+            };
         }
 
         /// <summary>
