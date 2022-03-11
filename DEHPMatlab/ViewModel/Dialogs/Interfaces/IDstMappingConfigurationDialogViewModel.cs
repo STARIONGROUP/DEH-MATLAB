@@ -140,6 +140,6 @@ namespace DEHPMatlab.ViewModel.Dialogs.Interfaces
         /// <summary>
         /// Dispose all <see cref="IDisposable" /> of the viewmodel
         /// </summary>
-        void Dispose();
+        void DisposeAllDisposables();
     }
 }

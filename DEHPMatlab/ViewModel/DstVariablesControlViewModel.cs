@@ -249,7 +249,7 @@ namespace DEHPMatlab.ViewModel
                 viewModel.Initialize();
                 viewModel.Variables.AddRange(this.SelectedThings);
                 this.navigationService.ShowDialog<DstMappingConfigurationDialog, IDstMappingConfigurationDialogViewModel>(viewModel);
-                viewModel.Dispose();
+                viewModel.DisposeAllDisposables();
                 this.SelectedThings.Clear();
                 this.statusBar.Append("Mapping in progress");
             }

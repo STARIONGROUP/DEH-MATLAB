@@ -188,7 +188,7 @@ namespace DEHPMatlab.ViewModel.Row
                 .Subscribe(_ => this.CheckIfIsEditable());
 
             this.SampledFunctionParameterParameterAssignementToHubRows.IsEmptyChanged
-                .Where(x => !x).Subscribe(_ => this.GenerateTimeTaggedValues());
+                .Where(x => !x).Subscribe(_ => this.GetTimeDependentValues());
 
             CDPMessageBus.Current.Listen<DstHighlightEvent>()
                 .Where(x => x.TargetThingId.ToString() == this.Identifier)
@@ -453,7 +453,7 @@ namespace DEHPMatlab.ViewModel.Row
         /// <summary>
         /// Generates all values to fill the <see cref="TimeTaggedValues" />
         /// </summary>
-        public void GenerateTimeTaggedValues()
+        public void GetTimeDependentValues()
         {
             this.TimeTaggedValues.Clear();
             this.SelectedValues.Clear();
@@ -478,21 +478,34 @@ namespace DEHPMatlab.ViewModel.Row
 
             for (var timeTaggedValueIndex = 0; timeTaggedValueIndex < timeTaggedValuesCount; timeTaggedValueIndex++)
             {
-                var values = new List<object>();
-
-                foreach (var orderIndex in orderedIndexes)
-                {
-                    var rowIndex = this.RowColumnSelectionToHub == RowColumnSelection.Column ? timeTaggedValueIndex : int.Parse(orderIndex);
-                    var columnIndex = this.RowColumnSelectionToHub == RowColumnSelection.Row ? timeTaggedValueIndex : int.Parse(orderIndex);
-
-                    values.Add(currentArrayValue.GetValue(rowIndex, columnIndex));
-                }
-
                 var timeRowIndex = this.RowColumnSelectionToHub == RowColumnSelection.Column ? timeTaggedValueIndex : timeTaggedIndex;
                 var timeColumnIndex = this.RowColumnSelectionToHub == RowColumnSelection.Row ? timeTaggedValueIndex : timeTaggedIndex;
 
-                this.TimeTaggedValues.Add(new TimeTaggedValuesRowViewModel((double) currentArrayValue.GetValue(timeRowIndex, timeColumnIndex), values));
+                this.TimeTaggedValues.Add(new TimeTaggedValuesRowViewModel((double)currentArrayValue.GetValue(timeRowIndex, timeColumnIndex), 
+                    this.GetTimeDependentValues(currentArrayValue, orderedIndexes, timeTaggedValueIndex)));
             }
+        }
+
+        /// <summary>
+        /// Retrieve the time dependent values for a row or column of the <see cref="ArrayValue" />
+        /// </summary>
+        /// <param name="currentArrayValue">The <see cref="ArrayValue" /> casted</param>
+        /// <param name="orderedIndexes">The collection of orderedIndexes</param>
+        /// <param name="timeTaggedValueIndex">The current index inside the <see cref="ArrayValue"/></param>
+        /// <returns>A collection of values</returns>
+        private IEnumerable<object> GetTimeDependentValues(Array currentArrayValue, List<string> orderedIndexes, int timeTaggedValueIndex)
+        {
+            var values = new List<object>();
+            
+            foreach (var orderIndex in orderedIndexes)
+            {
+                var rowIndex = this.RowColumnSelectionToHub == RowColumnSelection.Column ? timeTaggedValueIndex : int.Parse(orderIndex);
+                var columnIndex = this.RowColumnSelectionToHub == RowColumnSelection.Row ? timeTaggedValueIndex : int.Parse(orderIndex);
+
+                values.Add(currentArrayValue.GetValue(rowIndex, columnIndex));
+            }
+
+            return values;
         }
 
         /// <summary>

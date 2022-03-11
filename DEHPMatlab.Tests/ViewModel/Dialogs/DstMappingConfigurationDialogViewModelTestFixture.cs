@@ -227,7 +227,7 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
         [Test]
         public void VerifyDispose()
         {
-            Assert.DoesNotThrow(() => this.viewModel.Dispose());
+            Assert.DoesNotThrow(() => this.viewModel.DisposeAllDisposables());
         }
 
         [Test]

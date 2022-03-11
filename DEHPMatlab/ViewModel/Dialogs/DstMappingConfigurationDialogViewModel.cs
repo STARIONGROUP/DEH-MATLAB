@@ -372,7 +372,7 @@ namespace DEHPMatlab.ViewModel.Dialogs
         /// <summary>
         /// Dispose all <see cref="IDisposable" /> of the viewmodel
         /// </summary>
-        public void Dispose()
+        public void DisposeAllDisposables()
         {
             foreach (var disposable in this.disposables)
             {
