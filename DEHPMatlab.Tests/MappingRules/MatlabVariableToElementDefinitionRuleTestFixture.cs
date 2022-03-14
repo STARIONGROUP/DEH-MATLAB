@@ -392,7 +392,7 @@ namespace DEHPMatlab.Tests.MappingRules
                 }
             };
 
-            var arrayValue = new object[2, 3];
+            var arrayValue = new double[2, 3];
 
             for (var i = 0; i < arrayValue.GetLength(0); i++)
             {
@@ -415,9 +415,42 @@ namespace DEHPMatlab.Tests.MappingRules
             Assert.DoesNotThrow(() => this.rule.UpdateValueSet(variable, parameter));
             
             variable.UnwrapVariableRowViewModels();
-            variable.RowColumnSelection = RowColumnSelection.Row;
-            variable.SampledFunctionParameterParameterAssignementRows.First().IsDependantParameter = true;
-            variable.SampledFunctionParameterParameterAssignementRows.Last().IsDependantParameter = false;
+            variable.RowColumnSelectionToHub = RowColumnSelection.Row;
+            variable.SampledFunctionParameterParameterAssignementToHubRows.Clear();
+            
+            variable.SampledFunctionParameterParameterAssignementToHubRows.Add(new SampledFunctionParameterParameterAssignementRowViewModel("1")
+            {
+                SelectedParameterTypeAssignment = sfpt.IndependentParameterType.First()
+            });
+
+            variable.SampledFunctionParameterParameterAssignementToHubRows.Add(new SampledFunctionParameterParameterAssignementRowViewModel("0")
+            {
+                SelectedParameterTypeAssignment = sfpt.DependentParameterType.First()
+            });
+
+            Assert.DoesNotThrow(() => this.rule.UpdateValueSet(variable, parameter));
+            Assert.AreEqual("2", parameter.ValueSet.First().Computed.First());
+
+            variable.SampledFunctionParameterParameterAssignementToHubRows.Clear();
+            
+            variable.SampledFunctionParameterParameterAssignementToHubRows.AddRange(new []
+            {
+                new SampledFunctionParameterParameterAssignementRowViewModel("1")
+                {
+                    SelectedParameterTypeAssignment = sfpt.IndependentParameterType.First(),
+                    IsTimeTaggedParameter = true
+                },
+                new SampledFunctionParameterParameterAssignementRowViewModel("0")
+                {
+                    SelectedParameterTypeAssignment = sfpt.DependentParameterType.First()
+                }
+            });
+
+            Assert.IsNotEmpty(variable.TimeTaggedValues);
+            Assert.AreEqual(0, variable.SelectedTimeStep);
+            variable.SelectedTimeStep = 2;
+            variable.ApplyTimeStep();
+
             Assert.DoesNotThrow(() => this.rule.UpdateValueSet(variable, parameter));
             Assert.AreEqual("2", parameter.ValueSet.First().Computed.First());
         }

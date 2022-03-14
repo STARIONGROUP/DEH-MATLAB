@@ -360,8 +360,17 @@ namespace DEHPMatlab.Tests.NetChange
 
             this.inputVariables.AddRange(variable.UnwrapVariableRowViewModels());
 
-            variable.SampledFunctionParameterParameterAssignementRows[0].SelectedParameterTypeAssignment = sampledFunction.IndependentParameterType[0];
-            variable.SampledFunctionParameterParameterAssignementRows[1].SelectedParameterTypeAssignment = sampledFunction.DependentParameterType[0];
+            variable.SampledFunctionParameterParameterAssignementToDstRows.Clear();
+
+            variable.SampledFunctionParameterParameterAssignementToDstRows.Add(new SampledFunctionParameterParameterAssignementRowViewModel("0")
+            {
+                SelectedParameterTypeAssignment = sampledFunction.IndependentParameterType[0]
+            });
+
+            variable.SampledFunctionParameterParameterAssignementToDstRows.Add(new SampledFunctionParameterParameterAssignementRowViewModel("1")
+            {
+                SelectedParameterTypeAssignment = sampledFunction.DependentParameterType[0]
+            });
 
             this.viewModel.SelectedThings.Add(variable);
 

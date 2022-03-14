@@ -39,7 +39,6 @@ namespace DEHPMatlab.ViewModel.Dialogs
     using DEHPCommon.UserInterfaces.ViewModels.Interfaces;
 
     using DEHPMatlab.DstController;
-    using DEHPMatlab.Enumerator;
     using DEHPMatlab.Extensions;
     using DEHPMatlab.ViewModel.Dialogs.Interfaces;
     using DEHPMatlab.ViewModel.Row;
@@ -53,32 +52,37 @@ namespace DEHPMatlab.ViewModel.Dialogs
     public class DstMappingConfigurationDialogViewModel : MappingConfigurationDialogViewModel, IDstMappingConfigurationDialogViewModel
     {
         /// <summary>
-        /// The <see cref="INavigationService"/>
+        /// The <see cref="INavigationService" />
         /// </summary>
         private readonly INavigationService navigationService;
 
         /// <summary>
-        /// Collection of <see cref="IDisposable"/>
+        /// A collection of <see cref="IDisposable"/>
         /// </summary>
-        private readonly List<IDisposable> disposablesObservables = new();
+        private readonly List<IDisposable> disposables = new();
 
         /// <summary>
-        /// Backing field for <see cref="SelectedThing"/>
+        /// Backing field for <see cref="SelectedThing" />
         /// </summary>
         private MatlabWorkspaceRowViewModel selectedThing;
 
         /// <summary>
-        /// Backing field for <see cref="CanContinue"/>
+        /// Backing field for <see cref="CanContinue" />
         /// </summary>
         private bool canContinue;
 
         /// <summary>
-        /// Initializes a new <see cref="DstMappingConfigurationDialogViewModel"/>
+        /// Asserts if the <see cref="INavigationService" /> does not already opened the <see cref="SampledFunctionParameterTypeMappingConfigurationDialog" />
         /// </summary>
-        /// <param name="hubController">The <see cref="IHubController"/></param>
-        /// <param name="dstController">The <see cref="IDstController"/></param>
-        /// <param name="statusBar">The <see cref="IStatusBarControlViewModel"/></param>
-        /// <param name="navigationService">The <see cref="INavigationService"/></param>
+        private bool isDialogOpened;
+
+        /// <summary>
+        /// Initializes a new <see cref="DstMappingConfigurationDialogViewModel" />
+        /// </summary>
+        /// <param name="hubController">The <see cref="IHubController" /></param>
+        /// <param name="dstController">The <see cref="IDstController" /></param>
+        /// <param name="statusBar">The <see cref="IStatusBarControlViewModel" /></param>
+        /// <param name="navigationService">The <see cref="INavigationService" /></param>
         public DstMappingConfigurationDialogViewModel(IHubController hubController, IDstController dstController,
             IStatusBarControlViewModel statusBar, INavigationService navigationService) : base(hubController, dstController, statusBar)
         {
@@ -86,7 +90,7 @@ namespace DEHPMatlab.ViewModel.Dialogs
         }
 
         /// <summary>
-        /// Gets or sets the selected row that represents a <see cref="MatlabWorkspaceRowViewModel"/>
+        /// Gets or sets the selected row that represents a <see cref="MatlabWorkspaceRowViewModel" />
         /// </summary>
         public MatlabWorkspaceRowViewModel SelectedThing
         {
@@ -95,7 +99,7 @@ namespace DEHPMatlab.ViewModel.Dialogs
         }
 
         /// <summary>
-        /// Gets or sets whether the <see cref="MappingConfigurationDialogViewModel.ContinueCommand"/> can execute
+        /// Gets or sets whether the <see cref="MappingConfigurationDialogViewModel.ContinueCommand" /> can execute
         /// </summary>
         public bool CanContinue
         {
@@ -104,44 +108,50 @@ namespace DEHPMatlab.ViewModel.Dialogs
         }
 
         /// <summary>
-        /// Gets the collections of <see cref="MatlabWorkspaceRowViewModel"/>
+        /// Gets the collections of <see cref="MatlabWorkspaceRowViewModel" />
         /// </summary>
         public ReactiveList<MatlabWorkspaceRowViewModel> Variables { get; } = new();
 
         /// <summary>
-        /// Gets the collections of the available <see cref="ElementDefinition"/> from the connected Hub Model
+        /// Gets the collections of the available <see cref="ElementDefinition" /> from the connected Hub Model
         /// </summary>
         public ReactiveList<ElementDefinition> AvailableElementDefinitions { get; } = new();
 
         /// <summary>
-        /// Gets the collections of the available <see cref="ElementUsage"/> from the connected Hub Model
+        /// Gets the collections of the available <see cref="ElementUsage" /> from the connected Hub Model
         /// </summary>
         public ReactiveList<ElementUsage> AvailableElementUsages { get; } = new();
 
         /// <summary>
-        /// Gets the collections of the available <see cref="ParameterType"/> from the connected Hub Model
+        /// Gets the collections of the available <see cref="ParameterType" /> from the connected Hub Model
         /// </summary>
         public ReactiveList<ParameterType> AvailableParameterTypes { get; } = new();
 
         /// <summary>
-        /// Gets the collections of the available <see cref="ParameterOrOverrideBase"/> from the connected Hub Model
+        /// Gets the collections of the available <see cref="ParameterOrOverrideBase" /> from the connected Hub Model
         /// </summary>
         public ReactiveList<ParameterOrOverrideBase> AvailableParameters { get; } = new();
 
         /// <summary>
-        /// Gets the collection of the available <see cref="ActualFiniteState"/>s depending on the selected <see cref="Parameter"/>
+        /// Gets the collection of the available <see cref="ActualFiniteState" />s depending on the selected
+        /// <see cref="Parameter" />
         /// </summary>
         public ReactiveList<ActualFiniteState> AvailableActualFiniteStates { get; } = new();
 
         /// <summary>
-        /// Gets the collection of the available <see cref="Option"/> from the connected Hub Model
+        /// Gets the collection of the available <see cref="Option" /> from the connected Hub Model
         /// </summary>
         public ReactiveList<Option> AvailableOptions { get; } = new();
 
         /// <summary>
-        /// Gets the collection of all <see cref="RowColumnSelection"/> values
+        /// Gets or sets the command that Add or Remove all available values to the <see cref="SelectedThing"/> <see cref="MatlabWorkspaceRowViewModel.SelectedValues"/>
         /// </summary>
-        public List<RowColumnSelection> RowColumnValues { get; } = new() { RowColumnSelection.Column, RowColumnSelection.Row };
+        public ReactiveCommand<object> SelectAllValuesCommand { get; set; }
+
+        /// <summary>
+        /// Gets or sets the command that applies the configured time step at the current <see cref="SelectedThing"/>
+        /// </summary>
+        public ReactiveCommand<object> ApplyTimeStepOnSelectionCommand { get; set; }
 
         /// <summary>
         /// Initializes this view model properties
@@ -150,154 +160,18 @@ namespace DEHPMatlab.ViewModel.Dialogs
         {
             this.UpdateProperties();
 
-            this.Variables.CountChanged
+            this.disposables.Add(this.Variables.CountChanged
                 .Subscribe(_ => this.UpdateHubFields(() =>
                 {
                     this.InitializesCommandsAndObservables();
                     this.DstController.LoadMapping();
                     this.UpdatePropertiesBasedOnMappingConfiguration();
                     this.CheckCanExecute();
-                }));
+                })));
         }
 
         /// <summary>
-        /// Initializes all <see cref="ReactiveCommand"/> and <see cref="Observable"/> of this view model
-        /// </summary>
-        private void InitializesCommandsAndObservables()
-        {
-            this.ContinueCommand = ReactiveCommand.Create(this.WhenAnyValue(x => x.CanContinue)
-                , RxApp.MainThreadScheduler);
-
-            this.ContinueCommand.Subscribe(_ =>
-            {
-                if (this.Variables.Any(x => x.IsVariableMappingValid is false)
-                    && this.navigationService.ShowDxDialog<MappingValidationErrorDialog>() is false)
-                {
-                    return;
-                }
-
-                this.ExecuteContinueCommand(() =>
-                {
-                    var variableRowViewModels = 
-                        this.Variables
-                        .Where(x => x.IsVariableMappingValid is true).ToList();
-
-                    this.DstController.Map(variableRowViewModels);
-                    this.StatusBar.Append($"Mapping in progress of {variableRowViewModels.Count} value(s)...");
-                });
-            });
-
-            this.WhenAnyValue(x => x.SelectedThing.SelectedElementDefinition)
-                .ObserveOn(RxApp.MainThreadScheduler)
-                .Subscribe(_ => this.UpdateHubFields(() =>
-                {
-                    this.UpdateAvailableParameters();
-                    this.UpdateAvailableParameterType();
-                    this.UpdateAvailableElementsUsages();
-                    this.CheckCanExecute();
-                }));
-
-            this.WhenAnyValue(x => x.SelectedThing.SelectedParameterType)
-                .ObserveOn(RxApp.MainThreadScheduler)
-                .Subscribe(_ => this.UpdateHubFields(() =>
-                {
-                    this.UpdateSelectedParameter();
-                    this.UpdateSelectedScale();
-                    this.NotifyIfParameterTypeIsNotAllowed();
-                    this.CheckCanExecute();
-                }));
-
-            this.WhenAnyValue(x => x.SelectedThing.SelectedParameter)
-                .ObserveOn(RxApp.MainThreadScheduler)
-                .Subscribe(_ => this.UpdateHubFields(() =>
-                {
-                    this.UpdateSelectedParameterType();
-                    this.UpdateAvailableActualFiniteStates();
-                    this.CheckCanExecute();
-                }));
-
-            this.WhenAnyValue(x => x.SelectedThing)
-                .ObserveOn(RxApp.MainThreadScheduler)
-                .Subscribe(_ => this.UpdateHubFields(() =>
-                {
-                    this.RefreshSelectedThingObservables();
-                    this.UpdateAvailableParameters();
-                    this.UpdateAvailableParameterType();
-                    this.UpdateAvailableElementsUsages();
-                }));
-        }
-
-        /// <summary>
-        /// Initializes the <see cref="Observable"/> for the <see cref="SelectedThing"/>
-        /// </summary>
-        private void RefreshSelectedThingObservables()
-        {
-            if (this.SelectedThing is null)
-            {
-                return;
-            }
-
-            foreach (var disposable in this.disposablesObservables)
-            {
-                disposable.Dispose();
-            }
-
-            this.disposablesObservables.Clear();
-
-            this.disposablesObservables.Add(this.WhenAnyValue(x => x.SelectedThing.RowColumnSelection)
-                .ObserveOn(RxApp.MainThreadScheduler)
-                .Subscribe(_ => this.UpdateHubFields(this.UpdateAvailableParameterType)));
-
-            this.disposablesObservables.Add(this.SelectedThing.SampledFunctionParameterParameterAssignementRows.ItemChanged
-                .ObserveOn(RxApp.MainThreadScheduler)
-                .Subscribe(_ => this.UpdateHubFields(this.UpdateAvailableParameterType)));
-        }
-
-        /// <summary>
-        /// Verify that the selected <see cref="ParameterType"/> is compatible with the selected variable value type
-        /// </summary>
-        private void NotifyIfParameterTypeIsNotAllowed()
-        {
-            if (this.SelectedThing?.IsVariableMappingValid is false)
-            {
-                this.StatusBar.Append("The selected ParameterType isn't " +
-                                      "compatible with the selected variable", StatusBarMessageSeverity.Error);
-            }
-        }
-
-        /// <summary>
-        /// Checks that any of the <see cref="Variables"/> has at least one value selected
-        /// </summary>
-        private void CheckCanExecute()
-        {
-            foreach (var variable in this.Variables)
-            {
-                if (variable.IsValid())
-                {
-                    this.CanContinue = true;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Update this view model properties
-        /// </summary>
-        private void UpdateProperties()
-        {
-            this.IsBusy = true;
-
-            this.UpdateAvailableOptions();
-            this.UpdateAvailableElementsDefinitions();
-            this.UpdateAvailableParameterType();
-            this.UpdateAvailableParameters();
-            this.UpdateAvailableElementsUsages();
-            this.UpdateAvailableActualFiniteStates();
-
-            this.IsBusy = false;
-        }
-
-        /// <summary>
-        /// Sets the <see cref="SelectedThing"/> <see cref="ParameterType"/> according to the selected <see cref="Parameter"/>
+        /// Sets the <see cref="SelectedThing" /> <see cref="ParameterType" /> according to the selected <see cref="Parameter" />
         /// </summary>
         public void UpdateSelectedParameterType()
         {
@@ -310,8 +184,8 @@ namespace DEHPMatlab.ViewModel.Dialogs
         }
 
         /// <summary>
-        /// Sets the <see cref="SelectedThing"/> <see cref="MeasurementScale"/> according
-        /// to the selected <see cref="Parameter"/> and the selected <see cref="ParameterType"/>
+        /// Sets the <see cref="SelectedThing" /> <see cref="MeasurementScale" /> according
+        /// to the selected <see cref="Parameter" /> and the selected <see cref="ParameterType" />
         /// </summary>
         public void UpdateSelectedScale()
         {
@@ -333,8 +207,8 @@ namespace DEHPMatlab.ViewModel.Dialogs
         }
 
         /// <summary>
-        /// Sets the <see cref="SelectedThing"/> <see cref="Parameter"/> according
-        /// to the selected <see cref="ParameterType"/>
+        /// Sets the <see cref="SelectedThing" /> <see cref="Parameter" /> according
+        /// to the selected <see cref="ParameterType" />
         /// </summary>
         public void UpdateSelectedParameter()
         {
@@ -351,7 +225,7 @@ namespace DEHPMatlab.ViewModel.Dialogs
                 this.UpdateAvailableParameterType();
             }
             else if (this.AvailableParameters.FirstOrDefault(x =>
-                         x.ParameterType.Iid == this.SelectedThing.SelectedParameterType?.Iid) 
+                         x.ParameterType.Iid == this.SelectedThing.SelectedParameterType?.Iid)
                      is Parameter parameterOrOverride)
             {
                 this.SelectedThing.SelectedParameter = parameterOrOverride;
@@ -364,7 +238,32 @@ namespace DEHPMatlab.ViewModel.Dialogs
         }
 
         /// <summary>
-        /// Update the <see cref="AvailableActualFiniteStates"/> collection
+        /// Asserts that the <see cref="SelectedThing" /> has already a correct mapping for the <see cref="SampledFunctionParameterType" />
+        /// </summary>
+        /// <returns></returns>
+        private bool SampledFunctionAssignmentAlreadyMapped()
+        {
+            if (!this.SelectedThing.SampledFunctionParameterParameterAssignementToHubRows.Any() ||
+                this.SelectedThing.SelectedParameterType is not SampledFunctionParameterType sampledFunctionParameterType)
+            {
+                return false;
+            }
+
+            var assignmentParameters = new List<IParameterTypeAssignment>();
+            assignmentParameters.AddRange(sampledFunctionParameterType.IndependentParameterType);
+            assignmentParameters.AddRange(sampledFunctionParameterType.DependentParameterType);
+
+            if (this.SelectedThing.SampledFunctionParameterParameterAssignementToHubRows.Count != assignmentParameters.Count)
+            {
+                return false;
+            }
+
+            return !assignmentParameters.Where((t, parameterAssignmedIndex) =>
+                t != this.SelectedThing.SampledFunctionParameterParameterAssignementToHubRows[parameterAssignmedIndex].SelectedParameterTypeAssignment).Any();
+        }
+
+        /// <summary>
+        /// Update the <see cref="AvailableActualFiniteStates" /> collection
         /// </summary>
         public void UpdateAvailableActualFiniteStates()
         {
@@ -378,13 +277,13 @@ namespace DEHPMatlab.ViewModel.Dialogs
         }
 
         /// <summary>
-        /// Update the <see cref="AvailableElementUsages"/> collection
+        /// Update the <see cref="AvailableElementUsages" /> collection
         /// </summary>
         public void UpdateAvailableElementsUsages()
         {
             this.AvailableElementUsages.Clear();
 
-            if (this.SelectedThing?.SelectedElementDefinition is { } elementDefinition 
+            if (this.SelectedThing?.SelectedElementDefinition is { } elementDefinition
                 && elementDefinition.Iid != Guid.Empty)
             {
                 var elementUsages = this.AvailableElementDefinitions
@@ -401,7 +300,7 @@ namespace DEHPMatlab.ViewModel.Dialogs
         }
 
         /// <summary>
-        /// Update the <see cref="AvailableParameters"/> collections
+        /// Update the <see cref="AvailableParameters" /> collections
         /// </summary>
         public void UpdateAvailableParameters()
         {
@@ -424,7 +323,7 @@ namespace DEHPMatlab.ViewModel.Dialogs
         }
 
         /// <summary>
-        /// Update the <see cref="AvailableParameterTypes"/> collection
+        /// Update the <see cref="AvailableParameterTypes" /> collection
         /// </summary>
         public void UpdateAvailableParameterType()
         {
@@ -436,7 +335,7 @@ namespace DEHPMatlab.ViewModel.Dialogs
                 .GetContainerOfType<EngineeringModel>()
                 .RequiredRdls
                 .SelectMany(x => x.ParameterType);
-            
+
             if (isAnArray)
             {
                 parameterTypes = parameterTypes.Where(x => x is SampledFunctionParameterType or ArrayParameterType);
@@ -450,28 +349,7 @@ namespace DEHPMatlab.ViewModel.Dialogs
         }
 
         /// <summary>
-        /// Verify if the <paramref name="parameterType"/> is <see cref="ScalarParameterType"/>
-        /// or is <see cref="SampledFunctionParameterType"/> and at least compatible with this dst adapter
-        /// </summary>
-        /// <param name="parameterType">The <see cref="ParameterType"/></param>
-        /// <returns>An value indicating whether the <paramref name="parameterType"/> is valid</returns>
-        private bool FilterParameterType(ParameterType parameterType)
-        {
-            return !parameterType.IsDeprecated && parameterType switch
-            {
-                SampledFunctionParameterType when this.SelectedThing is null => true,
-                SampledFunctionParameterType sampledFunctionParameterType =>
-                    sampledFunctionParameterType.Validate(this.SelectedThing?.ArrayValue, this.SelectedThing.RowColumnSelection, this.SelectedThing.SampledFunctionParameterParameterAssignementRows.ToList()),
-                ArrayParameterType when this.SelectedThing is null => true,
-                ArrayParameterType arrayParameterType =>
-                    arrayParameterType.Validate(this.SelectedThing?.ArrayValue, this.SelectedThing?.SelectedScale),
-                ScalarParameterType => true,
-                _ => false
-            };
-        }
-
-        /// <summary>
-        /// Update the <see cref="AvailableElementDefinitions"/> collection
+        /// Update the <see cref="AvailableElementDefinitions" /> collection
         /// </summary>
         public void UpdateAvailableElementsDefinitions()
         {
@@ -483,7 +361,7 @@ namespace DEHPMatlab.ViewModel.Dialogs
         }
 
         /// <summary>
-        /// Update the <see cref="AvailableOptions"/> collection
+        /// Update the <see cref="AvailableOptions" /> collection
         /// </summary>
         public void UpdateAvailableOptions()
         {
@@ -492,10 +370,23 @@ namespace DEHPMatlab.ViewModel.Dialogs
         }
 
         /// <summary>
+        /// Dispose all <see cref="IDisposable" /> of the viewmodel
+        /// </summary>
+        public void DisposeAllDisposables()
+        {
+            foreach (var disposable in this.disposables)
+            {
+                disposable.Dispose();
+            }
+
+            this.disposables.Clear();
+        }
+
+        /// <summary>
         /// Updates the mapping based on the available 10-25 elements
         /// </summary>
         public void UpdatePropertiesBasedOnMappingConfiguration()
-        {
+        { 
             foreach (var variable in this.Variables)
             {
                 foreach (var idCorrespondence in variable.MappingConfigurations)
@@ -508,10 +399,201 @@ namespace DEHPMatlab.ViewModel.Dialogs
         }
 
         /// <summary>
-        /// Update a <see cref="MatlabWorkspaceRowViewModel"/> if any correspondence has been found
+        /// Checks that any of the <see cref="Variables" /> has at least one value selected
         /// </summary>
-        /// <param name="idCorrespondence">A <see cref="IdCorrespondence"/></param>
-        /// <param name="variable">A <see cref="MatlabWorkspaceRowViewModel"/></param>
+        private void CheckCanExecute()
+        {
+            foreach (var variable in this.Variables)
+            {
+                if (variable.IsValid())
+                {
+                    this.CanContinue = true;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Verify if the <paramref name="parameterType" /> is <see cref="ScalarParameterType" />
+        /// or is <see cref="SampledFunctionParameterType" /> and at least compatible with this dst adapter
+        /// </summary>
+        /// <param name="parameterType">The <see cref="ParameterType" /></param>
+        /// <returns>An value indicating whether the <paramref name="parameterType" /> is valid</returns>
+        private bool FilterParameterType(ParameterType parameterType)
+        {
+            return !parameterType.IsDeprecated && parameterType switch
+            {
+                SampledFunctionParameterType when this.SelectedThing is null => true,
+                SampledFunctionParameterType sampledFunctionParameterType =>
+                    sampledFunctionParameterType.Validate(this.SelectedThing?.ArrayValue),
+                ArrayParameterType when this.SelectedThing is null => true,
+                ArrayParameterType arrayParameterType =>
+                    arrayParameterType.Validate(this.SelectedThing?.ArrayValue, this.SelectedThing?.SelectedScale),
+                ScalarParameterType => true,
+                _ => false
+            };
+        }
+
+        /// <summary>
+        /// Initializes all <see cref="ReactiveCommand" /> and <see cref="Observable" /> of this view model
+        /// </summary>
+        private void InitializesCommandsAndObservables()
+        {
+            foreach (var variableRowViewModel in this.Variables)
+            {
+                variableRowViewModel.SelectedValues.CountChanged
+                    .Subscribe(_ =>
+                        this.UpdateHubFields(this.CheckCanExecute));
+            }
+
+            this.ContinueCommand = ReactiveCommand.Create(this.WhenAnyValue(x => x.CanContinue)
+                , RxApp.MainThreadScheduler);
+
+            this.ContinueCommand.Subscribe(_ =>
+            {
+                if (this.Variables.Any(x => x.IsVariableMappingValid is false)
+                    && this.navigationService.ShowDxDialog<MappingValidationErrorDialog>() is false)
+                {
+                    return;
+                }
+
+                this.ExecuteContinueCommand(() =>
+                {
+                    var variableRowViewModels =
+                        this.Variables
+                            .Where(x => x.IsVariableMappingValid is true).ToList();
+
+                    this.DstController.Map(variableRowViewModels);
+                    this.StatusBar.Append($"Mapping in progress of {variableRowViewModels.Count} value(s)...");
+                });
+            });
+
+            this.disposables.Add(this.WhenAnyValue(x => x.SelectedThing.SelectedElementDefinition)
+                .ObserveOn(RxApp.MainThreadScheduler)
+                .Subscribe(_ => this.UpdateHubFields(() =>
+                {
+                    this.UpdateAvailableParameters();
+                    this.UpdateAvailableParameterType();
+                    this.UpdateAvailableElementsUsages();
+                    this.CheckCanExecute();
+                })));
+
+            this.disposables.Add(this.WhenAnyValue(x => x.SelectedThing.SelectedParameterType)
+                .ObserveOn(RxApp.MainThreadScheduler)
+                .Subscribe(_ => this.UpdateHubFields(() =>
+                {
+                    this.UpdateSelectedParameter();
+                    this.UpdateSelectedScale();
+                    this.VerifyIfParameterTypeIsSampledFunctionParameterType();
+                    this.NotifyIfParameterTypeIsNotAllowed();
+                    this.CheckCanExecute();
+                })));
+
+            this.disposables.Add(this.WhenAnyValue(x => x.SelectedThing.SelectedParameter)
+                .ObserveOn(RxApp.MainThreadScheduler)
+                .Subscribe(_ => this.UpdateHubFields(() =>
+                {
+                    this.UpdateSelectedParameterType();
+                    this.UpdateAvailableActualFiniteStates();
+                    this.CheckCanExecute();
+                })));
+
+            this.disposables.Add(this.WhenAnyValue(x => x.SelectedThing)
+                .ObserveOn(RxApp.MainThreadScheduler)
+                .Subscribe(_ => this.UpdateHubFields(() =>
+                {
+                    this.UpdateAvailableParameters();
+                    this.UpdateAvailableParameterType();
+                    this.UpdateAvailableElementsUsages();
+                })));
+
+            this.ApplyTimeStepOnSelectionCommand = ReactiveCommand.Create();
+
+            this.ApplyTimeStepOnSelectionCommand.Subscribe(_ =>
+                this.UpdateHubFields(() =>
+                {
+                    this.SelectedThing?.ApplyTimeStep();
+                    this.CheckCanExecute();
+                }));
+
+            this.SelectAllValuesCommand = ReactiveCommand.Create();
+
+            this.SelectAllValuesCommand.Subscribe(_ =>
+                this.UpdateHubFields(() =>
+                {
+                    if (this.SelectedThing?.SelectedValues.Count == 0)
+                    {
+                        this.SelectedThing?.SelectedValues.AddRange(this.SelectedThing?.TimeTaggedValues);
+                    }
+                    else
+                    {
+                        this.SelectedThing?.SelectedValues.Clear();
+                    }
+
+                    this.CheckCanExecute();
+                }));
+        }
+
+        /// <summary>
+        /// Verify if the <see cref="MatlabWorkspaceRowViewModel.SelectedParameterType" /> if a <see cref="SampledFunctionParameterType" />
+        /// Shows a dialog if that's true and the <see cref="MatlabWorkspaceRowViewModel.SampledFunctionParameterParameterAssignementToHubRows" />
+        /// needs to be assigned
+        /// </summary>
+        private void VerifyIfParameterTypeIsSampledFunctionParameterType()
+        {
+            if (!this.isDialogOpened && this.SelectedThing.SelectedParameterType is SampledFunctionParameterType sampledFunctionParameterType
+                && !this.SampledFunctionAssignmentAlreadyMapped())
+            {
+                this.isDialogOpened = true;
+
+                var viewModel = new SampledFunctionParameterTypeMappingConfigurationDialogViewModel(this.SelectedThing,
+                    sampledFunctionParameterType, MappingDirection.FromDstToHub);
+
+                if (this.navigationService.ShowDxDialog<SampledFunctionParameterTypeMappingConfigurationDialog,
+                        SampledFunctionParameterTypeMappingConfigurationDialogViewModel>(viewModel)
+                    != true)
+                {
+                    this.SelectedThing.SelectedParameter = null;
+                    this.SelectedThing.SelectedParameterType = null;
+                }
+
+                this.isDialogOpened = false;
+            }
+        }
+
+        /// <summary>
+        /// Verify that the selected <see cref="ParameterType" /> is compatible with the selected variable value type
+        /// </summary>
+        private void NotifyIfParameterTypeIsNotAllowed()
+        {
+            if (this.SelectedThing?.IsVariableMappingValid is false)
+            {
+                this.StatusBar.Append("The selected ParameterType isn't " +
+                                      "compatible with the selected variable", StatusBarMessageSeverity.Error);
+            }
+        }
+
+        /// <summary>
+        /// Update this view model properties
+        /// </summary>
+        private void UpdateProperties()
+        {
+            this.IsBusy = true;
+
+            this.UpdateAvailableOptions();
+            this.UpdateAvailableElementsDefinitions();
+            this.UpdateAvailableParameterType();
+            this.UpdateAvailableParameters();
+            this.UpdateAvailableElementsUsages();
+            this.UpdateAvailableActualFiniteStates();
+
+            this.IsBusy = false;
+        }
+
+        /// <summary>
+        /// Update a <see cref="MatlabWorkspaceRowViewModel" /> if any correspondence has been found
+        /// </summary>
+        /// <param name="idCorrespondence">A <see cref="IdCorrespondence" /></param>
+        /// <param name="variable">A <see cref="MatlabWorkspaceRowViewModel" /></param>
         private void UpdateVariableBasedOnCorrespondence(IdCorrespondence idCorrespondence, MatlabWorkspaceRowViewModel variable)
         {
             if (!this.HubController.GetThingById(idCorrespondence.InternalThing, this.HubController.OpenIteration, out Thing thing))

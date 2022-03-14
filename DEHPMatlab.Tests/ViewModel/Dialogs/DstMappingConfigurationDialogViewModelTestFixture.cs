@@ -220,8 +220,14 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
             Assert.IsFalse(this.viewModel.IsBusy);
             Assert.IsNotNull(this.viewModel.CloseWindowBehavior);
             Assert.IsNotNull(this.viewModel.ContinueCommand);
-            Assert.IsNotNull(this.viewModel.RowColumnValues);
-            Assert.AreEqual(2,this.viewModel.RowColumnValues.Count);
+            Assert.IsNotNull(this.viewModel.ApplyTimeStepOnSelectionCommand);
+            Assert.IsNotNull(this.viewModel.SelectAllValuesCommand);
+        }
+
+        [Test]
+        public void VerifyDispose()
+        {
+            Assert.DoesNotThrow(() => this.viewModel.DisposeAllDisposables());
         }
 
         [Test]
@@ -252,6 +258,8 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
         [Test]
         public void VerifyUpdateSelectedParameterType()
         {
+            this.navigationService.Setup(x => x.ShowDxDialog<SampledFunctionParameterTypeMappingConfigurationDialog, SampledFunctionParameterTypeMappingConfigurationDialogViewModel>(It.IsAny<SampledFunctionParameterTypeMappingConfigurationDialogViewModel>())).Returns(true);
+
             this.viewModel.SelectedThing = null;
             Assert.DoesNotThrow(() => this.viewModel.UpdateSelectedParameterType());
             this.viewModel.SelectedThing = this.viewModel.Variables.First();
@@ -288,6 +296,8 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
             {
                 ParameterType = new BooleanParameterType()
             };
+
+            this.navigationService.Setup(x => x.ShowDxDialog<SampledFunctionParameterTypeMappingConfigurationDialog, SampledFunctionParameterTypeMappingConfigurationDialogViewModel>(It.IsAny<SampledFunctionParameterTypeMappingConfigurationDialogViewModel>())).Returns(true);
 
             this.viewModel.SelectedThing.SelectedParameterType = this.parameterType;
             Assert.DoesNotThrow(() => this.viewModel.UpdateSelectedParameter());
@@ -484,17 +494,11 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
             }
 
             var variable = new MatlabWorkspaceRowViewModel("aName", array);
-            Assert.IsEmpty(variable.SampledFunctionParameterParameterAssignementRows);
+            Assert.IsEmpty(variable.SampledFunctionParameterParameterAssignementToHubRows);
 
             variable.UnwrapVariableRowViewModels();
-            Assert.AreEqual(2, variable.SampledFunctionParameterParameterAssignementRows.Count);
-            Assert.AreEqual(RowColumnSelection.Column, variable.RowColumnSelection);
-            Assert.IsFalse(variable.SampledFunctionParameterParameterAssignementRows.First().IsDependantParameter);
-            Assert.AreEqual("1", variable.SampledFunctionParameterParameterAssignementRows.Last().Index);
-
-            variable.RowColumnSelection = RowColumnSelection.Row;
-            Assert.AreEqual(3, variable.SampledFunctionParameterParameterAssignementRows.Count);
-
+            Assert.IsEmpty(variable.SampledFunctionParameterParameterAssignementToHubRows);
+            
             this.viewModel.Variables.Add(variable);
             this.viewModel.SelectedThing = variable;
             Assert.AreEqual(0, this.viewModel.AvailableParameterTypes.Count);
@@ -593,13 +597,23 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
             variable.UnwrapVariableRowViewModels();
 
             Assert.DoesNotThrow(() => this.viewModel.UpdateAvailableParameterType());
-            Assert.AreEqual(0, this.viewModel.AvailableParameterTypes.Count);
+            Assert.AreEqual(1, this.viewModel.AvailableParameterTypes.Count);
+
+            this.navigationService.Setup(x => x.ShowDxDialog<SampledFunctionParameterTypeMappingConfigurationDialog, SampledFunctionParameterTypeMappingConfigurationDialogViewModel>(It.IsAny<SampledFunctionParameterTypeMappingConfigurationDialogViewModel>())).Returns(false);
+            variable.SelectedParameterType = sfpt;
+            Assert.IsFalse(variable.IsValid());
+            Assert.IsNull(variable.SelectedParameterType);
+
+            this.navigationService.Setup(x => x.ShowDxDialog<SampledFunctionParameterTypeMappingConfigurationDialog, SampledFunctionParameterTypeMappingConfigurationDialogViewModel>(It.IsAny<SampledFunctionParameterTypeMappingConfigurationDialogViewModel>())).Returns(true);
+            variable.SelectedParameterType = sfpt;
+            Assert.IsNotNull(variable.SelectedParameterType);
 
             variable.ActualValue = 5;
             variable.UnwrapVariableRowViewModels();
 
             variable.SelectedParameterType = sfpt;
             Assert.IsFalse(variable.IsValid());
+            Assert.IsNull(variable.SelectedParameter);
 
             variable.SelectedParameterType = arrayParameter;
             Assert.IsFalse(variable.IsValid());
@@ -618,7 +632,7 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
                 });
             }
 
-            arrayParameter.Component.Add((new ParameterTypeComponent()
+            arrayParameter.Component.Add((new ParameterTypeComponent
             {
                 ParameterType = this.scalarParameterType,
                 Scale = this.scale
@@ -632,8 +646,92 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
             sfpt.DependentParameterType.First().MeasurementScale = null;
             variable.ActualValue = array;
             variable.UnwrapVariableRowViewModels();
-            variable.RowColumnSelection = RowColumnSelection.Column;
+            variable.RowColumnSelectionToHub = RowColumnSelection.Column;
             Assert.IsFalse(variable.IsValid());
+        }
+
+        [Test]
+        public void VerifyTimeStepCommands()
+        {
+            var sfpt = new SampledFunctionParameterType()
+            {
+                Name = "TextXQuantity",
+                IndependentParameterType =
+                {
+                    new IndependentParameterTypeAssignment()
+                    {
+                        ParameterType = new SimpleQuantityKind()
+                        {
+                            Name = "IndependentText"
+                        },
+                        MeasurementScale = this.scale
+                    }
+                },
+
+                DependentParameterType =
+                {
+                    new DependentParameterTypeAssignment()
+                    {
+                        ParameterType = new SimpleQuantityKind()
+                        {
+                            Name = "DependentQuantityKing",
+                            DefaultScale = this.scale,
+                            PossibleScale = { this.scale }
+                        },
+                        MeasurementScale = this.scale
+                    }
+                }
+            };
+
+            var arrayValue = new double[2, 3];
+
+            for (var i = 0; i < arrayValue.GetLength(0); i++)
+            {
+                for (var j = 0; j < arrayValue.GetLength(1); j++)
+                {
+                    arrayValue.SetValue(i + j + 1, i, j);
+                }
+            }
+
+            var variable = new MatlabWorkspaceRowViewModel("a", arrayValue);
+            variable.UnwrapVariableRowViewModels();
+
+            var sfptParameter = new Parameter()
+            {
+                Iid = new Guid(),
+                ParameterType = sfpt,
+                Container = new ElementDefinition(new Guid(), null, null),
+                ValueSet = { new ParameterValueSet() }
+            };
+
+            Assert.DoesNotThrow(() => this.viewModel.SelectAllValuesCommand.Execute(null));
+            Assert.DoesNotThrow(() => this.viewModel.ApplyTimeStepOnSelectionCommand.Execute(null));
+
+            variable.RowColumnSelectionToHub = RowColumnSelection.Row;
+            variable.SampledFunctionParameterParameterAssignementToHubRows.Clear();
+
+            variable.SampledFunctionParameterParameterAssignementToHubRows.AddRange(new[]
+            {
+                new SampledFunctionParameterParameterAssignementRowViewModel("1")
+                {
+                    SelectedParameterTypeAssignment = sfpt.IndependentParameterType.First(),
+                    IsTimeTaggedParameter = true
+                },
+                new SampledFunctionParameterParameterAssignementRowViewModel("0")
+                {
+                    SelectedParameterTypeAssignment = sfpt.DependentParameterType.First()
+                }
+            });
+
+            this.viewModel.SelectedThing = variable;
+            variable.SelectedParameter = sfptParameter;
+
+            Assert.DoesNotThrow(() => this.viewModel.SelectAllValuesCommand.Execute(null));
+            Assert.DoesNotThrow(() => this.viewModel.ApplyTimeStepOnSelectionCommand.Execute(null));
+            Assert.AreEqual(3, variable.SelectedValues.Count);
+            Assert.DoesNotThrow(() => this.viewModel.SelectAllValuesCommand.Execute(null));
+            Assert.AreEqual(0, variable.SelectedValues.Count);
+            Assert.IsFalse(this.viewModel.CanContinue);
         }
     }
 }
