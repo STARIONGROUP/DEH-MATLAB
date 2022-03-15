@@ -172,23 +172,23 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
             this.hubController.Setup(x => x.GetSiteDirectory()).Returns(new SiteDirectory());
 
             this.elementDefinition = new ElementDefinition(Guid.NewGuid(), null, null);
-            var elementDefinitionAsThing = (Thing) this.elementDefinition;
+            var elementDefinitionAsThing = (Thing)this.elementDefinition;
             this.hubController.Setup(x => x.GetThingById(this.elementDefinition.Iid, this.iteration, out elementDefinitionAsThing)).Returns(true);
 
             this.parameter = new Parameter(Guid.NewGuid(), null, null);
-            var parameterAsThing = (Thing) this.parameter;
+            var parameterAsThing = (Thing)this.parameter;
             this.hubController.Setup(x => x.GetThingById(this.parameter.Iid, this.iteration, out parameterAsThing)).Returns(true);
 
             this.option = new Option(Guid.NewGuid(), null, null);
-            var optionAsThing = (Thing) this.option;
+            var optionAsThing = (Thing)this.option;
             this.hubController.Setup(x => x.GetThingById(this.option.Iid, this.iteration, out optionAsThing)).Returns(true);
 
             this.state = new ActualFiniteState(Guid.NewGuid(), null, null);
-            var stateAsThing = (Thing) this.state;
+            var stateAsThing = (Thing)this.state;
             this.hubController.Setup(x => x.GetThingById(this.state.Iid, this.iteration, out stateAsThing)).Returns(true);
 
             this.elementUsage = new ElementUsage(Guid.NewGuid(), null, null);
-            var elementUsageAsThing = (Thing) this.elementUsage;
+            var elementUsageAsThing = (Thing)this.elementUsage;
             this.hubController.Setup(x => x.GetThingById(this.elementUsage.Iid, this.iteration, out elementUsageAsThing)).Returns(true);
 
             this.navigationService = new Mock<INavigationService>();
@@ -489,7 +489,7 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
             {
                 for (var j = 0; j < array.GetLength(1); j++)
                 {
-                    array.SetValue(i + j+1, i, j);
+                    array.SetValue(i + j + 1, i, j);
                 }
             }
 
@@ -498,7 +498,7 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
 
             variable.UnwrapVariableRowViewModels();
             Assert.IsEmpty(variable.SampledFunctionParameterParameterAssignementToHubRows);
-            
+
             this.viewModel.Variables.Add(variable);
             this.viewModel.SelectedThing = variable;
             Assert.AreEqual(0, this.viewModel.AvailableParameterTypes.Count);
@@ -515,7 +515,7 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
                             Name = "IndependentText",
                             DefaultScale = this.scale,
                             PossibleScale = { this.scale },
-                        }, 
+                        },
                         MeasurementScale = this.scale
                     }
                 },
@@ -732,6 +732,15 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
             Assert.DoesNotThrow(() => this.viewModel.SelectAllValuesCommand.Execute(null));
             Assert.AreEqual(0, variable.SelectedValues.Count);
             Assert.IsFalse(this.viewModel.CanContinue);
+
+            this.viewModel.SelectedThing.GetTimeDependentValues();
+            this.viewModel.SelectedThing.SelectedValues.Add(this.viewModel.SelectedThing.TimeTaggedValues.First());
+            Assert.IsTrue(this.viewModel.SelectedThing.IsValid());
+            this.viewModel.SelectedThing.IsAveraged = true;
+            Assert.IsFalse(this.viewModel.SelectedThing.IsValid());
+            this.viewModel.SelectedThing.SelectedTimeStep = 1;
+            this.viewModel.SelectedThing.ApplyTimeStep();
+            Assert.IsTrue(this.viewModel.SelectedThing.IsValid());
         }
     }
 }

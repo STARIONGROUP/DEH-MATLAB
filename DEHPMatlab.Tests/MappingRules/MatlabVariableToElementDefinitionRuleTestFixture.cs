@@ -118,7 +118,7 @@ namespace DEHPMatlab.Tests.MappingRules
 
             this.variables = new List<MatlabWorkspaceRowViewModel>()
             {
-                new MatlabWorkspaceRowViewModel("mass", 500)
+                new ("mass", 500)
                 {
                     SelectedParameterType = this.scalarParameterType,
                     SelectedScale = this.scale
@@ -453,6 +453,48 @@ namespace DEHPMatlab.Tests.MappingRules
 
             Assert.DoesNotThrow(() => this.rule.UpdateValueSet(variable, parameter));
             Assert.AreEqual("2", parameter.ValueSet.First().Computed.First());
+
+            variable.IsAveraged = true;
+            variable.ApplyTimeStep();
+
+            Assert.DoesNotThrow(() => this.rule.UpdateValueSet(variable, parameter));
+            Assert.AreEqual("2", parameter.ValueSet.First().Computed.First());
+
+            variable.RowColumnSelectionToHub = RowColumnSelection.Column;
+
+            sfpt.IndependentParameterType.Add(new IndependentParameterTypeAssignment()
+            {
+                ParameterType = new SimpleQuantityKind()
+                {
+                    Name = "IndependentText"
+                },
+                MeasurementScale = this.scale
+            });
+
+            variable.SampledFunctionParameterParameterAssignementToHubRows.Clear();
+
+            variable.SampledFunctionParameterParameterAssignementToHubRows.AddRange(new[]
+            {
+                new SampledFunctionParameterParameterAssignementRowViewModel("2")
+                {
+                    SelectedParameterTypeAssignment = sfpt.IndependentParameterType.Last(),
+                },
+                new SampledFunctionParameterParameterAssignementRowViewModel("1")
+                {
+                    SelectedParameterTypeAssignment = sfpt.IndependentParameterType.First(),
+                    IsTimeTaggedParameter = true
+                },
+                new SampledFunctionParameterParameterAssignementRowViewModel("0")
+                {
+                    SelectedParameterTypeAssignment = sfpt.DependentParameterType.First()
+                }
+            });
+
+            variable.IsAveraged = true;
+            variable.SelectedTimeStep = 2;
+            variable.ApplyTimeStep();
+
+            Assert.DoesNotThrow(() => this.rule.UpdateValueSet(variable, parameter));
         }
 
         [Test]
