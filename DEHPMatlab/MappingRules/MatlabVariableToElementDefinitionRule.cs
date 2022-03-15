@@ -237,26 +237,26 @@ namespace DEHPMatlab.MappingRules
         /// <param name="valueSet">The <see cref="IValueSet" /> to update</param>
         private void AssignNewTimeTaggedValues(MatlabWorkspaceRowViewModel matlabVariable, ParameterValueSetBase valueSet)
         {
-            if (matlabVariable.ArrayValue is not Array arrayValue)
+            if (matlabVariable.ArrayValue is not Array)
             {
                 return;
             }
 
             var values = new List<string>();
 
-            var selectedItemsIndexes = matlabVariable.SelectedValues.Select(selectedValue => matlabVariable.TimeTaggedValues.IndexOf(selectedValue)).ToList();
-            selectedItemsIndexes.Sort();
+            var timeTaggedValuesIndices = matlabVariable.SelectedValues.Select(selectedValue => matlabVariable.TimeTaggedValues.IndexOf(selectedValue)).ToList();
+            timeTaggedValuesIndices.Sort();
 
-            var indexOrder = matlabVariable.SampledFunctionParameterParameterAssignementToHubRows.Select(parameterAssignement => parameterAssignement.Index).ToList();
+            var timeTaggedParameter = matlabVariable.SampledFunctionParameterParameterAssignementToHubRows
+                .First(x => x.IsTimeTaggedParameter);
 
-            for (var lengthIndex = 0; lengthIndex < selectedItemsIndexes.Count; lengthIndex++)
+            var timeTaggedParameterIndex = matlabVariable.SampledFunctionParameterParameterAssignementToHubRows.IndexOf(timeTaggedParameter);
+
+            foreach (var timeTaggedValuesIndex in timeTaggedValuesIndices)
             {
-                foreach (var index in indexOrder)
+                for (var parameterIndex = 0; parameterIndex < matlabVariable.SampledFunctionParameterParameterAssignementToHubRows.Count; parameterIndex++)
                 {
-                    var valueToAdd = matlabVariable.RowColumnSelectionToHub == RowColumnSelection.Column
-                        ? arrayValue.GetValue(lengthIndex, int.Parse(index))
-                        : arrayValue.GetValue(int.Parse(index), lengthIndex);
-
+                    var valueToAdd = this.GetCurrentValueToAdd(matlabVariable, parameterIndex, timeTaggedParameterIndex, timeTaggedValuesIndex);
                     values.Add(FormattableString.Invariant($"{valueToAdd}"));
                 }
             }
@@ -265,6 +265,37 @@ namespace DEHPMatlab.MappingRules
             {
                 valueSet.Computed = new ValueArray<string>(values);
             }
+        }
+
+        /// <summary>
+        /// Gets the correct value for <see cref="TimeTaggedValuesRowViewModel"/> to add to the set
+        /// </summary>
+        /// <param name="matlabVariable">The <see cref="MatlabWorkspaceRowViewModel"/></param>
+        /// <param name="parameterIndex">The parameter index</param>
+        /// <param name="timeTaggedParameterIndex">The index of the Parameter containing Time values</param>
+        /// <param name="timeTaggedValuesIndex">The current index of the <see cref="TimeTaggedValuesRowViewModel"/></param>
+        /// <returns>The value to add to the set</returns>
+        private object GetCurrentValueToAdd(MatlabWorkspaceRowViewModel matlabVariable, int parameterIndex, int timeTaggedParameterIndex, int timeTaggedValuesIndex)
+        {
+            var currentTimeTagged = matlabVariable.TimeTaggedValues[timeTaggedValuesIndex];
+            object valueToAdd;
+
+            if (parameterIndex == timeTaggedParameterIndex)
+            {
+                valueToAdd = currentTimeTagged.TimeStep;
+            }
+            else if (parameterIndex < timeTaggedParameterIndex)
+            {
+                valueToAdd = matlabVariable.IsAveraged ? currentTimeTagged.AveragedValues[parameterIndex] : currentTimeTagged.Values[parameterIndex];
+            }
+            else
+            {
+                valueToAdd = matlabVariable.IsAveraged
+                    ? currentTimeTagged.AveragedValues[parameterIndex - 1]
+                    : currentTimeTagged.Values[parameterIndex - 1];
+            }
+
+            return valueToAdd;
         }
 
         /// <summary>

@@ -440,9 +440,9 @@ namespace DEHPMatlab.ViewModel.Dialogs
         {
             foreach (var variableRowViewModel in this.Variables)
             {
-                variableRowViewModel.SelectedValues.CountChanged
+                this.disposables.Add(variableRowViewModel.SelectedValues.CountChanged
                     .Subscribe(_ =>
-                        this.UpdateHubFields(this.CheckCanExecute));
+                        this.UpdateHubFields(this.CheckCanExecute)));
             }
 
             this.ContinueCommand = ReactiveCommand.Create(this.WhenAnyValue(x => x.CanContinue)
@@ -505,6 +505,10 @@ namespace DEHPMatlab.ViewModel.Dialogs
                     this.UpdateAvailableParameterType();
                     this.UpdateAvailableElementsUsages();
                 })));
+
+            this.disposables.Add(this.WhenAnyValue(x => x.SelectedThing.IsAveraged)
+                .ObserveOn(RxApp.MainThreadScheduler)
+                .Subscribe(_ => this.UpdateHubFields(this.CheckCanExecute)));
 
             this.ApplyTimeStepOnSelectionCommand = ReactiveCommand.Create();
 

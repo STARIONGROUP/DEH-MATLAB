@@ -149,6 +149,11 @@ namespace DEHPMatlab.ViewModel.Row
         private double selectedTimeStep;
 
         /// <summary>
+        /// Backing field for <see cref="IsAveraged" />
+        /// </summary>
+        private bool isAveraged;
+
+        /// <summary>
         /// Initializes a new <see cref="MatlabWorkspaceRowViewModel" />
         /// </summary>
         /// <param name="matlabVariable">The <see cref="MatlabWorkspaceRowViewModel" /> to copy</param>
@@ -165,6 +170,7 @@ namespace DEHPMatlab.ViewModel.Row
             this.TimeTaggedValues = matlabVariable.TimeTaggedValues;
             this.SelectedTimeStep = matlabVariable.SelectedTimeStep;
             this.SelectedValues = matlabVariable.SelectedValues;
+            this.IsAveraged = matlabVariable.IsAveraged;
         }
 
         /// <summary>
@@ -203,6 +209,15 @@ namespace DEHPMatlab.ViewModel.Row
         {
             get => this.selectedActualFiniteState;
             set => this.RaiseAndSetIfChanged(ref this.selectedActualFiniteState, value);
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this row is averaged over timestep
+        /// </summary>
+        public bool IsAveraged
+        {
+            get => this.isAveraged;
+            set => this.RaiseAndSetIfChanged(ref this.isAveraged, value);
         }
 
         /// <summary>
@@ -336,38 +351,6 @@ namespace DEHPMatlab.ViewModel.Row
             set => this.RaiseAndSetIfChanged(ref this.selectedParameterType, value);
         }
 
-        /// <summary>
-        /// Gets or sets the collection of selected <see cref="ElementUsage" />s
-        /// </summary>
-        public ReactiveList<ElementUsage> SelectedElementUsages { get; set; } = new();
-
-        /// <summary>
-        /// Gets or sets the mapping configurations
-        /// </summary>
-        public ReactiveList<IdCorrespondence> MappingConfigurations { get; } = new();
-
-        /// <summary>
-        /// Gets the collection of <see cref="SampledFunctionParameterParameterAssignementRowViewModel" /> for
-        /// <see cref="MappingDirection.FromHubToDst" />
-        /// </summary>
-        public ReactiveList<SampledFunctionParameterParameterAssignementRowViewModel> SampledFunctionParameterParameterAssignementToDstRows { get; set; } = new() { ChangeTrackingEnabled = true };
-
-        /// <summary>
-        /// Gets the collection of <see cref="SampledFunctionParameterParameterAssignementRowViewModel" /> for
-        /// <see cref="MappingDirection.FromDstToHub" />
-        /// </summary>
-        public ReactiveList<SampledFunctionParameterParameterAssignementRowViewModel> SampledFunctionParameterParameterAssignementToHubRows { get; set; }
-            = new() { ChangeTrackingEnabled = true };
-
-        /// <summary>
-        /// Gets the values that has been selected to map
-        /// </summary>
-        public ReactiveList<TimeTaggedValuesRowViewModel> SelectedValues { get; set; } = new();
-
-        /// <summary>
-        /// Gets the collections of <see cref="TimeTaggedValuesRowViewModel" />
-        /// </summary>
-        public ReactiveList<TimeTaggedValuesRowViewModel> TimeTaggedValues { get; set; } = new();
 
         /// <summary>
         /// The <see cref="RowColumnSelection" /> value for <see cref="MappingDirection.FromHubToDst" />
@@ -415,6 +398,39 @@ namespace DEHPMatlab.ViewModel.Row
         }
 
         /// <summary>
+        /// Gets or sets the collection of selected <see cref="ElementUsage" />s
+        /// </summary>
+        public ReactiveList<ElementUsage> SelectedElementUsages { get; set; } = new();
+
+        /// <summary>
+        /// Gets or sets the mapping configurations
+        /// </summary>
+        public ReactiveList<IdCorrespondence> MappingConfigurations { get; } = new();
+
+        /// <summary>
+        /// Gets the collection of <see cref="SampledFunctionParameterParameterAssignementRowViewModel" /> for
+        /// <see cref="MappingDirection.FromHubToDst" />
+        /// </summary>
+        public ReactiveList<SampledFunctionParameterParameterAssignementRowViewModel> SampledFunctionParameterParameterAssignementToDstRows { get; set; } = new() { ChangeTrackingEnabled = true };
+
+        /// <summary>
+        /// Gets the collection of <see cref="SampledFunctionParameterParameterAssignementRowViewModel" /> for
+        /// <see cref="MappingDirection.FromDstToHub" />
+        /// </summary>
+        public ReactiveList<SampledFunctionParameterParameterAssignementRowViewModel> SampledFunctionParameterParameterAssignementToHubRows { get; set; }
+            = new() { ChangeTrackingEnabled = true };
+
+        /// <summary>
+        /// Gets the values that has been selected to map
+        /// </summary>
+        public ReactiveList<TimeTaggedValuesRowViewModel> SelectedValues { get; set; } = new();
+
+        /// <summary>
+        /// Gets the collections of <see cref="TimeTaggedValuesRowViewModel" />
+        /// </summary>
+        public ReactiveList<TimeTaggedValuesRowViewModel> TimeTaggedValues { get; set; } = new();
+
+        /// <summary>
         /// Updates the <see cref="SelectedValues" /> based on <see cref="SelectedTimeStep" />
         /// </summary>
         public void ApplyTimeStep()
@@ -434,19 +450,32 @@ namespace DEHPMatlab.ViewModel.Row
                 return;
             }
 
-            var currentTimestep = firstValue.TimeStep;
-
             this.SelectedValues.Add(firstValue);
 
-            foreach (var timeTaggedValueRowViewModel in this.TimeTaggedValues)
-            {
-                var lastValuePlusTimeStep = currentTimestep + this.SelectedTimeStep;
+            var averagingLists = new List<List<double>>();
 
-                if (Math.Round(Math.Abs(timeTaggedValueRowViewModel.TimeStep), 3) >= Math.Round(Math.Abs(lastValuePlusTimeStep), 3))
-                {
-                    this.SelectedValues.Add(timeTaggedValueRowViewModel);
-                    currentTimestep = timeTaggedValueRowViewModel.TimeStep;
-                }
+            for (var valuesIndex = 0; valuesIndex < firstValue.Values.Count; valuesIndex++)
+            {
+                averagingLists.Add(new List<double>());
+            }
+
+            this.PopulateSelectedValues(firstValue, averagingLists);
+
+            if (!this.IsAveraged)
+            {
+                return;
+            }
+
+            var lastSelectedRow = this.SelectedValues.LastOrDefault();
+
+            if (lastSelectedRow == null)
+            {
+                return;
+            }
+
+            foreach (var averagingList in averagingLists)
+            {
+                lastSelectedRow.AveragedValues.Add(averagingList.Average());
             }
         }
 
@@ -476,36 +505,20 @@ namespace DEHPMatlab.ViewModel.Row
                 ? currentArrayValue.GetLength(0)
                 : currentArrayValue.GetLength(1);
 
+            var timeTaggedValueList = new List<TimeTaggedValuesRowViewModel>();
+
             for (var timeTaggedValueIndex = 0; timeTaggedValueIndex < timeTaggedValuesCount; timeTaggedValueIndex++)
             {
                 var timeRowIndex = this.RowColumnSelectionToHub == RowColumnSelection.Column ? timeTaggedValueIndex : timeTaggedIndex;
                 var timeColumnIndex = this.RowColumnSelectionToHub == RowColumnSelection.Row ? timeTaggedValueIndex : timeTaggedIndex;
 
-                this.TimeTaggedValues.Add(new TimeTaggedValuesRowViewModel((double)currentArrayValue.GetValue(timeRowIndex, timeColumnIndex), 
+                timeTaggedValueList.Add(new TimeTaggedValuesRowViewModel((double) currentArrayValue.GetValue(timeRowIndex, timeColumnIndex),
                     this.GetTimeDependentValues(currentArrayValue, orderedIndexes, timeTaggedValueIndex)));
             }
-        }
 
-        /// <summary>
-        /// Retrieve the time dependent values for a row or column of the <see cref="ArrayValue" />
-        /// </summary>
-        /// <param name="currentArrayValue">The <see cref="ArrayValue" /> casted</param>
-        /// <param name="orderedIndexes">The collection of orderedIndexes</param>
-        /// <param name="timeTaggedValueIndex">The current index inside the <see cref="ArrayValue"/></param>
-        /// <returns>A collection of values</returns>
-        private IEnumerable<object> GetTimeDependentValues(Array currentArrayValue, List<string> orderedIndexes, int timeTaggedValueIndex)
-        {
-            var values = new List<object>();
-            
-            foreach (var orderIndex in orderedIndexes)
-            {
-                var rowIndex = this.RowColumnSelectionToHub == RowColumnSelection.Column ? timeTaggedValueIndex : int.Parse(orderIndex);
-                var columnIndex = this.RowColumnSelectionToHub == RowColumnSelection.Row ? timeTaggedValueIndex : int.Parse(orderIndex);
+            this.TimeTaggedValues.AddRange(timeTaggedValueList);
 
-                values.Add(currentArrayValue.GetValue(rowIndex, columnIndex));
-            }
-
-            return values;
+            this.IsValid();
         }
 
         /// <summary>
@@ -546,6 +559,11 @@ namespace DEHPMatlab.ViewModel.Row
             if (this.SelectedParameterType is SampledFunctionParameterType && this.TimeTaggedValues.Any())
             {
                 result = result && this.SelectedValues.Any();
+
+                if (result && this.IsAveraged)
+                {
+                    result = !this.SelectedValues.Any(x => x.AveragedValues.IsEmpty);
+                }
             }
 
             this.IsVariableMappingValid = result ? this.IsParameterTypeValid() : default(bool?);
@@ -610,11 +628,117 @@ namespace DEHPMatlab.ViewModel.Row
         }
 
         /// <summary>
+        /// Fill <see cref="SelectedValues" /> collection
+        /// </summary>
+        /// <param name="firstValue">The first <see cref="TimeTaggedValuesRowViewModel" /></param>
+        /// <param name="averagingLists">The collection containing all averaged values</param>
+        private void PopulateSelectedValues(TimeTaggedValuesRowViewModel firstValue, List<List<double>> averagingLists)
+        {
+            var currentTimestep = firstValue.TimeStep;
+
+            foreach (var timeTaggedValueRowViewModel in this.TimeTaggedValues)
+            {
+                if (this.IsAveraged)
+                {
+                    this.AddValuesToAverage(averagingLists, timeTaggedValueRowViewModel);
+                }
+
+                var lastValuePlusTimeStep = currentTimestep + this.SelectedTimeStep;
+
+                if (Math.Round(Math.Abs(timeTaggedValueRowViewModel.TimeStep), 3) >= Math.Round(Math.Abs(lastValuePlusTimeStep), 3))
+                {
+                    if (this.IsAveraged)
+                    {
+                        this.ComputeAverageValues(averagingLists, timeTaggedValueRowViewModel);
+                    }
+
+                    this.SelectedValues.Add(timeTaggedValueRowViewModel);
+                    currentTimestep = timeTaggedValueRowViewModel.TimeStep;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Compute the average values
+        /// </summary>
+        /// <param name="averagingLists">The collection containing all averaged values</param>
+        /// <param name="timeTaggedValueRowViewModel">The current <see cref="TimeTaggedValuesRowViewModel" /></param>
+        private void ComputeAverageValues(List<List<double>> averagingLists, TimeTaggedValuesRowViewModel timeTaggedValueRowViewModel)
+        {
+            var lastSelectedRow = this.SelectedValues.LastOrDefault();
+
+            if (lastSelectedRow == null)
+            {
+                return;
+            }
+
+            foreach (var averagingList in averagingLists)
+            {
+                averagingList.RemoveAt(averagingList.Count - 1);
+            }
+
+            lastSelectedRow.AveragedValues.Clear();
+
+            foreach (var averagingList in averagingLists)
+            {
+                lastSelectedRow.AveragedValues.Add(averagingList.Average());
+            }
+
+            foreach (var averagingList in averagingLists)
+            {
+                averagingList.Clear();
+            }
+
+            this.AddValuesToAverage(averagingLists, timeTaggedValueRowViewModel);
+        }
+
+        /// <summary>
+        /// Adds all values from the <see cref="TimeTaggedValuesRowViewModel.Values" /> to be averaged
+        /// </summary>
+        /// <param name="averagingLists">The averaging List</param>
+        /// <param name="timeTaggedValueRowViewModel">The <see cref="TimeTaggedValuesRowViewModel" /></param>
+        private void AddValuesToAverage(List<List<double>> averagingLists, TimeTaggedValuesRowViewModel timeTaggedValueRowViewModel)
+        {
+            if (timeTaggedValueRowViewModel.Values.All(x => x is IConvertible))
+            {
+                var averagingList = timeTaggedValueRowViewModel.Values
+                    .Select(value => value as IConvertible).Select(convert => convert!.ToDouble(null)).ToList();
+
+                for (var averagingIndex = 0; averagingIndex < averagingLists.Count; averagingIndex++)
+                {
+                    averagingLists[averagingIndex].Add(averagingList[averagingIndex]);
+                }
+            }
+        }
+
+        /// <summary>
         /// Verify if this view model can be edit inside the UI
         /// </summary>
         private void CheckIfIsEditable()
         {
             this.IsManuallyEditable = this.ArrayValue == null;
+        }
+
+        /// <summary>
+        /// Retrieve the time dependent values for a row or column of the <see cref="ArrayValue" />
+        /// </summary>
+        /// <param name="currentArrayValue">The <see cref="ArrayValue" /> casted</param>
+        /// <param name="orderedIndexes">The collection of orderedIndexes</param>
+        /// <param name="timeTaggedValueIndex">The current index inside the <see cref="ArrayValue" /></param>
+        /// <returns>A collection of values</returns>
+        private IEnumerable<object> GetTimeDependentValues(Array currentArrayValue, List<string> orderedIndexes, int timeTaggedValueIndex)
+        {
+            var values = new List<object>();
+
+            foreach (var orderIndex in orderedIndexes)
+            {
+                var rowIndex = this.RowColumnSelectionToHub == RowColumnSelection.Column ? timeTaggedValueIndex : int.Parse(orderIndex);
+                var columnIndex = this.RowColumnSelectionToHub == RowColumnSelection.Row ? timeTaggedValueIndex : int.Parse(orderIndex);
+
+                values.Add(currentArrayValue.GetValue(rowIndex, columnIndex));
+            }
+
+            return values;
         }
     }
 }

@@ -15,11 +15,11 @@
         Title="Mapping Configuration Dialog" MinWidth="800"
         WindowStartupLocation="CenterScreen"
         MinHeight="600" mc:Ignorable="d" Topmost="True">
-    <Window.Resources>
+    <dx:DXDialogWindow.Resources>
         <ResourceDictionary>
             <converters:ListToElementUsageConverter x:Key="ListToElementUsageConverter" />
         </ResourceDictionary>
-    </Window.Resources>
+    </dx:DXDialogWindow.Resources>
     <dxmvvm:Interaction.Behaviors>
         <behaviors:CloseWindowBehavior />
     </dxmvvm:Interaction.Behaviors>
@@ -111,27 +111,29 @@
                                           EditValue="{Binding SelectedThing.SelectedTimeStep, UpdateSourceTrigger=PropertyChanged}"
                                           EditValueType="{x:Type system:Double}" ToolTip="Defines the time step"
                                           MinValue="0" ValidateOnEnterKeyPressed="False" ValidateOnTextInput="False" />
+                            <dxe:CheckEdit Grid.Column="3" Content="Average" IsChecked="{Binding SelectedThing.IsAveraged, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                             <Button ToolTip="Applies the defined step" Grid.Column="4" Margin="2,2,10,2" HorizontalAlignment="Stretch" Command="{Binding ApplyTimeStepOnSelectionCommand}">Apply</Button>
                         </Grid>
-                        <dxg:GridControl Grid.Row="1" ItemsSource="{Binding SelectedThing.TimeTaggedValues}" 
+                        <dxg:GridControl Grid.Row="1" AllowUpdateTwoWayBoundPropertiesOnSynchronization="False"  ItemsSource="{Binding SelectedThing.TimeTaggedValues}" 
                                          SelectedItems="{Binding SelectedThing.SelectedValues, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                          SelectionMode="Row"
                                          ToolTip="The representation of all time tagged values" AutoGenerateColumns="None">
                             
                             <dxg:GridControl.View>
+                                
                                 <dxg:TableView HorizontalAlignment="Stretch" VerticalAlignment="Stretch" AllowColumnMoving="False" 
                                                AllowGrouping="False" IsDetailButtonVisibleBinding="{x:Null}" RetainSelectionOnClickOutsideCheckBoxSelector="True" 
-                                               ShowCheckBoxSelectorColumn="True" ShowFilterPanelMode="Never" 
+                                               ShowCheckBoxSelectorColumn="True" ShowFilterPanelMode="Never"
                                                ShowGroupPanel="False" VerticalScrollbarVisibility="Auto"
                                                AllowEditing="False" AllowSorting="False" AllowFilterEditor="False"
-                                               HorizontalScrollbarVisibility="Auto" >
+                                               HorizontalScrollbarVisibility="Auto" CheckBoxSelectorColumnWidth="45">
                                 <dxg:TableView.CheckBoxSelectorColumnHeaderTemplate>
                                     <DataTemplate>
                                         <dx:MeasurePixelSnapper HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                                             <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
                                                 <CheckBox Command="{Binding RelativeSource={RelativeSource FindAncestor, 
                                                             AncestorType={x:Type dialogs:DstMappingConfigurationDialog}},
-                                                            Path=DataContext.SelectAllValuesCommand}"/>
+                                                            Path=DataContext.SelectAllValuesCommand}" />
                                             </Grid>
                                         </dx:MeasurePixelSnapper>
                                     </DataTemplate>
@@ -140,14 +142,10 @@
                             </dxg:GridControl.View>
                             <dxg:GridControl.Columns>
                                 <dxg:GridColumn FieldName="TimeStep"/>
-                                <dxg:GridColumn FieldName="Value" >
-                                    <dxg:GridColumn.CellTemplate>
-                                        <DataTemplate>
-                                            <dxe:ComboBoxEdit ItemsSource="{Binding RowData.Row.Values}" IsTextEditable="False" SelectedIndex="0"/>
-                                        </DataTemplate>
-                                    </dxg:GridColumn.CellTemplate>
-                                </dxg:GridColumn>
                             </dxg:GridControl.Columns>
+                            <dxmvvm:Interaction.Behaviors>
+                                <behaviors1:TimeTaggedColumnsGeneratorBehavior />
+                            </dxmvvm:Interaction.Behaviors>
                         </dxg:GridControl>
                     </Grid>
                     <Grid Grid.Column="2" Margin="5">

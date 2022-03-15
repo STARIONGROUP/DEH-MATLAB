@@ -25,6 +25,7 @@
 namespace DEHPMatlab.ViewModel.Row
 {
     using System.Collections.Generic;
+    using System.Linq;
 
     using ReactiveUI;
 
@@ -61,6 +62,11 @@ namespace DEHPMatlab.ViewModel.Row
         /// <summary>
         /// A collection of all corresponding values linked to the represented reference
         /// </summary>
-        public List<object> Values { get; } = new();
+        public ReactiveList<object> Values { get; } = new() { ChangeTrackingEnabled = true };
+
+        /// <summary>
+        /// A collection of all corresponding averaged values linked to the represented reference
+        /// </summary>
+        public ReactiveList<object> AveragedValues { get; } = new() { ChangeTrackingEnabled = true };
     }
 }
