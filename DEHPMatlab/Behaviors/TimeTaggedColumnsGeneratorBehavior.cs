@@ -91,9 +91,8 @@ namespace DEHPMatlab.Behaviors
             {
                 return;
             }
-            
-            var variable = viewModel.SelectedThing;
 
+            var variable = viewModel.SelectedThing;
             this.AssociatedObject.Columns.Clear();
 
             var timeStepColumn = new GridColumn

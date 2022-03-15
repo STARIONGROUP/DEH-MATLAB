@@ -402,7 +402,13 @@ namespace DEHPMatlab.Tests.MappingRules
                 }
             }
 
-            var variable = new MatlabWorkspaceRowViewModel("a", arrayValue);
+            var variable = new MatlabWorkspaceRowViewModel("a", arrayValue)
+            {
+                SelectedTimeStep = 0.1
+            };
+
+            variable.ApplyTimeStep();
+            variable.SelectedTimeStep = 0;
 
             var parameter = new Parameter()
             {
@@ -446,6 +452,7 @@ namespace DEHPMatlab.Tests.MappingRules
                 }
             });
 
+            variable.GetTimeDependentValues();
             Assert.IsNotEmpty(variable.TimeTaggedValues);
             Assert.AreEqual(0, variable.SelectedTimeStep);
             variable.SelectedTimeStep = 2;

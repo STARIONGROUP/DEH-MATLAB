@@ -244,38 +244,19 @@ namespace DEHPMatlab.MappingRules
 
             var values = new List<string>();
 
-            var selectedItemsIndexes = matlabVariable.SelectedValues.Select(selectedValue => matlabVariable.TimeTaggedValues.IndexOf(selectedValue)).ToList();
-            selectedItemsIndexes.Sort();
+            var timeTaggedValuesIndices = matlabVariable.SelectedValues.Select(selectedValue => matlabVariable.TimeTaggedValues.IndexOf(selectedValue)).ToList();
+            timeTaggedValuesIndices.Sort();
 
             var timeTaggedParameter = matlabVariable.SampledFunctionParameterParameterAssignementToHubRows
                 .First(x => x.IsTimeTaggedParameter);
 
             var timeTaggedParameterIndex = matlabVariable.SampledFunctionParameterParameterAssignementToHubRows.IndexOf(timeTaggedParameter);
 
-            foreach (var selectedItemsIndex in selectedItemsIndexes)
+            foreach (var timeTaggedValuesIndex in timeTaggedValuesIndices)
             {
                 for (var parameterIndex = 0; parameterIndex < matlabVariable.SampledFunctionParameterParameterAssignementToHubRows.Count; parameterIndex++)
                 {
-                    var currentTimeTagged = matlabVariable.TimeTaggedValues[selectedItemsIndex];
-                    object valueToAdd;
-
-                    if (parameterIndex == timeTaggedParameterIndex)
-                    {
-                        valueToAdd = currentTimeTagged.TimeStep;
-                    }
-                    else if (parameterIndex < timeTaggedParameterIndex)
-                    {
-                        valueToAdd = matlabVariable.IsAveraged ? currentTimeTagged.AveragedValues[parameterIndex] : currentTimeTagged.Values[parameterIndex];
-                    }
-                    else
-                    {
-                        var indexDifference = parameterIndex == 0 ? 0 : 1;
-                       
-                        valueToAdd = matlabVariable.IsAveraged
-                            ? currentTimeTagged.AveragedValues[parameterIndex - indexDifference] 
-                            : currentTimeTagged.Values[parameterIndex - indexDifference];
-                    }
-
+                    var valueToAdd = this.GetCurrentValueToAdd(matlabVariable, parameterIndex, timeTaggedParameterIndex, timeTaggedValuesIndex);
                     values.Add(FormattableString.Invariant($"{valueToAdd}"));
                 }
             }
@@ -284,6 +265,37 @@ namespace DEHPMatlab.MappingRules
             {
                 valueSet.Computed = new ValueArray<string>(values);
             }
+        }
+
+        /// <summary>
+        /// Gets the correct value for <see cref="TimeTaggedValuesRowViewModel"/> to add to the set
+        /// </summary>
+        /// <param name="matlabVariable">The <see cref="MatlabWorkspaceRowViewModel"/></param>
+        /// <param name="parameterIndex">The parameter index</param>
+        /// <param name="timeTaggedParameterIndex">The index of the Parameter containing Time values</param>
+        /// <param name="timeTaggedValuesIndex">The current index of the <see cref="TimeTaggedValuesRowViewModel"/></param>
+        /// <returns></returns>
+        private object GetCurrentValueToAdd(MatlabWorkspaceRowViewModel matlabVariable, int parameterIndex, int timeTaggedParameterIndex, int timeTaggedValuesIndex)
+        {
+            var currentTimeTagged = matlabVariable.TimeTaggedValues[timeTaggedValuesIndex];
+            object valueToAdd;
+
+            if (parameterIndex == timeTaggedParameterIndex)
+            {
+                valueToAdd = currentTimeTagged.TimeStep;
+            }
+            else if (parameterIndex < timeTaggedParameterIndex)
+            {
+                valueToAdd = matlabVariable.IsAveraged ? currentTimeTagged.AveragedValues[parameterIndex] : currentTimeTagged.Values[parameterIndex];
+            }
+            else
+            {
+                valueToAdd = matlabVariable.IsAveraged
+                    ? currentTimeTagged.AveragedValues[parameterIndex - 1]
+                    : currentTimeTagged.Values[parameterIndex - 1];
+            }
+
+            return valueToAdd;
         }
 
         /// <summary>
