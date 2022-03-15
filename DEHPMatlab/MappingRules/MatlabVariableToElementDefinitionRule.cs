@@ -274,7 +274,7 @@ namespace DEHPMatlab.MappingRules
         /// <param name="parameterIndex">The parameter index</param>
         /// <param name="timeTaggedParameterIndex">The index of the Parameter containing Time values</param>
         /// <param name="timeTaggedValuesIndex">The current index of the <see cref="TimeTaggedValuesRowViewModel"/></param>
-        /// <returns></returns>
+        /// <returns>The value to add to the set</returns>
         private object GetCurrentValueToAdd(MatlabWorkspaceRowViewModel matlabVariable, int parameterIndex, int timeTaggedParameterIndex, int timeTaggedValuesIndex)
         {
             var currentTimeTagged = matlabVariable.TimeTaggedValues[timeTaggedValuesIndex];
