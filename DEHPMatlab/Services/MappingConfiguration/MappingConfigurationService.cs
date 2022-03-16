@@ -416,47 +416,6 @@ namespace DEHPMatlab.Services.MappingConfiguration
             }
         }
 
-        /// <summary>
-        /// Maps the <see cref="MatlabWorkspaceRowViewModel" />s defined in the <see cref="ExternalIdentifierMap" />
-        /// </summary>
-        /// <param name="variables">The collection of <see cref="MatlabWorkspaceRowViewModel" /></param>
-        /// <returns>A collection of <see cref="MatlabWorkspaceRowViewModel" /></returns>
-        private List<MatlabWorkspaceRowViewModel> MapElementsFromTheExternalIdentifierMapToHub(IList<MatlabWorkspaceRowViewModel> variables)
-        {
-            var mappedVariables = new List<MatlabWorkspaceRowViewModel>();
-
-            foreach (var idCorrespondences in this.correspondences
-                .Where(x => x.ExternalIdentifier.MappingDirection == MappingDirection.FromDstToHub)
-                .GroupBy(x => x.ExternalIdentifier.Identifier))
-            {
-                if (variables.FirstOrDefault(x => x.Identifier.Equals(idCorrespondences.Key)) is not { } element)
-                {
-                    continue;
-                }
-
-                this.LoadCorrespondences(element, idCorrespondences);
-
-                element.MappingConfigurations.AddRange(this.ExternalIdentifierMap.Correspondence
-                    .Where(x => idCorrespondences.Any(c => c.Iid == x.Iid)).ToList());
-
-                foreach (var (internalId, externalId, _) in idCorrespondences)
-                {
-                    if (!this.hubController.GetThingById(internalId, this.hubController.OpenIteration, out Thing thing))
-                    {
-                        continue;
-                    }
-
-                    if (thing is ParameterOrOverrideBase parameterOrOverride)
-                    {
-                        this.LoadSampledFunctionParameterTypeMappingConfiguration(element, externalId, parameterOrOverride);
-                    }
-                }
-
-                mappedVariables.Add(element);
-            }
-
-            return mappedVariables;
-        }
 
         /// <summary>
         /// If the current <see cref="parameterOrOverride" /> correspond to a <see cref="ParameterOrOverrideBase" /> of type
@@ -502,6 +461,48 @@ namespace DEHPMatlab.Services.MappingConfiguration
                     element.SampledFunctionParameterParameterAssignementToHubRows[externalId.TimeTaggedIndex.Value].IsTimeTaggedParameter = true;
                 }
             }
+        }
+
+        /// <summary>
+        /// Maps the <see cref="MatlabWorkspaceRowViewModel" />s defined in the <see cref="ExternalIdentifierMap" />
+        /// </summary>
+        /// <param name="variables">The collection of <see cref="MatlabWorkspaceRowViewModel" /></param>
+        /// <returns>A collection of <see cref="MatlabWorkspaceRowViewModel" /></returns>
+        private List<MatlabWorkspaceRowViewModel> MapElementsFromTheExternalIdentifierMapToHub(IList<MatlabWorkspaceRowViewModel> variables)
+        {
+            var mappedVariables = new List<MatlabWorkspaceRowViewModel>();
+
+            foreach (var idCorrespondences in this.correspondences
+                .Where(x => x.ExternalIdentifier.MappingDirection == MappingDirection.FromDstToHub)
+                .GroupBy(x => x.ExternalIdentifier.Identifier))
+            {
+                if (variables.FirstOrDefault(x => x.Identifier.Equals(idCorrespondences.Key)) is not { } element)
+                {
+                    continue;
+                }
+
+                this.LoadCorrespondences(element, idCorrespondences);
+
+                element.MappingConfigurations.AddRange(this.ExternalIdentifierMap.Correspondence
+                    .Where(x => idCorrespondences.Any(c => c.Iid == x.Iid)).ToList());
+
+                foreach (var (internalId, externalId, _) in idCorrespondences)
+                {
+                    if (!this.hubController.GetThingById(internalId, this.hubController.OpenIteration, out Thing thing))
+                    {
+                        continue;
+                    }
+
+                    if (thing is ParameterOrOverrideBase parameterOrOverride)
+                    {
+                        this.LoadSampledFunctionParameterTypeMappingConfiguration(element, externalId, parameterOrOverride);
+                    }
+                }
+
+                mappedVariables.Add(element);
+            }
+
+            return mappedVariables;
         }
 
         /// <summary>
