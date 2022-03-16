@@ -309,7 +309,7 @@ namespace DEHPMatlab.DstController
             this.MatlabAllWorkspaceRowViewModels.Clear();
             this.MatlabWorkspaceInputRowViewModels.Clear();
 
-            List<MatlabWorkspaceRowViewModel> detectedInputsWrapped = this.matlabParser.ParseMatlabScript(scriptPath,
+            var detectedInputsWrapped = this.matlabParser.ParseMatlabScript(scriptPath,
                 out this.loadedScriptPath);
 
             List<MatlabWorkspaceRowViewModel> detectedInputs = new();
@@ -377,7 +377,7 @@ namespace DEHPMatlab.DstController
         {
             if (this.mappingEngine.Map(dstVariables) is (Dictionary<ParameterOrOverrideBase, MatlabWorkspaceRowViewModel> parameterNodeIds, List<ElementBase> elements) && elements.Any())
             {
-                foreach (KeyValuePair<ParameterOrOverrideBase, MatlabWorkspaceRowViewModel> keyValue in parameterNodeIds)
+                foreach (var keyValue in parameterNodeIds)
                 {
                     this.ParameterVariable[keyValue.Key] = keyValue.Value;
                 }
@@ -430,6 +430,7 @@ namespace DEHPMatlab.DstController
 
                 if (!(this.SelectedDstMapResultToTransfer.Any() && this.TrySupplyingAndCreatingLogEntry(transaction)))
                 {
+                    this.IsBusy = false;
                     return;
                 }
 
@@ -809,6 +810,23 @@ namespace DEHPMatlab.DstController
                 return 0;
             }
 
+            foreach (var mappedVariable in mappedVariables)
+            {
+                var variable = this.MatlabAllWorkspaceRowViewModels.FirstOrDefault(x => x.Identifier == mappedVariable.Identifier);
+
+                if (variable is null)
+                {
+                    continue;
+                }
+
+                variable.IsAveraged = mappedVariable.IsAveraged;
+                variable.RowColumnSelectionToHub = mappedVariable.RowColumnSelectionToHub;
+                variable.SampledFunctionParameterParameterAssignementToHubRows = mappedVariable.SampledFunctionParameterParameterAssignementToHubRows;
+                variable.SelectedTimeStep = mappedVariable.SelectedTimeStep;
+                variable.GetTimeDependentValues();
+                variable.ApplyTimeStep();
+            }
+
             var validMappedVariables = mappedVariables.Where(x => x.IsValid()).ToList();
 
             if (!validMappedVariables.Any())
@@ -832,6 +850,19 @@ namespace DEHPMatlab.DstController
                 || !mappedElements.Any())
             {
                 return 0;
+            }
+
+            foreach (var mappedElement in mappedElements)
+            {
+                var inputVariable = this.MatlabWorkspaceInputRowViewModels.FirstOrDefault(x => x.Name == mappedElement.SelectedMatlabVariable.Name);
+
+                if (inputVariable is null)
+                {
+                    continue;
+                }
+
+                inputVariable.RowColumnSelectionToDst = mappedElement.SelectedMatlabVariable.RowColumnSelectionToDst;
+                inputVariable.SampledFunctionParameterParameterAssignementToDstRows = mappedElement.SelectedMatlabVariable.SampledFunctionParameterParameterAssignementToDstRows;
             }
 
             mappedElements.ForEach(x => x.VerifyValidity());
@@ -879,7 +910,7 @@ namespace DEHPMatlab.DstController
         private void UnwrapVariableAndCheckIfPresent(ICollection<MatlabWorkspaceRowViewModel> variablesToAdd, ICollection<MatlabWorkspaceRowViewModel> variablesToModify,
             MatlabWorkspaceRowViewModel matlabVariable)
         {
-            List<MatlabWorkspaceRowViewModel> unwrapped = matlabVariable.UnwrapVariableRowViewModels();
+            var unwrapped = matlabVariable.UnwrapVariableRowViewModels();
 
             foreach (var matlabWorkspaceBaseRowViewModel in unwrapped)
             {

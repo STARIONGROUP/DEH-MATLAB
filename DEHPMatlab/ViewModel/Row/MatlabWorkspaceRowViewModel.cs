@@ -351,7 +351,6 @@ namespace DEHPMatlab.ViewModel.Row
             set => this.RaiseAndSetIfChanged(ref this.selectedParameterType, value);
         }
 
-
         /// <summary>
         /// The <see cref="RowColumnSelection" /> value for <see cref="MappingDirection.FromHubToDst" />
         /// </summary>
@@ -550,11 +549,6 @@ namespace DEHPMatlab.ViewModel.Row
         {
             var result = (this.SelectedParameter != null || this.SelectedParameterType != null && this.SelectedParameter is null)
                          && (this.SelectedElementUsages.IsEmpty || this.SelectedElementDefinition != null && this.SelectedParameter != null);
-
-            if (this.SelectedParameterType is QuantityKind && this.SelectedScale is null)
-            {
-                result = false;
-            }
 
             if (this.SelectedParameterType is SampledFunctionParameterType && this.TimeTaggedValues.Any())
             {

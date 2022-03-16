@@ -483,6 +483,8 @@ namespace DEHPMatlab.Tests.DstController
                 }
             });
 
+            this.dstController.MatlabAllWorkspaceRowViewModels.Add(variableRowViewModels.Last());
+
             Assert.DoesNotThrow(() => this.dstController.LoadMapping());
         }
 

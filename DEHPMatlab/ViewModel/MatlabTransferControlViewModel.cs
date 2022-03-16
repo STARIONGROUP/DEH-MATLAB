@@ -186,7 +186,7 @@ namespace DEHPMatlab.ViewModel
             this.TransferInProgress = true;
             this.IsIndeterminate = true;
             this.statusBar.Append("Transfer in progress");
-
+            
             if (this.dstController.MappingDirection is MappingDirection.FromDstToHub)
             {
                 await this.dstController.TransferMappedThingsToHub();
