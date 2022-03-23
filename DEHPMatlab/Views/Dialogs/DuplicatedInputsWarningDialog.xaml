@@ -16,7 +16,7 @@
         <TextBlock Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap"
                    Text="Warning !
                    &#x0a;&#x0a;The following variables have been detected multiple times as input.
-                   &#x0a;&#x0a;If you want to have a control on these variables, consider modify your script by renaming the duplicated variables to remove the duplication.">
+                   &#x0a;&#x0a;Keep in mind that any mapping applied to these variables will be overriden by the script upon execution. Consider modifying your script by renaming these variables where they are reassigned.">
         </TextBlock>
         <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <StackPanel Orientation="Vertical">
@@ -27,6 +27,6 @@
         </ScrollViewer>
     </Grid>
     <dx:DXDialogWindow.FooterButtons>
-        <dx:DialogButton ToolTip="Close the dialog" Content="Close" MinWidth="65" DialogResult="OK"/>
+        <dx:DialogButton ToolTip="Close the dialog" Content="Continue" MinWidth="65" DialogResult="OK"/>
     </dx:DXDialogWindow.FooterButtons>
 </dx:DXDialogWindow>
