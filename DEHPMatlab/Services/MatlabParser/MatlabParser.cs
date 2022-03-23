@@ -91,8 +91,8 @@ namespace DEHPMatlab.Services.MatlabParser
         /// <returns>The list of duplicated nodes</returns>
         private IEnumerable<string> DetectDuplicationNodes(List<(SyntaxNode node, TokenKind tokenKind)> inputNodes)
         {
-            var nodeNames = inputNodes.Select(inputNode => ((string name, SyntaxNode node))
-                new(inputNode.node.GetChildNodesAndTokens().First().AsNode()!.Text, inputNode.node)).ToList();
+            List<(string name, SyntaxNode node)> nodeNames = inputNodes.Select(inputNode =>
+                (inputNode.node.GetChildNodesAndTokens().First().AsNode()!.Text, inputNode.node)).ToList();
 
             var duplicatedNames = nodeNames.GroupBy(x => x.name).Where(x => x.Skip(1).Any())
                 .Select(x => x.Key).ToList();

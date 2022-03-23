@@ -24,9 +24,13 @@
 
 namespace DEHPMatlab.ViewModel.Dialogs
 {
+    using System;
     using System.Collections.Generic;
+    using System.Text;
 
     using DEHPMatlab.Views.Dialogs;
+
+    using DevExpress.Mvvm.Native;
 
     /// <summary>
     /// The view model for <see cref="DuplicatedInputsWarningDialog" />
@@ -39,10 +43,9 @@ namespace DEHPMatlab.ViewModel.Dialogs
         /// <param name="duplicatedVariables">A collection of the duplicated variables</param>
         public DuplicatedInputsWarningDialogViewModel(IEnumerable<string> duplicatedVariables)
         {
-            foreach (var duplicatedVariable in duplicatedVariables)
-            {
-                this.DuplicatedVariables += $"- {duplicatedVariable}\n";
-            }
+            var builder = new StringBuilder();
+            duplicatedVariables.ForEach(duplicatedVariable => builder.Append($"- {duplicatedVariable}" + Environment.NewLine));
+            this.DuplicatedVariables = builder.ToString();
         }
 
         /// <summary>
