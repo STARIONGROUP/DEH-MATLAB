@@ -451,7 +451,7 @@ namespace DEHPMatlab.DstController
                     elementBasesToUpdate[element.Container].Add(element);
                 }
 
-                this.TransferSelectedParameterOrOverride(elementBasesToUpdate, transaction, iterationClone);
+                this.AddParameterOrOverrideToTransaction(elementBasesToUpdate, transaction, iterationClone);
 
                 transaction.CreateOrUpdate(iterationClone);
 
@@ -664,7 +664,7 @@ namespace DEHPMatlab.DstController
         /// <param name="elementBasesToUpdate">The collection of <see cref="ParameterOrOverrideBase" /> to transfer</param>
         /// <param name="transaction">The <see cref="IThingTransaction" /></param>
         /// <param name="iterationClone">The <see cref="Iteration" /></param>
-        private void TransferSelectedParameterOrOverride(Dictionary<Thing, List<ParameterOrOverrideBase>> elementBasesToUpdate, IThingTransaction transaction, Iteration iterationClone)
+        private void AddParameterOrOverrideToTransaction(Dictionary<Thing, List<ParameterOrOverrideBase>> elementBasesToUpdate, IThingTransaction transaction, Iteration iterationClone)
         {
             foreach (var element in elementBasesToUpdate.Keys.ToList())
             {
@@ -678,11 +678,7 @@ namespace DEHPMatlab.DstController
                         {
                             var sourceThing = this.CreateOrUpdateTransaction(transaction, (Parameter) parameter, elementClone.Parameter);
                             var targetThing = this.ParameterVariable[parameter].SelectedCoordinateSystem;
-
-                            if (targetThing != null)
-                            {
-                                this.CreateOrUpdateRelationShip(sourceThing, targetThing, iterationClone, transaction);
-                            }
+                            this.CreateOrUpdateRelationShip(sourceThing, targetThing, iterationClone, transaction);
                         }
 
                         break;
@@ -696,11 +692,7 @@ namespace DEHPMatlab.DstController
                         {
                             var sourceThing = this.CreateOrUpdateTransaction(transaction, (ParameterOverride) parameterOverride, elementUsageClone.ParameterOverride);
                             var targetThing = this.ParameterVariable[parameterOverride].SelectedCoordinateSystem;
-
-                            if (targetThing != null)
-                            {
-                                this.CreateOrUpdateRelationShip(sourceThing, targetThing, iterationClone, transaction);
-                            }
+                            this.CreateOrUpdateRelationShip(sourceThing, targetThing, iterationClone, transaction);
                         }
 
                         break;
@@ -807,6 +799,11 @@ namespace DEHPMatlab.DstController
         /// <param name="transaction">The <see cref="IThingTransaction" /></param>
         private void CreateOrUpdateRelationShip(Thing sourceThing, Thing targetThing, Iteration iterationClone, IThingTransaction transaction)
         {
+            if (targetThing == null)
+            {
+                return;
+            }
+
             var relationShip = iterationClone.Relationship
                 .OfType<BinaryRelationship>().FirstOrDefault(x =>
                     x.Owner == this.hubController.CurrentDomainOfExpertise
