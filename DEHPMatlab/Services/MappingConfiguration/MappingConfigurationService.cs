@@ -31,6 +31,7 @@ namespace DEHPMatlab.Services.MappingConfiguration
 
     using CDP4Common.CommonData;
     using CDP4Common.EngineeringModelData;
+    using CDP4Common.SiteDirectoryData;
 
     using CDP4Dal.Operations;
 
@@ -102,7 +103,7 @@ namespace DEHPMatlab.Services.MappingConfiguration
         /// <returns>A newly created <see cref="ExternalIdentifierMap" /></returns>
         public ExternalIdentifierMap CreateExternalIdentifierMap(string newName)
         {
-            return new ExternalIdentifierMap
+            return new()
             {
                 Name = newName,
                 ExternalToolName = DstController.ThisToolName,
@@ -112,7 +113,7 @@ namespace DEHPMatlab.Services.MappingConfiguration
         }
 
         /// <summary>
-        /// Adds one correspondance to the <see cref="MappingConfigurationService.ExternalIdentifierMap" />
+        /// Adds one correspondance to the <see cref="ExternalIdentifierMap" />
         /// </summary>
         /// <param name="internalId">The thing that <see cref="externalId" /> corresponds to</param>
         /// <param name="externalId">The external thing that <see cref="internalId" /> corresponds to</param>
@@ -127,7 +128,7 @@ namespace DEHPMatlab.Services.MappingConfiguration
         }
 
         /// <summary>
-        /// Adds one correspondence to the <see cref="MappingConfigurationService.ExternalIdentifierMap" />
+        /// Adds one correspondence to the <see cref="ExternalIdentifierMap" />
         /// </summary>
         /// <param name="internalId">The thing that <paramref name="externalIdentifier" /> corresponds to</param>
         /// <param name="externalIdentifier">The external thing that <see cref="internalId" /> corresponds to</param>
@@ -155,7 +156,7 @@ namespace DEHPMatlab.Services.MappingConfiguration
         }
 
         /// <summary>
-        /// Adds one correspondence to the <see cref="MappingConfigurationService.ExternalIdentifierMap" />
+        /// Adds one correspondence to the <see cref="ExternalIdentifierMap" />
         /// </summary>
         /// <param name="mappedElement">A <see cref="ParameterToMatlabVariableMappingRowViewModel" /></param>
         public void AddToExternalIdentifierMap(ParameterToMatlabVariableMappingRowViewModel mappedElement)
@@ -167,7 +168,11 @@ namespace DEHPMatlab.Services.MappingConfiguration
                 Identifier = mappedElement.SelectedMatlabVariable.Identifier,
                 MappingDirection = MappingDirection.FromHubToDst,
                 ValueIndex = index,
-                ParameterSwitchKind = switchKind
+                ParameterSwitchKind = switchKind,
+                RowColumnSelection = mappedElement.SelectedMatlabVariable.RowColumnSelectionToDst,
+                SampledFunctionParameterParameterAssignementIndices =
+                    mappedElement.SelectedMatlabVariable.SampledFunctionParameterParameterAssignementToDstRows
+                        .Select(x => x.Index).ToList()
             });
         }
 
@@ -182,9 +187,18 @@ namespace DEHPMatlab.Services.MappingConfiguration
         {
             foreach (var variable in parameterVariable)
             {
+                var timeTaggedParameter = variable.Value.SampledFunctionParameterParameterAssignementToHubRows
+                    .FirstOrDefault(x => x.IsTimeTaggedParameter);
+
                 this.AddToExternalIdentifierMap(variable.Key.Iid, new ExternalIdentifier
                 {
-                    Identifier = variable.Value.Identifier
+                    Identifier = variable.Value.Identifier,
+                    IsAveraged = variable.Value.IsAveraged,
+                    RowColumnSelection = variable.Value.RowColumnSelectionToHub,
+                    SelectedTimeStep = variable.Value.SelectedTimeStep,
+                    SampledFunctionParameterParameterAssignementIndices = variable.Value.SampledFunctionParameterParameterAssignementToHubRows
+                        .Select(x => x.Index).ToList(),
+                    TimeTaggedIndex = timeTaggedParameter == null ? null : variable.Value.SampledFunctionParameterParameterAssignementToHubRows.IndexOf(timeTaggedParameter)
                 });
 
                 if (variable.Key.GetContainerOfType<ElementUsage>() is { } elementUsage)
@@ -240,7 +254,7 @@ namespace DEHPMatlab.Services.MappingConfiguration
         }
 
         /// <summary>
-        /// Refreshes the <see cref="MappingConfigurationService.ExternalIdentifierMap" /> usually done after a session write
+        /// Refreshes the <see cref="ExternalIdentifierMap" /> usually done after a session write
         /// </summary>
         public void RefreshExternalIdentifierMap()
         {
@@ -330,15 +344,15 @@ namespace DEHPMatlab.Services.MappingConfiguration
             var mappedElements = new List<ParameterToMatlabVariableMappingRowViewModel>();
 
             foreach (var idCorrespondences in this.correspondences
-                         .Where(x => x.ExternalIdentifier.MappingDirection == MappingDirection.FromHubToDst)
-                         .GroupBy(x => x.ExternalIdentifier.Identifier))
+                .Where(x => x.ExternalIdentifier.MappingDirection == MappingDirection.FromHubToDst)
+                .GroupBy(x => x.ExternalIdentifier.Identifier))
             {
                 if (variables.FirstOrDefault(x => x.Identifier.Equals(idCorrespondences.Key)) is not { } element)
                 {
                     continue;
                 }
 
-                foreach (var (internalId, externalId, idCorrespondence) in idCorrespondences)
+                foreach (var (internalId, externalId, _) in idCorrespondences)
                 {
                     if (!this.hubController.GetThingById(internalId, this.hubController.OpenIteration, out ParameterValueSet valueSet))
                     {
@@ -349,6 +363,8 @@ namespace DEHPMatlab.Services.MappingConfiguration
                     {
                         continue;
                     }
+
+                    this.LoadSampledFunctionParameterTypeMappingConfiguration(element, externalId, valueSet);
 
                     var mappedElement = new ParameterToMatlabVariableMappingRowViewModel(valueSet, index, externalId.ParameterSwitchKind)
                     {
@@ -363,6 +379,91 @@ namespace DEHPMatlab.Services.MappingConfiguration
         }
 
         /// <summary>
+        /// If the current <see cref="valueSet" /> correspond to a ValueSet of a <see cref="Parameter" /> of type
+        /// <see cref="SampledFunctionParameterType" />,
+        /// loads the corresponding row/column correspondance mapping configuration
+        /// </summary>
+        /// <param name="element">The <see cref="MatlabWorkspaceRowViewModel" /></param>
+        /// <param name="externalId">The <see cref="ExternalIdentifier" /></param>
+        /// <param name="valueSet">The <see cref="ParameterValueSet" /></param>
+        private void LoadSampledFunctionParameterTypeMappingConfiguration(MatlabWorkspaceRowViewModel element, ExternalIdentifier externalId, ParameterValueSet valueSet)
+        {
+            if (valueSet.GetContainerOfType<ParameterOrOverrideBase>()?.ParameterType is SampledFunctionParameterType sampledFunctionParameterType)
+            {
+                element.RowColumnSelectionToDst = externalId.RowColumnSelection;
+                element.SampledFunctionParameterParameterAssignementToDstRows.Clear();
+                var parameterIndex = 0;
+
+                foreach (IndependentParameterTypeAssignment independentParameterTypeAssignment in sampledFunctionParameterType.IndependentParameterType)
+                {
+                    element.SampledFunctionParameterParameterAssignementToDstRows
+                        .Add(new SampledFunctionParameterParameterAssignementRowViewModel(
+                            externalId.SampledFunctionParameterParameterAssignementIndices[parameterIndex++])
+                        {
+                            SelectedParameterTypeAssignment = independentParameterTypeAssignment
+                        });
+                }
+
+                foreach (DependentParameterTypeAssignment dependentParameterTypeAssignment in sampledFunctionParameterType.DependentParameterType)
+                {
+                    element.SampledFunctionParameterParameterAssignementToDstRows
+                        .Add(new SampledFunctionParameterParameterAssignementRowViewModel(
+                            externalId.SampledFunctionParameterParameterAssignementIndices[parameterIndex++])
+                        {
+                            SelectedParameterTypeAssignment = dependentParameterTypeAssignment
+                        });
+                }
+            }
+        }
+
+
+        /// <summary>
+        /// If the current <see cref="parameterOrOverride" /> correspond to a <see cref="ParameterOrOverrideBase" /> of type
+        /// <see cref="SampledFunctionParameterType" />,
+        /// loads the corresponding row/column correspondance mapping configuration
+        /// </summary>
+        /// <param name="element">The <see cref="MatlabWorkspaceRowViewModel" /></param>
+        /// <param name="externalId">The <see cref="ExternalIdentifier" /></param>
+        /// <param name="parameterOrOverride">The <see cref="ParameterOrOverrideBase" /></param>
+        private void LoadSampledFunctionParameterTypeMappingConfiguration(MatlabWorkspaceRowViewModel element, ExternalIdentifier externalId, ParameterOrOverrideBase parameterOrOverride)
+        {
+            if (parameterOrOverride.ParameterType is SampledFunctionParameterType sampledFunctionParameterType)
+            {
+                element.RowColumnSelectionToHub = externalId.RowColumnSelection;
+                element.SampledFunctionParameterParameterAssignementToHubRows.Clear();
+                var parameterIndex = 0;
+
+                foreach (IndependentParameterTypeAssignment independentParameterTypeAssignment in sampledFunctionParameterType.IndependentParameterType)
+                {
+                    element.SampledFunctionParameterParameterAssignementToHubRows
+                        .Add(new SampledFunctionParameterParameterAssignementRowViewModel(
+                            externalId.SampledFunctionParameterParameterAssignementIndices[parameterIndex++])
+                        {
+                            SelectedParameterTypeAssignment = independentParameterTypeAssignment
+                        });
+                }
+
+                foreach (DependentParameterTypeAssignment dependentParameterTypeAssignment in sampledFunctionParameterType.DependentParameterType)
+                {
+                    element.SampledFunctionParameterParameterAssignementToHubRows
+                        .Add(new SampledFunctionParameterParameterAssignementRowViewModel(
+                            externalId.SampledFunctionParameterParameterAssignementIndices[parameterIndex++])
+                        {
+                            SelectedParameterTypeAssignment = dependentParameterTypeAssignment
+                        });
+                }
+
+                element.IsAveraged = externalId.IsAveraged;
+                element.SelectedTimeStep = externalId.SelectedTimeStep;
+
+                if (externalId.TimeTaggedIndex is not null)
+                {
+                    element.SampledFunctionParameterParameterAssignementToHubRows[externalId.TimeTaggedIndex.Value].IsTimeTaggedParameter = true;
+                }
+            }
+        }
+
+        /// <summary>
         /// Maps the <see cref="MatlabWorkspaceRowViewModel" />s defined in the <see cref="ExternalIdentifierMap" />
         /// </summary>
         /// <param name="variables">The collection of <see cref="MatlabWorkspaceRowViewModel" /></param>
@@ -372,8 +473,8 @@ namespace DEHPMatlab.Services.MappingConfiguration
             var mappedVariables = new List<MatlabWorkspaceRowViewModel>();
 
             foreach (var idCorrespondences in this.correspondences
-                         .Where(x => x.ExternalIdentifier.MappingDirection == MappingDirection.FromDstToHub)
-                         .GroupBy(x => x.ExternalIdentifier.Identifier))
+                .Where(x => x.ExternalIdentifier.MappingDirection == MappingDirection.FromDstToHub)
+                .GroupBy(x => x.ExternalIdentifier.Identifier))
             {
                 if (variables.FirstOrDefault(x => x.Identifier.Equals(idCorrespondences.Key)) is not { } element)
                 {
@@ -384,6 +485,19 @@ namespace DEHPMatlab.Services.MappingConfiguration
 
                 element.MappingConfigurations.AddRange(this.ExternalIdentifierMap.Correspondence
                     .Where(x => idCorrespondences.Any(c => c.Iid == x.Iid)).ToList());
+
+                foreach (var (internalId, externalId, _) in idCorrespondences)
+                {
+                    if (!this.hubController.GetThingById(internalId, this.hubController.OpenIteration, out Thing thing))
+                    {
+                        continue;
+                    }
+
+                    if (thing is ParameterOrOverrideBase parameterOrOverride)
+                    {
+                        this.LoadSampledFunctionParameterTypeMappingConfiguration(element, externalId, parameterOrOverride);
+                    }
+                }
 
                 mappedVariables.Add(element);
             }

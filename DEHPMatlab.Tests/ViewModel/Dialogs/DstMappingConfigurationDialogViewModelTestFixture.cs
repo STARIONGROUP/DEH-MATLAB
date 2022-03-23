@@ -240,8 +240,6 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
                 SelectedParameterType = this.quantityKindParameterType,
             };
 
-            Assert.IsFalse(variable.IsValid());
-            variable.SelectedScale = this.scale;
             Assert.IsTrue(variable.IsValid());
 
             this.viewModel.Variables.Add(variable);

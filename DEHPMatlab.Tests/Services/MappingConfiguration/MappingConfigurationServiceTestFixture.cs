@@ -40,6 +40,7 @@ namespace DEHPMatlab.Tests.Services.MappingConfiguration
     using DEHPCommon.UserInterfaces.ViewModels.Interfaces;
 
     using DEHPMatlab.DstController;
+    using DEHPMatlab.Enumerator;
     using DEHPMatlab.Services.MappingConfiguration;
     using DEHPMatlab.ViewModel.Row;
 
@@ -48,6 +49,8 @@ namespace DEHPMatlab.Tests.Services.MappingConfiguration
     using Newtonsoft.Json;
 
     using NUnit.Framework;
+
+    using ReactiveUI;
 
     [TestFixture]
     public class MappingConfigurationServiceTestFixture
@@ -59,19 +62,24 @@ namespace DEHPMatlab.Tests.Services.MappingConfiguration
         private ElementDefinition elementDefinition0;
         private ParameterOverride parameterOverride;
         private Parameter parameter;
+        private Parameter parameterSampledFunctionParameter;
         private Iteration iteration;
         private Person person;
         private Participant participant;
         private ElementDefinition elementDefinition1;
         private ElementDefinition elementDefinition2;
         private ParameterType parameterType;
+        private SampledFunctionParameterType sampledFunctionParameterType;
         private ExternalIdentifierMap externalIdentifierMap;
         private List<ExternalIdentifier> externalIdentifiers;
         private List<MatlabWorkspaceRowViewModel> variables;
+        private MeasurementScale scale;
 
         [SetUp]
         public void Setup()
         {
+            this.scale = new RatioScale() { Name = "scale", NumberSet = NumberSetKind.REAL_NUMBER_SET };
+
             this.variables = new List<MatlabWorkspaceRowViewModel>()
             {
                 new("a", 45)
@@ -83,6 +91,66 @@ namespace DEHPMatlab.Tests.Services.MappingConfiguration
                     Identifier = "a-b"
                 }
             };
+
+            this.sampledFunctionParameterType = new SampledFunctionParameterType(Guid.NewGuid(), null, null)
+            {
+                Name = "TextXQuantity",
+                IndependentParameterType =
+                {
+                    new IndependentParameterTypeAssignment()
+                    {
+                        ParameterType = new SimpleQuantityKind()
+                        {
+                            Name = "IndependentText",
+                            DefaultScale = this.scale,
+                            PossibleScale = { this.scale },
+                        },
+                        MeasurementScale = this.scale
+                    }
+                },
+
+                DependentParameterType =
+                {
+                    new DependentParameterTypeAssignment()
+                    {
+                        ParameterType = new SimpleQuantityKind()
+                        {
+                            Name = "DependentQuantityKing",
+                            DefaultScale = this.scale,
+                            PossibleScale = { this.scale }
+                        },
+                        MeasurementScale = this.scale
+                    }
+                }
+            };
+
+            var variable = new MatlabWorkspaceRowViewModel("c", new double[2, 2])
+            {
+                Identifier = "a-c", 
+                RowColumnSelectionToHub = RowColumnSelection.Row,
+                RowColumnSelectionToDst =  RowColumnSelection.Row,
+                IsAveraged = false,
+                SelectedTimeStep = 0.2
+            };
+
+            variable.SampledFunctionParameterParameterAssignementToHubRows.Clear();
+
+            variable.SampledFunctionParameterParameterAssignementToHubRows.AddRange(new[]
+            {
+                new SampledFunctionParameterParameterAssignementRowViewModel("1")
+                {
+                    SelectedParameterTypeAssignment = this.sampledFunctionParameterType.IndependentParameterType.First(),
+                    IsTimeTaggedParameter = true
+                },
+                new SampledFunctionParameterParameterAssignementRowViewModel("0")
+                {
+                    SelectedParameterTypeAssignment = this.sampledFunctionParameterType.DependentParameterType.First()
+                }
+            });
+
+            variable.SampledFunctionParameterParameterAssignementToDstRows.AddRange(variable.SampledFunctionParameterParameterAssignementToHubRows);
+
+            this.variables.Add(variable);
 
             this.parameterType = new SimpleQuantityKind(Guid.NewGuid(), null, null);
             this.person = new Person(Guid.NewGuid(), null, null) { GivenName = "test", DefaultDomain = this.domain };
@@ -123,9 +191,21 @@ namespace DEHPMatlab.Tests.Services.MappingConfiguration
                 ParameterType = this.parameterType
             };
 
+            this.parameterSampledFunctionParameter = new Parameter(Guid.NewGuid(), null, null)
+            {
+                ValueSet =
+                {
+                    new ParameterValueSet(Guid.NewGuid(), null, null)
+                    {
+                        Manual = new ValueArray<string>(new []{"2","3","4","5"}), ValueSwitch = ParameterSwitchKind.MANUAL
+                    }
+                },
+                ParameterType = this.sampledFunctionParameterType
+            };
+
             this.elementDefinition0 = new ElementDefinition(Guid.NewGuid(), null, null)
             {
-                Parameter = { this.parameter },
+                Parameter = { this.parameter, this.parameterSampledFunctionParameter },
                 Container = this.iteration
             };
 
@@ -197,6 +277,27 @@ namespace DEHPMatlab.Tests.Services.MappingConfiguration
                     Identifier = "Mos.a",
                     ValueIndex = 0,
                     ParameterSwitchKind = ParameterSwitchKind.COMPUTED
+                }, 
+                new ()
+                {
+                    MappingDirection = MappingDirection.FromDstToHub,
+                    Identifier = "a-c",
+                    RowColumnSelection =  RowColumnSelection.Row,
+                    IsAveraged = false,
+                    ValueIndex = 0,
+                    SelectedTimeStep = 0.2,
+                    SampledFunctionParameterParameterAssignementIndices = variable.SampledFunctionParameterParameterAssignementToHubRows
+                        .Select(x => x.Index).ToList(),
+                    TimeTaggedIndex = 0,
+                },
+                new ()
+                {
+                    MappingDirection = MappingDirection.FromHubToDst,
+                    Identifier = "a-c",
+                    ValueIndex = 0,
+                    RowColumnSelection =  RowColumnSelection.Row,
+                    SampledFunctionParameterParameterAssignementIndices = variable.SampledFunctionParameterParameterAssignementToDstRows
+                        .Select(x => x.Index).ToList(),
                 }
             };
 
@@ -207,6 +308,8 @@ namespace DEHPMatlab.Tests.Services.MappingConfiguration
                     new IdCorrespondence() { InternalThing = this.elementDefinition0.Iid, ExternalId = JsonConvert.SerializeObject(this.externalIdentifiers[0]) },
                     new IdCorrespondence() { InternalThing = this.parameter.Iid, ExternalId = JsonConvert.SerializeObject(this.externalIdentifiers[1]) },
                     new IdCorrespondence() { InternalThing = Guid.NewGuid(), ExternalId = JsonConvert.SerializeObject(this.externalIdentifiers[2]) },
+                    new IdCorrespondence() { InternalThing = this.parameterSampledFunctionParameter.Iid, ExternalId = JsonConvert.SerializeObject(this.externalIdentifiers[3]) },
+                    new IdCorrespondence() { InternalThing = this.parameterSampledFunctionParameter.ValueSet.First().Iid, ExternalId = JsonConvert.SerializeObject(this.externalIdentifiers[4]) },
                 }
             };
         }
@@ -260,7 +363,11 @@ namespace DEHPMatlab.Tests.Services.MappingConfiguration
                 {
                     SelectedMatlabVariable = new MatlabWorkspaceRowViewModel("b", 5)
                     {
-                        Identifier = "a-b"
+                        Identifier = "a-b",
+                        SampledFunctionParameterParameterAssignementToDstRows = new ReactiveList<SampledFunctionParameterParameterAssignementRowViewModel>()
+                        {
+                            new("0")
+                        }
                     },
                     SelectedValue = new ValueSetValueRowViewModel(
                         new ParameterValueSet()
@@ -328,7 +435,7 @@ namespace DEHPMatlab.Tests.Services.MappingConfiguration
 
             Assert.AreEqual(1, this.iteration.ExternalIdentifierMap.Count);
             transactionMock.Verify(x => x.CreateOrUpdate(It.IsAny<Thing>()), Times.Exactly(3));
-            transactionMock.Verify(x => x.Create(It.IsAny<Thing>(), null), Times.Exactly(3));
+            transactionMock.Verify(x => x.Create(It.IsAny<Thing>(), null), Times.Exactly(5));
         }
 
         [Test]
@@ -364,16 +471,26 @@ namespace DEHPMatlab.Tests.Services.MappingConfiguration
             this.hubController.Setup(x => x.GetThingById(It.IsAny<Guid>(), It.IsAny<Iteration>(), out valueSet));
             Assert.DoesNotThrow(() => mappedRows = this.mappingConfiguration.LoadMappingFromHubToDst(this.variables));
 
-            valueSet = new ParameterValueSet()
+            valueSet = new ParameterValueSet(new Guid(), null, null)
             {
                 Computed = new ValueArray<string>(new[] { "42" })
             };
 
-            this.hubController.Setup(x => x.GetThingById(It.IsAny<Guid>(), It.IsAny<Iteration>(), out valueSet)).Returns(true);
+            var setup = this.hubController.Setup(x => x.GetThingById(It.IsAny<Guid>(), It.IsAny<Iteration>(), out valueSet));
+            setup.Returns(true);
+            Assert.DoesNotThrow(() => mappedRows = this.mappingConfiguration.LoadMappingFromHubToDst(this.variables));
+
+            Assert.AreEqual(2, mappedRows.Count);
+            Assert.AreEqual("42", mappedRows.First().SelectedValue.Value);
+
+            var valueSet2 = this.parameterSampledFunctionParameter.ValueSet.First();
+
+            setup.Returns(false);
+            this.hubController.Setup(x => x.GetThingById(valueSet2.Iid, It.IsAny<Iteration>(), out valueSet2)).Returns(true);
             Assert.DoesNotThrow(() => mappedRows = this.mappingConfiguration.LoadMappingFromHubToDst(this.variables));
 
             Assert.AreEqual(1, mappedRows.Count);
-            Assert.AreEqual("42", mappedRows.First().SelectedValue.Value);
+            Assert.AreEqual("[2x2]", mappedRows.First().SelectedValue.Value);
         }
 
         [Test]
@@ -387,16 +504,17 @@ namespace DEHPMatlab.Tests.Services.MappingConfiguration
 
             var parameterAsThing = (Thing)this.parameter;
             var elementAsThing = (Thing)this.elementDefinition0;
+            var parameterSampledFunctionParameterAsThing = (Thing) this.parameterSampledFunctionParameter;
             this.hubController.Setup(x => x.GetThingById(this.parameter.Iid, It.IsAny<Iteration>(), out parameterAsThing)).Returns(true);
             this.hubController.Setup(x => x.GetThingById(this.elementDefinition0.Iid, It.IsAny<Iteration>(), out elementAsThing)).Returns(true);
-
+            this.hubController.Setup(x => x.GetThingById(this.parameterSampledFunctionParameter.Iid, It.IsAny<Iteration>(), out parameterSampledFunctionParameterAsThing)).Returns(true);
             var mappedVariables = new List<MatlabWorkspaceRowViewModel>();
             Assert.DoesNotThrow(() => mappedVariables = this.mappingConfiguration.LoadMappingFromDstToHub(this.variables));
 
             Assert.IsNotNull(mappedVariables);
-            Assert.AreEqual(1, mappedVariables.Count);
+            Assert.AreEqual(2, mappedVariables.Count);
 
-            this.hubController.Verify(x => x.GetThingById(It.IsAny<Guid>(), It.IsAny<Iteration>(), out thing), Times.Exactly(3));
+            this.hubController.Verify(x => x.GetThingById(It.IsAny<Guid>(), It.IsAny<Iteration>(), out thing), Times.Exactly(12));
         }
 
         [Test]
@@ -416,7 +534,7 @@ namespace DEHPMatlab.Tests.Services.MappingConfiguration
 
             Assert.AreEqual(1, iterationClone.ExternalIdentifierMap.Count);
             transactionMock.Verify(x => x.CreateOrUpdate(It.IsAny<Thing>()), Times.Exactly(3));
-            transactionMock.Verify(x => x.Create(It.IsAny<Thing>(), null), Times.Exactly(3));
+            transactionMock.Verify(x => x.Create(It.IsAny<Thing>(), null), Times.Exactly(5));
         }
     }
 }
