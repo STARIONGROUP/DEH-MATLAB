@@ -17,6 +17,20 @@ T_A = 2*pi*sqrt(r_A^3/mu);
 % Orbital period for spacecraft B in s
 T_B = 2*pi*sqrt(r_B^3/mu);
 
+% For loop : Skip that node on parsing
+for c = 1:s
+    A = 0;
+    for r = 1:s
+        H(r,c) = 1/(r+c-1);
+    end
+end
+
+for c = 1:s
+    A = 0;
+    for r = 1:s
+        H(r,c) = 1/(r+c-1);
+    end
+end
 
 %% TASK 2
 
@@ -216,3 +230,9 @@ function dydt = odefcn(t,y,mu);
           y(4);
           (-mu/r^3)*y(3)];
 end
+
+duplication1 = 5;
+duplication1 = 10;
+
+duplication2 = 6;
+duplication2 = 6;

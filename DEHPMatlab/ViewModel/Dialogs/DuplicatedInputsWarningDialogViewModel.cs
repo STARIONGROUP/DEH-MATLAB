@@ -1,5 +1,5 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="IMatlabParser.cs" company="RHEA System S.A.">
+// <copyright file="DuplicatedInputsWarningDialogViewModel.cs" company="RHEA System S.A.">
 // Copyright (c) 2020-2022 RHEA System S.A.
 // 
 // Author: Sam Gerené, Alex Vorobiev, Alexander van Delft, Nathanael Smiechowski, Antoine Théate.
@@ -22,24 +22,32 @@
 // </copyright>
 // --------------------------------------------------------------------------------------------------------------------
 
-namespace DEHPMatlab.Services.MatlabParser
+namespace DEHPMatlab.ViewModel.Dialogs
 {
-    using DEHPMatlab.ViewModel.Row;
-
     using System.Collections.Generic;
 
+    using DEHPMatlab.Views.Dialogs;
+
     /// <summary>
-    /// Interface definition for <see cref="MatlabParser"/>
+    /// The view model for <see cref="DuplicatedInputsWarningDialog" />
     /// </summary>
-    public interface IMatlabParser
+    public class DuplicatedInputsWarningDialogViewModel
     {
         /// <summary>
-        /// Parses a Matlab Script and retrieve all inputs variables
+        /// Initializes a new <see cref="DuplicatedInputsWarningDialogViewModel" />
         /// </summary>
-        /// <param name="originalScriptFilePath">The path of original script</param>
-        /// <param name="scriptWithoutInputsFilePath">The path of the modified script</param>
-        /// <param name="duplicatedNodes">A collection of duplicated nodes to warn the user of those duplicates</param>
-        /// <returns>The list of all <see cref="MatlabWorkspaceRowViewModel"/> found</returns>
-        List<MatlabWorkspaceRowViewModel> ParseMatlabScript(string originalScriptFilePath, out string scriptWithoutInputsFilePath, out List<string> duplicatedNodes);
+        /// <param name="duplicatedVariables">A collection of the duplicated variables</param>
+        public DuplicatedInputsWarningDialogViewModel(IEnumerable<string> duplicatedVariables)
+        {
+            foreach (var duplicatedVariable in duplicatedVariables)
+            {
+                this.DuplicatedVariables += $"- {duplicatedVariable}\n";
+            }
+        }
+
+        /// <summary>
+        /// The representation of the collection of duplicated variables
+        /// </summary>
+        public string DuplicatedVariables { get; }
     }
 }

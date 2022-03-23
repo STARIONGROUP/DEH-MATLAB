@@ -1,5 +1,5 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="IMatlabParser.cs" company="RHEA System S.A.">
+// <copyright file="DuplicatedInputsWarningDialog.xaml.cs" company="RHEA System S.A.">
 // Copyright (c) 2020-2022 RHEA System S.A.
 // 
 // Author: Sam Gerené, Alex Vorobiev, Alexander van Delft, Nathanael Smiechowski, Antoine Théate.
@@ -22,24 +22,22 @@
 // </copyright>
 // --------------------------------------------------------------------------------------------------------------------
 
-namespace DEHPMatlab.Services.MatlabParser
+namespace DEHPMatlab.Views.Dialogs
 {
-    using DEHPMatlab.ViewModel.Row;
-
-    using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
-    /// Interface definition for <see cref="MatlabParser"/>
+    /// Interaction logic for DuplicatedInputsWarningDialog.xaml
     /// </summary>
-    public interface IMatlabParser
+    public partial class DuplicatedInputsWarningDialog
     {
         /// <summary>
-        /// Parses a Matlab Script and retrieve all inputs variables
+        /// Initializes a new <see cref="DuplicatedInputsWarningDialog" />
         /// </summary>
-        /// <param name="originalScriptFilePath">The path of original script</param>
-        /// <param name="scriptWithoutInputsFilePath">The path of the modified script</param>
-        /// <param name="duplicatedNodes">A collection of duplicated nodes to warn the user of those duplicates</param>
-        /// <returns>The list of all <see cref="MatlabWorkspaceRowViewModel"/> found</returns>
-        List<MatlabWorkspaceRowViewModel> ParseMatlabScript(string originalScriptFilePath, out string scriptWithoutInputsFilePath, out List<string> duplicatedNodes);
+        [ExcludeFromCodeCoverage]
+        public DuplicatedInputsWarningDialog()
+        {
+            this.InitializeComponent();
+        }
     }
 }
