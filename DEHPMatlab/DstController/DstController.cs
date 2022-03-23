@@ -451,47 +451,7 @@ namespace DEHPMatlab.DstController
                     elementBasesToUpdate[element.Container].Add(element);
                 }
 
-                foreach (var element in elementBasesToUpdate.Keys.ToList())
-                {
-                    switch (element)
-                    {
-                        case ElementDefinition elementDefinition:
-                        {
-                            var elementClone = this.CreateOrUpdateTransaction(transaction, elementDefinition, iterationClone.Element);
-
-                            foreach (var parameter in elementBasesToUpdate[element])
-                            {
-                                var sourceThing = this.CreateOrUpdateTransaction(transaction, (Parameter) parameter, elementClone.Parameter);
-                                var targetThing = this.ParameterVariable[parameter].SelectedCoordinateSystem;
-
-                                if (targetThing != null)
-                                {
-                                    this.CreateOrUpdateRelationShip(sourceThing, targetThing, iterationClone, transaction);
-                                }
-                            }
-
-                            break;
-                        }
-                        case ElementUsage elementUsage:
-                        {
-                            var elementUsageClone = elementUsage.Clone(false);
-                            transaction.CreateOrUpdate(elementUsageClone);
-
-                            foreach (var parameterOverride in elementBasesToUpdate[element])
-                            {
-                                var sourceThing = this.CreateOrUpdateTransaction(transaction, (ParameterOverride) parameterOverride, elementUsageClone.ParameterOverride);
-                                var targetThing = this.ParameterVariable[parameterOverride].SelectedCoordinateSystem;
-
-                                if (targetThing != null)
-                                {
-                                    this.CreateOrUpdateRelationShip(sourceThing, targetThing, iterationClone, transaction);
-                                }
-                            }
-
-                            break;
-                        }
-                    }
-                }
+                this.TransferSelectedParameterOrOverride(elementBasesToUpdate, transaction, iterationClone);
 
                 transaction.CreateOrUpdate(iterationClone);
 
@@ -696,6 +656,57 @@ namespace DEHPMatlab.DstController
             }
 
             this.IsBusy = false;
+        }
+
+        /// <summary>
+        /// Includes all the <see cref="ParameterOrOverrideBase" /> to the transactio for the transfer
+        /// </summary>
+        /// <param name="elementBasesToUpdate">The collection of <see cref="ParameterOrOverrideBase" /> to transfer</param>
+        /// <param name="transaction">The <see cref="IThingTransaction" /></param>
+        /// <param name="iterationClone">The <see cref="Iteration" /></param>
+        private void TransferSelectedParameterOrOverride(Dictionary<Thing, List<ParameterOrOverrideBase>> elementBasesToUpdate, IThingTransaction transaction, Iteration iterationClone)
+        {
+            foreach (var element in elementBasesToUpdate.Keys.ToList())
+            {
+                switch (element)
+                {
+                    case ElementDefinition elementDefinition:
+                    {
+                        var elementClone = this.CreateOrUpdateTransaction(transaction, elementDefinition, iterationClone.Element);
+
+                        foreach (var parameter in elementBasesToUpdate[element])
+                        {
+                            var sourceThing = this.CreateOrUpdateTransaction(transaction, (Parameter) parameter, elementClone.Parameter);
+                            var targetThing = this.ParameterVariable[parameter].SelectedCoordinateSystem;
+
+                            if (targetThing != null)
+                            {
+                                this.CreateOrUpdateRelationShip(sourceThing, targetThing, iterationClone, transaction);
+                            }
+                        }
+
+                        break;
+                    }
+                    case ElementUsage elementUsage:
+                    {
+                        var elementUsageClone = elementUsage.Clone(false);
+                        transaction.CreateOrUpdate(elementUsageClone);
+
+                        foreach (var parameterOverride in elementBasesToUpdate[element])
+                        {
+                            var sourceThing = this.CreateOrUpdateTransaction(transaction, (ParameterOverride) parameterOverride, elementUsageClone.ParameterOverride);
+                            var targetThing = this.ParameterVariable[parameterOverride].SelectedCoordinateSystem;
+
+                            if (targetThing != null)
+                            {
+                                this.CreateOrUpdateRelationShip(sourceThing, targetThing, iterationClone, transaction);
+                            }
+                        }
+
+                        break;
+                    }
+                }
+            }
         }
 
         /// <summary>
