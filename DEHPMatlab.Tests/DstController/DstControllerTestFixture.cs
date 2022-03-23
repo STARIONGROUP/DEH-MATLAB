@@ -334,17 +334,32 @@ namespace DEHPMatlab.Tests.DstController
 
             var variable = new MatlabWorkspaceRowViewModel("a", 0)
             {
-                SelectedParameter = param,
-                SelectedParameterType = param.ParameterType
+                SelectedParameter = parameter,
+                SelectedParameterType = parameter.ParameterType,
+                SelectedCoordinateSystem = param
             };
 
-            this.dstController.ParameterVariable.Add(param, variable);
+            this.dstController.ParameterVariable.Add(parameterOverride, variable);
+            this.dstController.ParameterVariable.Add(parameter, variable);
 
             this.hubController.Setup(x =>
                 x.GetThingById(It.IsAny<Guid>(), It.IsAny<Iteration>(), out parameter));
 
             this.hubController.Setup(x =>
                 x.GetThingById(parameterOverride.Iid, It.IsAny<Iteration>(), out parameterOverride));
+
+            var paramAsThing = (Thing) param;
+            var parameterAsThing = (Thing) parameter;
+            var parameterOverrideAsThing = (Thing) parameterOverride;
+
+            this.hubController.Setup(x =>
+                  x.GetThingById(paramAsThing.Iid, It.IsAny<Iteration>(), out paramAsThing));
+
+            this.hubController.Setup(x =>
+                x.GetThingById(parameterAsThing.Iid, It.IsAny<Iteration>(), out parameterAsThing));
+
+            this.hubController.Setup(x =>
+                x.GetThingById(parameterOverrideAsThing.Iid, It.IsAny<Iteration>(), out parameterOverrideAsThing));
 
             Assert.DoesNotThrowAsync(async () => await this.dstController.TransferMappedThingsToHub());
 
@@ -381,10 +396,27 @@ namespace DEHPMatlab.Tests.DstController
                 x => x.Refresh(), Times.Exactly(1));
 
             this.exchangeHistory.Verify(x =>
-                x.Append(It.IsAny<Thing>(), It.IsAny<ChangeKind>()), Times.Exactly(3));
+                x.Append(It.IsAny<Thing>(), It.IsAny<ChangeKind>()), Times.Exactly(5));
 
             this.exchangeHistory.Verify(x =>
                 x.Append(It.IsAny<ParameterValueSetBase>(), It.IsAny<IValueSet>()), Times.Exactly(2));
+
+            this.iteration.Relationship.Add(new BinaryRelationship()
+            {
+                Iid = new Guid(),
+                Owner = this.hubController.Object.CurrentDomainOfExpertise,
+                Target = parameterOverrideAsThing,
+                Source = parameterAsThing,
+                Name = "CoordinateSystemReference"
+            });
+
+            this.dstController.ParameterVariable.Add(parameter, variable);
+            this.dstController.SelectedDstMapResultToTransfer.Add(parameter);
+
+            Assert.DoesNotThrowAsync(async () => await this.dstController.TransferMappedThingsToHub());
+            
+            this.exchangeHistory.Verify(x =>
+                x.Append(It.IsAny<Thing>(), It.IsAny<ChangeKind>()), Times.Exactly(8));
         }
 
         [Test]

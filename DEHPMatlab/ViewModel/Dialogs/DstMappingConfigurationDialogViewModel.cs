@@ -144,6 +144,11 @@ namespace DEHPMatlab.ViewModel.Dialogs
         public ReactiveList<Option> AvailableOptions { get; } = new();
 
         /// <summary>
+        /// Gets the collection of the available <see cref="Parameter" /> to refer to a coordinate system
+        /// </summary>
+        public ReactiveList<Parameter> AvailableCoordinateSystems { get; } = new();
+
+        /// <summary>
         /// Gets or sets the command that Add or Remove all available values to the <see cref="SelectedThing"/> <see cref="MatlabWorkspaceRowViewModel.SelectedValues"/>
         /// </summary>
         public ReactiveCommand<object> SelectAllValuesCommand { get; set; }
@@ -504,6 +509,7 @@ namespace DEHPMatlab.ViewModel.Dialogs
                     this.UpdateAvailableParameters();
                     this.UpdateAvailableParameterType();
                     this.UpdateAvailableElementsUsages();
+                    this.UpdateSelectedCoordinateSystem();
                 })));
 
             this.disposables.Add(this.WhenAnyValue(x => x.SelectedThing.IsAveraged)
@@ -535,6 +541,25 @@ namespace DEHPMatlab.ViewModel.Dialogs
 
                     this.CheckCanExecute();
                 }));
+        }
+
+        /// <summary>
+        /// Update the <see cref="MatlabWorkspaceRowViewModel.SelectedCoordinateSystem" />
+        /// Occurs when <see cref="SelectedThing" /> changes
+        /// </summary>
+        private void UpdateSelectedCoordinateSystem()
+        {
+            if (this.SelectedThing == null)
+            {
+                return;
+            }
+
+            var coordinateSystem = this.AvailableCoordinateSystems.FirstOrDefault(x => x.Iid == this.SelectedThing.SelectedCoordinateSystem.Iid);
+
+            if (coordinateSystem != null)
+            {
+                this.SelectedThing.SelectedCoordinateSystem = coordinateSystem;
+            }
         }
 
         /// <summary>
@@ -589,8 +614,22 @@ namespace DEHPMatlab.ViewModel.Dialogs
             this.UpdateAvailableParameters();
             this.UpdateAvailableElementsUsages();
             this.UpdateAvailableActualFiniteStates();
+            this.UpdateAvailableCoordinateSystems();
 
             this.IsBusy = false;
+        }
+
+        /// <summary>
+        /// Update the <see cref="AvailableCoordinateSystems" /> collection
+        /// </summary>
+        private void UpdateAvailableCoordinateSystems()
+        {
+            this.AvailableCoordinateSystems.Clear();
+
+            foreach (var availableElementDefinition in this.AvailableElementDefinitions)
+            {
+                this.AvailableCoordinateSystems.AddRange(availableElementDefinition.Parameter);
+            }
         }
 
         /// <summary>

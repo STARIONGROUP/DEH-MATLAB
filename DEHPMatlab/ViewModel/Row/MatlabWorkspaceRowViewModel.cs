@@ -154,6 +154,11 @@ namespace DEHPMatlab.ViewModel.Row
         private bool isAveraged;
 
         /// <summary>
+        /// Backing field for <see cref="SelectedCoordinateSystem"/>
+        /// </summary>
+        private Parameter selectedCoordinateSystem;
+
+        /// <summary>
         /// Initializes a new <see cref="MatlabWorkspaceRowViewModel" />
         /// </summary>
         /// <param name="matlabVariable">The <see cref="MatlabWorkspaceRowViewModel" /> to copy</param>
@@ -394,6 +399,15 @@ namespace DEHPMatlab.ViewModel.Row
         {
             get => this.parentName;
             set => this.RaiseAndSetIfChanged(ref this.parentName, value);
+        }
+
+        /// <summary>
+        /// The <see cref="Parameter" /> for creating a <see cref="Relationship" /> for a Coordinate System
+        /// </summary>
+        public Parameter SelectedCoordinateSystem
+        {
+            get => this.selectedCoordinateSystem;
+            set => this.RaiseAndSetIfChanged(ref this.selectedCoordinateSystem, value);
         }
 
         /// <summary>

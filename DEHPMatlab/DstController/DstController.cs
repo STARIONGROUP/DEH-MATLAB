@@ -70,6 +70,11 @@ namespace DEHPMatlab.DstController
     public class DstController : ReactiveObject, IDstController
     {
         /// <summary>
+        /// The name used for creating the <see cref="Relationship" />
+        /// </summary>
+        private const string RelationShipName = "CoordinateSystemReference";
+
+        /// <summary>
         /// Gets this running tool name
         /// </summary>
         public static readonly string ThisToolName = typeof(DstController).Assembly.GetName().Name;
@@ -438,7 +443,7 @@ namespace DEHPMatlab.DstController
 
                 foreach (var element in this.SelectedDstMapResultToTransfer.ToList())
                 {
-                    if(!elementBasesToUpdate.ContainsKey(element.Container))
+                    if (!elementBasesToUpdate.ContainsKey(element.Container))
                     {
                         elementBasesToUpdate[element.Container] = new List<ParameterOrOverrideBase>();
                     }
@@ -456,7 +461,13 @@ namespace DEHPMatlab.DstController
 
                             foreach (var parameter in elementBasesToUpdate[element])
                             {
-                                this.CreateOrUpdateTransaction(transaction, (Parameter) parameter, elementClone.Parameter);
+                                var sourceThing = this.CreateOrUpdateTransaction(transaction, (Parameter) parameter, elementClone.Parameter);
+                                var targetThing = this.ParameterVariable[parameter].SelectedCoordinateSystem;
+
+                                if (targetThing != null)
+                                {
+                                    this.CreateOrUpdateRelationShip(sourceThing, targetThing, iterationClone, transaction);
+                                }
                             }
 
                             break;
@@ -468,7 +479,13 @@ namespace DEHPMatlab.DstController
 
                             foreach (var parameterOverride in elementBasesToUpdate[element])
                             {
-                                    this.CreateOrUpdateTransaction(transaction,(ParameterOverride) parameterOverride, elementUsageClone.ParameterOverride);
+                                var sourceThing = this.CreateOrUpdateTransaction(transaction, (ParameterOverride) parameterOverride, elementUsageClone.ParameterOverride);
+                                var targetThing = this.ParameterVariable[parameterOverride].SelectedCoordinateSystem;
+
+                                if (targetThing != null)
+                                {
+                                    this.CreateOrUpdateRelationShip(sourceThing, targetThing, iterationClone, transaction);
+                                }
                             }
 
                             break;
@@ -542,7 +559,7 @@ namespace DEHPMatlab.DstController
                 this.exchangeHistory.Append($"Value [{mappedElement.SelectedValue.Representation}] from {mappedElement.SelectedParameter.ModelCode()} " +
                                             $"has been transfered to {mappedElement.SelectedMatlabVariable.Name}");
             }
-            
+
             var (iteration, transaction) = this.GetIterationTransaction();
             this.mappingConfigurationService.PersistExternalIdentifierMap(transaction, iteration);
             transaction.CreateOrUpdate(iteration);
@@ -771,6 +788,44 @@ namespace DEHPMatlab.DstController
         }
 
         /// <summary>
+        /// Create or update a <see cref="Relationship" />
+        /// </summary>
+        /// <param name="sourceThing">The <see cref="Thing" /> source</param>
+        /// <param name="targetThing">The <see cref="Thing" />target</param>
+        /// <param name="iterationClone">The <see cref="Iteration" /></param>
+        /// <param name="transaction">The <see cref="IThingTransaction" /></param>
+        private void CreateOrUpdateRelationShip(Thing sourceThing, Thing targetThing, Iteration iterationClone, IThingTransaction transaction)
+        {
+            var relationShip = iterationClone.Relationship
+                .OfType<BinaryRelationship>().FirstOrDefault(x =>
+                    x.Owner == this.hubController.CurrentDomainOfExpertise
+                    && x.Source.Iid == sourceThing.Iid && x.Name == RelationShipName);
+
+            if (relationShip == null)
+            {
+                relationShip = new BinaryRelationship
+                {
+                    Iid = Guid.NewGuid(),
+                    Source = sourceThing,
+                    Target = targetThing,
+                    Name = RelationShipName,
+                    Owner = this.hubController.CurrentDomainOfExpertise
+                };
+
+                transaction.Create(relationShip);
+                iterationClone.Relationship.Add(relationShip);
+                this.exchangeHistory.Append(relationShip, ChangeKind.Create);
+            }
+            else
+            {
+                relationShip = relationShip.Clone(false);
+                relationShip.Target = targetThing;
+                transaction.CreateOrUpdate(relationShip);
+                this.exchangeHistory.Append(relationShip, ChangeKind.Update);
+            }
+        }
+
+        /// <summary>
         /// Initializes a new <see cref="IThingTransaction" /> based on the current open <see cref="Iteration" />
         /// </summary>
         /// <returns>
@@ -825,6 +880,7 @@ namespace DEHPMatlab.DstController
                 variable.SelectedTimeStep = mappedVariable.SelectedTimeStep;
                 variable.GetTimeDependentValues();
                 variable.ApplyTimeStep();
+                variable.SelectedCoordinateSystem = mappedVariable.SelectedCoordinateSystem;
             }
 
             var validMappedVariables = mappedVariables.Where(x => x.IsValid()).ToList();

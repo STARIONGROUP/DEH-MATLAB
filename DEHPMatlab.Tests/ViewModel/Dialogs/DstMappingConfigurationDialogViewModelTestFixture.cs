@@ -24,35 +24,28 @@
 
 namespace DEHPMatlab.Tests.ViewModel.Dialogs
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Reactive.Concurrency;
-
     using CDP4Common.CommonData;
     using CDP4Common.EngineeringModelData;
     using CDP4Common.SiteDirectoryData;
     using CDP4Common.Types;
-
     using CDP4Dal;
     using CDP4Dal.Permission;
-
     using DEHPCommon.HubController.Interfaces;
     using DEHPCommon.Services.NavigationService;
     using DEHPCommon.UserInterfaces.Behaviors;
     using DEHPCommon.UserInterfaces.ViewModels.Interfaces;
-
     using DEHPMatlab.DstController;
     using DEHPMatlab.Enumerator;
     using DEHPMatlab.ViewModel.Dialogs;
     using DEHPMatlab.ViewModel.Row;
     using DEHPMatlab.Views.Dialogs;
-
     using Moq;
-
     using NUnit.Framework;
-
     using ReactiveUI;
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+    using System.Reactive.Concurrency;
 
     [TestFixture]
     public class DstMappingConfigurationDialogViewModelTestFixture
@@ -739,6 +732,28 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
             this.viewModel.SelectedThing.SelectedTimeStep = 1;
             this.viewModel.SelectedThing.ApplyTimeStep();
             Assert.IsTrue(this.viewModel.SelectedThing.IsValid());
+        }
+
+        [Test]
+        public void VerifyUpdateSelectedCoordinateSystem()
+        {
+            var variable = new MatlabWorkspaceRowViewModel("a", 45)
+            {
+                SelectedCoordinateSystem = this.parameter
+            };
+
+            Assert.IsEmpty(this.viewModel.AvailableCoordinateSystems);
+            this.viewModel.SelectedThing = variable;
+            Assert.AreEqual(this.parameter, this.viewModel.SelectedThing.SelectedCoordinateSystem);
+            
+            this.iteration.Element.First().Parameter.Add(this.parameter);
+            this.viewModel.SelectedThing = null;
+            this.viewModel.Initialize();
+
+            Assert.IsNotEmpty(this.viewModel.AvailableCoordinateSystems);
+            this.viewModel.SelectedThing = variable;
+            Assert.AreNotEqual(this.parameter, this.viewModel.SelectedThing.SelectedCoordinateSystem);
+            Assert.AreEqual(this.parameter.Iid, this.viewModel.SelectedThing.SelectedCoordinateSystem.Iid);
         }
     }
 }

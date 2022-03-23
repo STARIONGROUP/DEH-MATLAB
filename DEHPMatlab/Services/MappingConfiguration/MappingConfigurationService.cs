@@ -198,7 +198,8 @@ namespace DEHPMatlab.Services.MappingConfiguration
                     SelectedTimeStep = variable.Value.SelectedTimeStep,
                     SampledFunctionParameterParameterAssignementIndices = variable.Value.SampledFunctionParameterParameterAssignementToHubRows
                         .Select(x => x.Index).ToList(),
-                    TimeTaggedIndex = timeTaggedParameter == null ? null : variable.Value.SampledFunctionParameterParameterAssignementToHubRows.IndexOf(timeTaggedParameter)
+                    TimeTaggedIndex = timeTaggedParameter == null ? null : variable.Value.SampledFunctionParameterParameterAssignementToHubRows.IndexOf(timeTaggedParameter),
+                    SelectedCoordinateSystem = variable.Value.SelectedCoordinateSystem?.Iid ?? Guid.Empty
                 });
 
                 if (variable.Key.GetContainerOfType<ElementUsage>() is { } elementUsage)
@@ -416,7 +417,6 @@ namespace DEHPMatlab.Services.MappingConfiguration
             }
         }
 
-
         /// <summary>
         /// If the current <see cref="parameterOrOverride" /> correspond to a <see cref="ParameterOrOverrideBase" /> of type
         /// <see cref="SampledFunctionParameterType" />,
@@ -496,6 +496,12 @@ namespace DEHPMatlab.Services.MappingConfiguration
                     if (thing is ParameterOrOverrideBase parameterOrOverride)
                     {
                         this.LoadSampledFunctionParameterTypeMappingConfiguration(element, externalId, parameterOrOverride);
+                    }
+
+                    if (externalId.SelectedCoordinateSystem != Guid.Empty && 
+                        this.hubController.GetThingById(externalId.SelectedCoordinateSystem, this.hubController.OpenIteration, out Parameter coordinateSystem))
+                    {
+                        element.SelectedCoordinateSystem = coordinateSystem;
                     }
                 }
 
