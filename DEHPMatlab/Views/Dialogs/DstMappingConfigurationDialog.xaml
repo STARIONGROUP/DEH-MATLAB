@@ -120,8 +120,7 @@
                                          ToolTip="The representation of all time tagged values" AutoGenerateColumns="None">
                             
                             <dxg:GridControl.View>
-                                
-                                <dxg:TableView HorizontalAlignment="Stretch" VerticalAlignment="Stretch" AllowColumnMoving="False" 
+                                <dxg:TableView HorizontalAlignment="Stretch" VerticalAlignment="Stretch" AllowColumnMoving="False"  
                                                AllowGrouping="False" IsDetailButtonVisibleBinding="{x:Null}" RetainSelectionOnClickOutsideCheckBoxSelector="True" 
                                                ShowCheckBoxSelectorColumn="True" ShowFilterPanelMode="Never"
                                                ShowGroupPanel="False" VerticalScrollbarVisibility="Auto"
@@ -156,6 +155,7 @@
 
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
@@ -261,6 +261,14 @@
                                               ShowNullTextForEmptyValue="True" ValidateOnTextInput="False" 
                                               ValueMember="Name" AllowNullInput="True" 
                                               ToolTip="Select an Option when mapping to an option dependant Parameter"/>
+                        <Label Grid.Row="8" Grid.Column="0" Content="Coordinate System:" />
+                        <dxe:ComboBoxEdit Grid.Row="8" Grid.Column="1" Margin="2" DisplayMember="UserFriendlyName"
+                                          ItemsSource="{Binding AvailableCoordinateSystems}" NullText="Select a parameter"
+                                          ClearSelectionOnBackspace="False"
+                                          SelectedItem="{Binding SelectedThing.SelectedCoordinateSystem}" NullValueButtonPlacement="EditBox"
+                                          ShowNullTextForEmptyValue="True" ValidateOnTextInput="False" 
+                                          AllowNullInput="True" ValueMember="Iid"
+                                          ToolTip="Select a Parameter for linking a Coordinate System"/>
                     </Grid>
                 </Grid>
                 

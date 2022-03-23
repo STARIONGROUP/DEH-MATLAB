@@ -92,5 +92,10 @@ namespace DEHPMatlab.Services.MappingConfiguration
         /// Gets or sets the SelecteTimeStep value if applicable
         /// </summary>
         public double SelectedTimeStep { get; set; }
+
+        /// <summary>
+        /// Gets or sets the <see cref="Guid" /> of the <see cref="Parameter" /> used as reference for a coordinate system if applicable
+        /// </summary>
+        public Guid SelectedCoordinateSystem { get; set; }
     }
 }

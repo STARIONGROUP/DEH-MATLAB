@@ -26,7 +26,9 @@ namespace DEHPMatlab
 {
     using System;
     using System.Diagnostics.CodeAnalysis;
+    using System.Globalization;
     using System.Reflection;
+    using System.Threading;
     using System.Windows;
     using System.Windows.Threading;
 
@@ -81,6 +83,9 @@ namespace DEHPMatlab
                 Title = "DEHP-Matlab Adapter",
                 Logo = new Uri($"pack://application:,,,/Resources/logo.png")
             };
+
+            Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+            Thread.CurrentThread.CurrentUICulture = CultureInfo.InvariantCulture;
 
             SplashScreenManager.Create(() => new SplashScreen(), splashScreenViewModel).ShowOnStartup();
             containerBuilder ??= new ContainerBuilder();

@@ -150,8 +150,6 @@ namespace DEHPMatlab.Tests.Services.MappingConfiguration
 
             variable.SampledFunctionParameterParameterAssignementToDstRows.AddRange(variable.SampledFunctionParameterParameterAssignementToHubRows);
 
-            this.variables.Add(variable);
-
             this.parameterType = new SimpleQuantityKind(Guid.NewGuid(), null, null);
             this.person = new Person(Guid.NewGuid(), null, null) { GivenName = "test", DefaultDomain = this.domain };
 
@@ -190,6 +188,9 @@ namespace DEHPMatlab.Tests.Services.MappingConfiguration
                 },
                 ParameterType = this.parameterType
             };
+
+            variable.SelectedCoordinateSystem = this.parameter;
+            this.variables.Add(variable);
 
             this.parameterSampledFunctionParameter = new Parameter(Guid.NewGuid(), null, null)
             {
@@ -289,6 +290,7 @@ namespace DEHPMatlab.Tests.Services.MappingConfiguration
                     SampledFunctionParameterParameterAssignementIndices = variable.SampledFunctionParameterParameterAssignementToHubRows
                         .Select(x => x.Index).ToList(),
                     TimeTaggedIndex = 0,
+                    SelectedCoordinateSystem = this.parameter.Iid
                 },
                 new ()
                 {
@@ -337,7 +339,8 @@ namespace DEHPMatlab.Tests.Services.MappingConfiguration
             {
                 MappingDirection = MappingDirection.FromDstToHub,
                 Identifier = "a-a",
-                ValueIndex = 0
+                ValueIndex = 0,
+                SelectedCoordinateSystem = this.parameter.Iid
             };
             
             this.mappingConfiguration.AddToExternalIdentifierMap(internalId, externalIdentifier);
@@ -507,14 +510,18 @@ namespace DEHPMatlab.Tests.Services.MappingConfiguration
             var parameterSampledFunctionParameterAsThing = (Thing) this.parameterSampledFunctionParameter;
             this.hubController.Setup(x => x.GetThingById(this.parameter.Iid, It.IsAny<Iteration>(), out parameterAsThing)).Returns(true);
             this.hubController.Setup(x => x.GetThingById(this.elementDefinition0.Iid, It.IsAny<Iteration>(), out elementAsThing)).Returns(true);
-            this.hubController.Setup(x => x.GetThingById(this.parameterSampledFunctionParameter.Iid, It.IsAny<Iteration>(), out parameterSampledFunctionParameterAsThing)).Returns(true);
+            
+            this.hubController.Setup(x => x.GetThingById(this.parameterSampledFunctionParameter.Iid, It.IsAny<Iteration>(),
+                out parameterSampledFunctionParameterAsThing)).Returns(true);
+
+            this.hubController.Setup(x => x.GetThingById(this.parameter.Iid, It.IsAny<Iteration>(), out this.parameter)).Returns(true);
             var mappedVariables = new List<MatlabWorkspaceRowViewModel>();
             Assert.DoesNotThrow(() => mappedVariables = this.mappingConfiguration.LoadMappingFromDstToHub(this.variables));
 
             Assert.IsNotNull(mappedVariables);
             Assert.AreEqual(2, mappedVariables.Count);
 
-            this.hubController.Verify(x => x.GetThingById(It.IsAny<Guid>(), It.IsAny<Iteration>(), out thing), Times.Exactly(12));
+            this.hubController.Verify(x => x.GetThingById(It.IsAny<Guid>(), It.IsAny<Iteration>(), out thing), Times.Exactly(13));
         }
 
         [Test]
