@@ -57,7 +57,7 @@ namespace DEHPMatlab.Tests.MappingRules
 
             this.elements = new List<ParameterToMatlabVariableMappingRowViewModel>()
             {
-                new ParameterToMatlabVariableMappingRowViewModel()
+                new ()
                 {
                     SelectedMatlabVariable = new MatlabWorkspaceRowViewModel("a", 0.5d),
                     SelectedParameter = new Parameter()
@@ -74,7 +74,7 @@ namespace DEHPMatlab.Tests.MappingRules
                     },
                     SelectedValue = new ValueSetValueRowViewModel(new ParameterValueSet(), "5", null)
                 },
-                new ParameterToMatlabVariableMappingRowViewModel()
+                new ()
                 {
                     SelectedMatlabVariable = new MatlabWorkspaceRowViewModel("c", "-45"),
                     SelectedParameter = new Parameter()
@@ -104,7 +104,7 @@ namespace DEHPMatlab.Tests.MappingRules
                     },
                     SelectedValue = new ValueSetValueRowViewModel(new ParameterValueSet(), "15", null)
                 },
-                new ParameterToMatlabVariableMappingRowViewModel()
+                new ()
                 {
                     SelectedMatlabVariable = new MatlabWorkspaceRowViewModel("b", "-45"),
                     SelectedOption =  this.option1,

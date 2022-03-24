@@ -1,0 +1,46 @@
+﻿<UserControl x:Class="DEHPMatlab.Views.Difference"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:dxmvvm="http://schemas.devexpress.com/winfx/2008/xaml/mvvm"
+             xmlns:behaviors="clr-namespace:DEHPCommon.UserInterfaces.Behaviors;assembly=DEHPCommon"
+             xmlns:dxg="http://schemas.devexpress.com/winfx/2008/xaml/grid"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/DEHPCommon;component/UserInterfaces/Views/ContextMenu/ContextMenuStyle.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid>
+        <dxg:GridControl ToolTip="Select some values" HorizontalAlignment="Left" VerticalAlignment="Stretch" AllowUpdateTwoWayBoundPropertiesOnSynchronization="False" AutoGenerateColumns="None"
+                         EnableSmartColumnsGeneration="False"
+                         ItemsSource="{Binding Parameters}"
+                         SelectedItem="{Binding SelectedThing}"
+                         SelectionMode="Row">
+            <dxmvvm:Interaction.Behaviors>
+                <behaviors:ContextMenuBehavior/>
+            </dxmvvm:Interaction.Behaviors>
+            <dxg:GridControl.View>
+                <dxg:TableView HorizontalAlignment="Stretch" VerticalAlignment="Stretch" AllowColumnMoving="True" AllowEditing="False" AllowGrouping="True" AutoWidth="true"
+                               IsDetailButtonVisibleBinding="{x:Null}"
+                               RetainSelectionOnClickOutsideCheckBoxSelector="True" ShowCheckBoxSelectorColumn="false" ShowFilterPanelMode="Never" ShowGroupPanel="False" VerticalScrollbarVisibility="Auto">
+                    <dxg:TableView.ContextMenu>
+                        <ContextMenu/>
+                    </dxg:TableView.ContextMenu>
+                </dxg:TableView>
+
+            </dxg:GridControl.View>
+            <dxg:GridControl.Columns>
+                <dxg:GridColumn FieldName="Name" />
+                <dxg:GridColumn FieldName="OldValue" />
+                <dxg:GridColumn FieldName="NewValue" />
+                <dxg:GridColumn FieldName="Difference" />
+                <dxg:GridColumn FieldName="PercentDiff" />
+            </dxg:GridControl.Columns>
+        </dxg:GridControl>
+    </Grid>
+</UserControl>

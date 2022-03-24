@@ -54,7 +54,9 @@ namespace DEHPMatlab.Tests.DstController
     using DEHPMatlab.Services.MappingConfiguration;
     using DEHPMatlab.Services.MatlabConnector;
     using DEHPMatlab.Services.MatlabParser;
+    using DEHPMatlab.ViewModel.Dialogs;
     using DEHPMatlab.ViewModel.Row;
+    using DEHPMatlab.Views.Dialogs;
 
     using Moq;
 
@@ -130,6 +132,10 @@ namespace DEHPMatlab.Tests.DstController
             this.hubController.Setup(x => x.Write(It.IsAny<ThingTransaction>())).Returns(Task.CompletedTask);
 
             this.navigationService = new Mock<INavigationService>();
+            
+            this.navigationService.Setup(x => 
+                x.ShowDxDialog<DuplicatedInputsWarningDialog, DuplicatedInputsWarningDialogViewModel>(It.IsAny<DuplicatedInputsWarningDialogViewModel>()))
+                .Returns(true);
 
             this.exchangeHistory = new Mock<IExchangeHistoryService>();
 
@@ -308,7 +314,7 @@ namespace DEHPMatlab.Tests.DstController
                 }
             };
 
-            this.dstController.SelectedDstMapResultToTransfer.Add(elementDefinition);
+            this.dstController.SelectedDstMapResultToTransfer.Add(parameter);
 
             var parameterOverride = new ParameterOverride(Guid.NewGuid(), null, null)
             {
@@ -320,36 +326,46 @@ namespace DEHPMatlab.Tests.DstController
                         Computed = new ValueArray<string>(new[] { "654321" }),
                         ValueSwitch = ParameterSwitchKind.COMPUTED
                     }
-                }
+                },
+                Container = new ElementUsage()
             };
 
-            this.dstController.SelectedDstMapResultToTransfer.Add(new ElementUsage
-            {
-                ElementDefinition = elementDefinition,
-                ParameterOverride =
-                {
-                    parameterOverride
-                }
-            });
+            this.dstController.SelectedDstMapResultToTransfer.Add(parameterOverride);
 
             var param = new Parameter()
             {
-                ParameterType = new BooleanParameterType()
+                ParameterType = new BooleanParameterType(),
+                Container = new ElementDefinition()
             };
 
             var variable = new MatlabWorkspaceRowViewModel("a", 0)
             {
-                SelectedParameter = param,
-                SelectedParameterType = param.ParameterType
+                SelectedParameter = parameter,
+                SelectedParameterType = parameter.ParameterType,
+                SelectedCoordinateSystem = param
             };
 
-            this.dstController.ParameterVariable.Add(param, variable);
+            this.dstController.ParameterVariable.Add(parameterOverride, variable);
+            this.dstController.ParameterVariable.Add(parameter, variable);
 
             this.hubController.Setup(x =>
                 x.GetThingById(It.IsAny<Guid>(), It.IsAny<Iteration>(), out parameter));
 
             this.hubController.Setup(x =>
                 x.GetThingById(parameterOverride.Iid, It.IsAny<Iteration>(), out parameterOverride));
+
+            var paramAsThing = (Thing) param;
+            var parameterAsThing = (Thing) parameter;
+            var parameterOverrideAsThing = (Thing) parameterOverride;
+
+            this.hubController.Setup(x =>
+                  x.GetThingById(paramAsThing.Iid, It.IsAny<Iteration>(), out paramAsThing));
+
+            this.hubController.Setup(x =>
+                x.GetThingById(parameterAsThing.Iid, It.IsAny<Iteration>(), out parameterAsThing));
+
+            this.hubController.Setup(x =>
+                x.GetThingById(parameterOverrideAsThing.Iid, It.IsAny<Iteration>(), out parameterOverrideAsThing));
 
             Assert.DoesNotThrowAsync(async () => await this.dstController.TransferMappedThingsToHub());
 
@@ -386,10 +402,27 @@ namespace DEHPMatlab.Tests.DstController
                 x => x.Refresh(), Times.Exactly(1));
 
             this.exchangeHistory.Verify(x =>
-                x.Append(It.IsAny<Thing>(), It.IsAny<ChangeKind>()), Times.Exactly(3));
+                x.Append(It.IsAny<Thing>(), It.IsAny<ChangeKind>()), Times.Exactly(5));
 
             this.exchangeHistory.Verify(x =>
                 x.Append(It.IsAny<ParameterValueSetBase>(), It.IsAny<IValueSet>()), Times.Exactly(2));
+
+            this.iteration.Relationship.Add(new BinaryRelationship()
+            {
+                Iid = new Guid(),
+                Owner = this.hubController.Object.CurrentDomainOfExpertise,
+                Target = parameterOverrideAsThing,
+                Source = parameterAsThing,
+                Name = "CoordinateSystemReference"
+            });
+
+            this.dstController.ParameterVariable.Add(parameter, variable);
+            this.dstController.SelectedDstMapResultToTransfer.Add(parameter);
+
+            Assert.DoesNotThrowAsync(async () => await this.dstController.TransferMappedThingsToHub());
+            
+            this.exchangeHistory.Verify(x =>
+                x.Append(It.IsAny<Thing>(), It.IsAny<ChangeKind>()), Times.Exactly(8));
         }
 
         [Test]
@@ -488,6 +521,8 @@ namespace DEHPMatlab.Tests.DstController
                 }
             });
 
+            this.dstController.MatlabAllWorkspaceRowViewModels.Add(variableRowViewModels.Last());
+
             Assert.DoesNotThrow(() => this.dstController.LoadMapping());
         }
 
@@ -554,9 +589,17 @@ namespace DEHPMatlab.Tests.DstController
 
             this.dstController.MatlabWorkspaceInputRowViewModels.AddRange(variable.UnwrapVariableRowViewModels());
             variable = this.dstController.MatlabWorkspaceInputRowViewModels.First(x => x.Name == "anArrayVariable");
+            variable.SampledFunctionParameterParameterAssignementToDstRows.Clear();
+            
+            variable.SampledFunctionParameterParameterAssignementToDstRows.Add(new SampledFunctionParameterParameterAssignementRowViewModel("0")
+            {
+                SelectedParameterTypeAssignment = sampledFunction.IndependentParameterType[0]
+            });
 
-            variable.SampledFunctionParameterParameterAssignementRows[0].SelectedParameterTypeAssignment = sampledFunction.IndependentParameterType[0];
-            variable.SampledFunctionParameterParameterAssignementRows[1].SelectedParameterTypeAssignment = sampledFunction.DependentParameterType[0];
+            variable.SampledFunctionParameterParameterAssignementToDstRows.Add(new SampledFunctionParameterParameterAssignementRowViewModel("1")
+            {
+                SelectedParameterTypeAssignment = sampledFunction.DependentParameterType[0]
+            });
 
             var mappedElement = new ParameterToMatlabVariableMappingRowViewModel(parameter.ValueSet.First(), 0, ParameterSwitchKind.COMPUTED)
             {
@@ -572,9 +615,18 @@ namespace DEHPMatlab.Tests.DstController
             var array = (Array) variableAfterTransfer.ArrayValue;
             Assert.AreEqual(3, array.GetLength(0));
 
-            variable.RowColumnSelection = RowColumnSelection.Row;
-            variable.SampledFunctionParameterParameterAssignementRows[0].SelectedParameterTypeAssignment = sampledFunction.IndependentParameterType[0];
-            variable.SampledFunctionParameterParameterAssignementRows[1].SelectedParameterTypeAssignment = sampledFunction.DependentParameterType[0];
+            variable.RowColumnSelectionToDst = RowColumnSelection.Row;
+            variable.SampledFunctionParameterParameterAssignementToDstRows.Clear();
+
+            variable.SampledFunctionParameterParameterAssignementToDstRows.Add(new SampledFunctionParameterParameterAssignementRowViewModel("0")
+            {
+                SelectedParameterTypeAssignment = sampledFunction.IndependentParameterType[0]
+            });
+
+            variable.SampledFunctionParameterParameterAssignementToDstRows.Add(new SampledFunctionParameterParameterAssignementRowViewModel("1")
+            {
+                SelectedParameterTypeAssignment = sampledFunction.DependentParameterType[0]
+            });
 
             this.dstController.SelectedHubMapResultToTransfer.Add(mappedElement);
 

@@ -24,12 +24,14 @@
 
 namespace DEHPMatlab.Tests.NetChange
 {
+    using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Reactive.Concurrency;
 
     using CDP4Common.EngineeringModelData;
     using CDP4Common.SiteDirectoryData;
+    using CDP4Common.Types;
 
     using CDP4Dal;
     using CDP4Dal.Permission;
@@ -61,6 +63,7 @@ namespace DEHPMatlab.Tests.NetChange
         private ReactiveList<MatlabWorkspaceRowViewModel> inputVariables;
         private ReactiveList<ParameterToMatlabVariableMappingRowViewModel> hubMapResult;
         private Parameter parameter0;
+        private Parameter parameter1;
         private Mock<ISession> session;
 
         [SetUp]
@@ -68,6 +71,7 @@ namespace DEHPMatlab.Tests.NetChange
         {
             RxApp.MainThreadScheduler = Scheduler.CurrentThread;
             this.parameter0 = new Parameter() { ParameterType = new BooleanParameterType() };
+            this.parameter1 = new Parameter() { ParameterType = new BooleanParameterType() };
             this.session = new Mock<ISession>();
             this.session.Setup(x => x.PermissionService).Returns(new Mock<IPermissionService>().Object);
 
@@ -131,6 +135,17 @@ namespace DEHPMatlab.Tests.NetChange
                     new ElementDefinition() { Parameter = {this.parameter0} }, new DomainOfExpertise(), this.session.Object, null )
             }, null, true)));
 
+            Assert.DoesNotThrow(() => CDPMessageBus.Current.SendMessage(new UpdateDstPreviewBasedOnSelectionEvent(new List<ElementDefinitionRowViewModel>()
+            {
+                new(
+                    new ElementDefinition() { Parameter = {this.parameter1} }, new DomainOfExpertise(), this.session.Object, null )
+            }, null, true)));
+
+            Assert.DoesNotThrow(() => CDPMessageBus.Current.SendMessage(new UpdateDstPreviewBasedOnSelectionEvent(new List<ParameterRowViewModel>()
+            {
+                new(this.parameter0, this.session.Object, null)
+            }, null, true)));
+
             Assert.DoesNotThrow(() => CDPMessageBus.Current.SendMessage(new UpdateDstPreviewBasedOnSelectionEvent(new List<ElementDefinitionRowViewModel>(), null, true)));
 
             this.inputVariables.Add(variable);
@@ -186,6 +201,7 @@ namespace DEHPMatlab.Tests.NetChange
             this.hubMapResult.Add(new ParameterToMatlabVariableMappingRowViewModel()
             {
                 SelectedMatlabVariable = variable,
+                SelectedParameter = this.parameter0, 
                 SelectedValue = new ValueSetValueRowViewModel(new ParameterValueSet(), "45", null),
             });
 
@@ -209,6 +225,165 @@ namespace DEHPMatlab.Tests.NetChange
 
             Assert.DoesNotThrow(() => this.viewModel.DeselectAllCommand.Execute(null));
             Assert.IsFalse(variable.IsSelectedForTransfer);
+        }
+
+        [Test]
+        public void VerifyArrayPreviewUpdate()
+        {
+            var scale = new RatioScale() { NumberSet = NumberSetKind.REAL_NUMBER_SET };
+
+            var arrayParameter = new ArrayParameterType()
+            {
+                Name = "Array3x2",
+                ShortName = "array3x2",
+            };
+
+            arrayParameter.Dimension = new OrderedItemList<int>(arrayParameter) { 3, 2 };
+
+            var simpleQuantityKind = new SimpleQuantityKind()
+            {
+                Name = "aSimpleQuantity",
+                PossibleScale = { scale },
+                DefaultScale = scale
+            };
+
+            for (var i = 0; i < 6; i++)
+            {
+                arrayParameter.Component.Add(new ParameterTypeComponent()
+                {
+                    ParameterType = simpleQuantityKind,
+                    Scale = scale
+                });
+            }
+
+            var parameter = new Parameter()
+            {
+                Iid = new Guid(),
+                ParameterType = arrayParameter,
+                Container = new ElementDefinition(new Guid(), null, null),
+                ValueSet =
+                {
+                    new ParameterValueSet
+                    {
+                        Computed = new ValueArray<string>(new []{"1", "2", "3", "4", "5", "6"})
+                    }
+                }
+            };
+
+            var arrayValue = new object[3, 2];
+
+            for (var i = 0; i < arrayValue.GetLength(0); i++)
+            {
+                for (var j = 0; j < arrayValue.GetLength(1); j++)
+                {
+                    arrayValue.SetValue(0, i, j);
+                }
+            }
+
+            var variable = new MatlabWorkspaceRowViewModel("anArrayVariable", arrayValue)
+            {
+                Identifier = "anArrayVariable-a"
+            };
+
+            this.inputVariables.Add(variable);
+            this.viewModel.SelectedThings.Add(variable);
+
+            this.hubMapResult.Add(new ParameterToMatlabVariableMappingRowViewModel()
+            {
+                SelectedMatlabVariable = variable,
+                SelectedParameter = parameter,
+                SelectedValue = new ValueSetValueRowViewModel(parameter),
+            });
+
+            var valueOfPreview = this.viewModel.InputVariablesCopy.First(x => x.Name == variable.Name+"[0,0]").ActualValue;
+            Assert.AreEqual(1, valueOfPreview);
+        }
+
+        [Test]
+        public void VerifySampledFunctionParameterTypePreview()
+        {
+            var independentParameter = new SimpleQuantityKind()
+            {
+                Name = "time"
+            };
+
+            var dependentParameter = new SpecializedQuantityKind()
+            {
+                Name = "position"
+            };
+
+            var sampledFunction = new SampledFunctionParameterType()
+            {
+                IndependentParameterType =
+                {
+                    new IndependentParameterTypeAssignment()
+                    {
+                        ParameterType = independentParameter
+                    }
+                },
+                DependentParameterType =
+                {
+                    new DependentParameterTypeAssignment()
+                    {
+                        ParameterType = dependentParameter
+                    }
+                }
+            };
+
+            var parameter = new Parameter()
+            {
+                ParameterType = sampledFunction,
+                Container = new ElementDefinition(new Guid(), null, null),
+                ValueSet =
+                {
+                    new ParameterValueSet
+                    {
+                        Computed = new ValueArray<string>(new []{"1", "2", "3", "4", "5", "6", "7", "8"})
+                    }
+                }
+            };
+
+            var arrayValue = new double[2, 18];
+
+            for (var rowIndex = 0; rowIndex < arrayValue.GetLength(0); rowIndex++)
+            {
+                for (var columnIndex = 0; columnIndex < arrayValue.GetLength(1); columnIndex++)
+                {
+                    arrayValue.SetValue(0, rowIndex, columnIndex);
+                }
+            }
+
+            var variable = new MatlabWorkspaceRowViewModel("anArrayVariable", arrayValue)
+            {
+                Identifier = "anArrayVariable-a"
+            };
+
+            this.inputVariables.AddRange(variable.UnwrapVariableRowViewModels());
+
+            variable.SampledFunctionParameterParameterAssignementToDstRows.Clear();
+
+            variable.SampledFunctionParameterParameterAssignementToDstRows.Add(new SampledFunctionParameterParameterAssignementRowViewModel("0")
+            {
+                SelectedParameterTypeAssignment = sampledFunction.IndependentParameterType[0]
+            });
+
+            variable.SampledFunctionParameterParameterAssignementToDstRows.Add(new SampledFunctionParameterParameterAssignementRowViewModel("1")
+            {
+                SelectedParameterTypeAssignment = sampledFunction.DependentParameterType[0]
+            });
+
+            this.viewModel.SelectedThings.Add(variable);
+
+            this.hubMapResult.Add(new ParameterToMatlabVariableMappingRowViewModel()
+            {
+                SelectedMatlabVariable = variable,
+                SelectedParameter = parameter,
+                SelectedValue = new ValueSetValueRowViewModel(parameter),
+            });
+
+            var valueOfPreview = this.viewModel.InputVariablesCopy.First(x => x.Name == variable.Name + "[0,0]").ActualValue;
+            Assert.AreEqual(1, valueOfPreview);
+            Assert.AreEqual(9, this.viewModel.InputVariablesCopy.Count);
         }
     }
 }

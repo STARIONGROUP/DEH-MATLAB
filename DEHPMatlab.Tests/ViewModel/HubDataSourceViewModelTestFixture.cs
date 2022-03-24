@@ -33,7 +33,6 @@ namespace DEHPMatlab.Tests.ViewModel
     using CDP4Common.CommonData;
     using CDP4Common.EngineeringModelData;
     using CDP4Common.SiteDirectoryData;
-    using CDP4Common.Types;
 
     using CDP4Dal;
     using CDP4Dal.Permission;

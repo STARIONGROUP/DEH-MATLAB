@@ -1,5 +1,5 @@
 ﻿// --------------------------------------------------------------------------------------------------------------------
-// <copyright file="MappingValidationErrorDialog.xaml.cs" company="RHEA System S.A.">
+// <copyright file="DuplicatedInputsWarningDialogViewModel.cs" company="RHEA System S.A.">
 // Copyright (c) 2020-2022 RHEA System S.A.
 // 
 // Author: Sam Gerené, Alex Vorobiev, Alexander van Delft, Nathanael Smiechowski, Antoine Théate.
@@ -22,22 +22,35 @@
 // </copyright>
 // --------------------------------------------------------------------------------------------------------------------
 
-namespace DEHPMatlab.Views.Dialogs
+namespace DEHPMatlab.ViewModel.Dialogs
 {
-    using System.Diagnostics.CodeAnalysis;
+    using System;
+    using System.Collections.Generic;
+    using System.Text;
+
+    using DEHPMatlab.Views.Dialogs;
+
+    using DevExpress.Mvvm.Native;
 
     /// <summary>
-    /// Interaction logic for MappingValidationErrorDialog.xaml
+    /// The view model for <see cref="DuplicatedInputsWarningDialog" />
     /// </summary>
-    public partial class MappingValidationErrorDialog
+    public class DuplicatedInputsWarningDialogViewModel
     {
         /// <summary>
-        /// Initializes a new <see cref="MappingValidationErrorDialog"/>
+        /// Initializes a new <see cref="DuplicatedInputsWarningDialogViewModel" />
         /// </summary>
-        [ExcludeFromCodeCoverage]
-        public MappingValidationErrorDialog()
+        /// <param name="duplicatedVariables">A collection of the duplicated variables</param>
+        public DuplicatedInputsWarningDialogViewModel(IEnumerable<string> duplicatedVariables)
         {
-            this.InitializeComponent();
+            var builder = new StringBuilder();
+            duplicatedVariables.ForEach(duplicatedVariable => builder.Append($"- {duplicatedVariable}" + Environment.NewLine));
+            this.DuplicatedVariables = builder.ToString();
         }
+
+        /// <summary>
+        /// The representation of the collection of duplicated variables
+        /// </summary>
+        public string DuplicatedVariables { get; }
     }
 }

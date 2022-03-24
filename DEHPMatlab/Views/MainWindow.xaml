@@ -151,24 +151,7 @@
                                         <dx:DXTabItem.Header>
                                             <TextBlock Text="Value Diff" />
                                         </dx:DXTabItem.Header>
-                                        <dxg:GridControl ToolTip="Select some values" Grid.Row="1" HorizontalAlignment="Left" VerticalAlignment="Stretch" AllowUpdateTwoWayBoundPropertiesOnSynchronization="False" AutoGenerateColumns="None"
-                                                         EnableSmartColumnsGeneration="False"
-                                                         ItemsSource="{Binding DifferenceViewModel.Parameters}"
-                                                         SelectedItems="{Binding SelectedThing.SelectedValues, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                         SelectionMode="Row">
-                                            <dxg:GridControl.View>
-                                                <dxg:TableView HorizontalAlignment="Stretch" VerticalAlignment="Stretch" AllowColumnMoving="True" AllowEditing="False" AllowGrouping="True" AutoWidth="true"
-                                                               IsDetailButtonVisibleBinding="{x:Null}"
-                                                               RetainSelectionOnClickOutsideCheckBoxSelector="True" ShowCheckBoxSelectorColumn="false" ShowFilterPanelMode="Never" ShowGroupPanel="False" VerticalScrollbarVisibility="Auto" />
-                                            </dxg:GridControl.View>
-                                            <dxg:GridControl.Columns>
-                                                <dxg:GridColumn FieldName="Name" />
-                                                <dxg:GridColumn FieldName="OldValue" />
-                                                <dxg:GridColumn FieldName="NewValue" />
-                                                <dxg:GridColumn FieldName="Difference" />
-                                                <dxg:GridColumn FieldName="PercentDiff" />
-                                            </dxg:GridControl.Columns>
-                                        </dxg:GridControl>
+                                        <views:Difference DataContext="{Binding DifferenceViewModel}"/>
                                     </dx:DXTabItem>
                                 </dx:DXTabControl>
                                 <Button ToolTip="Open the history of transfer dialog" Command="{Binding OpenExchangeHistory}" Grid.Column="2" Margin="10.4,25,10,-0.2" Background="Transparent" BorderBrush="Transparent">

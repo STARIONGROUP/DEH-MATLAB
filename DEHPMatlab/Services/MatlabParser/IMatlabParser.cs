@@ -38,7 +38,8 @@ namespace DEHPMatlab.Services.MatlabParser
         /// </summary>
         /// <param name="originalScriptFilePath">The path of original script</param>
         /// <param name="scriptWithoutInputsFilePath">The path of the modified script</param>
+        /// <param name="duplicatedNodes">A collection of duplicated nodes to warn the user of those duplicates</param>
         /// <returns>The list of all <see cref="MatlabWorkspaceRowViewModel"/> found</returns>
-        List<MatlabWorkspaceRowViewModel> ParseMatlabScript(string originalScriptFilePath, out string scriptWithoutInputsFilePath);
+        List<MatlabWorkspaceRowViewModel> ParseMatlabScript(string originalScriptFilePath, out string scriptWithoutInputsFilePath, out List<string> duplicatedNodes);
     }
 }

@@ -135,18 +135,15 @@ namespace DEHPMatlab.Services.MatlabConnector
         /// <returns>The <see cref="MatlabWorkspaceRowViewModel"/> from the Matlab Workspace</returns>
         public MatlabWorkspaceRowViewModel GetVariable(string variableName)
         {
-            var matlabVariable = new MatlabWorkspaceRowViewModel(variableName, null);
-
             try
             {
-                matlabVariable.ActualValue = this.MatlabApp.GetVariable(matlabVariable.Name, WorkspaceName);
+                return new MatlabWorkspaceRowViewModel(variableName, this.MatlabApp.GetVariable(variableName, WorkspaceName));
             }
             catch (COMException ex)
             {
                 this.CheckIfMatlabDisconnected(ex);
+                return null;
             }
-
-            return matlabVariable;
         }
 
         /// <summary>

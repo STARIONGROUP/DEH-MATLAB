@@ -433,11 +433,7 @@ namespace DEHPMatlab.ViewModel.Dialogs
                 case ValidationResultKind.Invalid:
                     this.StatusBar.Append($"Unable to map the {parameter.ParameterType.Name} with {variable.Name} \n\r {validationResult.Message}",
                         StatusBarMessageSeverity.Error);
-
-                    this.SelectedMappedElement.SelectedMatlabVariable = null;
-                    break;
-                default:
-                    this.SelectedMappedElement.SelectedMatlabVariable = null;
+                    
                     break;
             }
 
@@ -460,7 +456,7 @@ namespace DEHPMatlab.ViewModel.Dialogs
                 return ValidationResultKind.Invalid;
             }
 
-            var sampledFunctionParameterType = (SampledFunctionParameterType) parameter.ParameterType; 
+            var sampledFunctionParameterType = (SampledFunctionParameterType) parameter.ParameterType;
             var parametersCount = sampledFunctionParameterType.NumberOfValues;
 
             if (parametersCount != arrayValue.GetLength(0) && parametersCount != arrayValue.GetLength(1))
@@ -468,7 +464,7 @@ namespace DEHPMatlab.ViewModel.Dialogs
                 return ValidationResultKind.Invalid;
             }
 
-            var viewModel = new SampledFunctionParameterTypeMappingConfigurationDialogViewModel(variable, sampledFunctionParameterType);
+            var viewModel = new SampledFunctionParameterTypeMappingConfigurationDialogViewModel(variable, sampledFunctionParameterType, MappingDirection.FromHubToDst);
 
             if (this.navigationService.ShowDxDialog<SampledFunctionParameterTypeMappingConfigurationDialog, SampledFunctionParameterTypeMappingConfigurationDialogViewModel>(viewModel)
                 != true)

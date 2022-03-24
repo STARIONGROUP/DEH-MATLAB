@@ -30,7 +30,6 @@ namespace DEHPMatlab.Extensions
 
     using CDP4Common.EngineeringModelData;
     using CDP4Common.SiteDirectoryData;
-    using CDP4Common.Validation;
 
     using DEHPMatlab.Enumerator;
     using DEHPMatlab.ViewModel.Row;
@@ -45,58 +44,28 @@ namespace DEHPMatlab.Extensions
         /// </summary>
         /// <param name="parameterType">The <see cref="SampledFunctionParameterType"/></param>
         /// <param name="value">The <see cref="object"/> value</param>
-        /// <param name="rowColumnSelection">The <see cref="RowColumnSelection"/></param>
-        /// <param name="parametersDefinition">The collection of <see cref="SampledFunctionParameterParameterAssignementRowViewModel"/></param>
         /// <returns>A value indicating if the <paramref name="parameterType"/> is compliant</returns>
-        public static bool Validate(this SampledFunctionParameterType parameterType, object value,
-            RowColumnSelection rowColumnSelection, List<SampledFunctionParameterParameterAssignementRowViewModel> parametersDefinition)
+        public static bool Validate(this SampledFunctionParameterType parameterType, object value)
         {
             if (value is not Array arrayValue)
             {
                 return false;
             }
 
-            var dependantParameretersDefined = parametersDefinition.Count(x => x.IsDependantParameter);
-
-            var independantParametersDefined = parametersDefinition.Count(x => !x.IsDependantParameter);
-
-            if (parameterType.IndependentParameterType.Count != independantParametersDefined || parameterType.DependentParameterType.Count != dependantParameretersDefined)
+            if (arrayValue.GetLength(0) != parameterType.NumberOfValues && arrayValue.GetLength(1) != parameterType.NumberOfValues)
             {
                 return false;
             }
 
-            var dependantIndex = 0;
-            var independantIndex = 0;
+            var parametersDefinition = new List<IParameterTypeAssignment>();
+            parametersDefinition.AddRange(parameterType.IndependentParameterType);
+            parametersDefinition.AddRange(parameterType.DependentParameterType);
 
-            foreach (var parameterDefinition in parametersDefinition)
-            {
-                var parameterToValidate = !parameterDefinition.IsDependantParameter 
-                    ? parameterType.IndependentParameterType[independantIndex].ParameterType
-                    :  parameterType.DependentParameterType[dependantIndex].ParameterType;
-
-                var scale = !parameterDefinition.IsDependantParameter
-                    ? parameterType.IndependentParameterType[independantIndex++].MeasurementScale
-                    : parameterType.DependentParameterType[dependantIndex++].MeasurementScale;
-
-                var index = int.Parse(parameterDefinition.Index);
-
-                var objectToValidate = rowColumnSelection == RowColumnSelection.Column
-                    ? arrayValue.GetValue(0, index)
-                    : arrayValue.GetValue(index, 0);
-
-                var validate = parameterToValidate.Validate(objectToValidate, scale);
-
-                if (validate.ResultKind != ValidationResultKind.Valid)
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            return parametersDefinition.All(parameterDefinition => parameterDefinition.MeasurementScale is not null && parameterDefinition.ParameterType is QuantityKind);
         }
 
         /// <summary>
-        /// Compute the <see cref="IValueSet"/> to generate an <see cref="Array"/>
+        /// Compute the <see cref="IValueSet"/> to generate an <see cref="Array"/> of double
         /// </summary>
         /// <param name="sampledFunctionParameterType">The <see cref="SampledFunctionParameterType"/></param>
         /// <param name="container">The <see cref="IValueSet"/></param>
@@ -128,6 +97,42 @@ namespace DEHPMatlab.Extensions
             }
 
             return array;
+        }
+
+        /// <summary>
+        /// Compute the <see cref="IValueSet"/> to generate an <see cref="Array"/> of string
+        /// </summary>
+        /// <param name="sampledFunctionParameterType">The <see cref="SampledFunctionParameterType"/></param>
+        /// <param name="container">The <see cref="IValueSet"/></param>
+        /// <returns>An <see cref="Array"/></returns>
+        public static string[,] ComputeArray(this SampledFunctionParameterType sampledFunctionParameterType, IValueSet container)
+        {
+            var columnsCount = sampledFunctionParameterType.NumberOfValues;
+            var rowsCount = container.ActualValue.Count / columnsCount;
+
+            var array = new string[rowsCount, columnsCount];
+
+            for (var rowIndex = 0; rowIndex < rowsCount; rowIndex++)
+            {
+                for (var columnIndex = 0; columnIndex < columnsCount; columnIndex++)
+                {
+                    var value = container.ActualValue[(rowIndex * columnsCount)+ columnIndex];
+                    array.SetValue(value, rowIndex, columnIndex);
+                }
+            }
+
+            return array;
+        }
+
+        /// <summary>
+        /// Gets a collection of all parameters of the <see cref="SampledFunctionParameterType"/>
+        /// </summary>
+        /// <param name="sampledFunctionParameterType">The <see cref="SampledFunctionParameterType"/></param>
+        /// <returns>The collection of parameters name</returns>
+        public static IEnumerable<string> ParametersName(this SampledFunctionParameterType sampledFunctionParameterType)
+        {
+            return sampledFunctionParameterType.IndependentParameterType.Select(x => x.ParameterType.Name)
+                .Union(sampledFunctionParameterType.DependentParameterType.Select(x => x.ParameterType.Name));
         }
     }
 }

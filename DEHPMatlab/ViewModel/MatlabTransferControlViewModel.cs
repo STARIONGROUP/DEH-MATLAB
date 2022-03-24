@@ -133,6 +133,8 @@ namespace DEHPMatlab.ViewModel
         {
             this.dstController.DstMapResult.Clear();
             this.dstController.HubMapResult.Clear();
+            this.dstController.SelectedDstMapResultToTransfer.Clear();
+            this.dstController.SelectedHubMapResultToTransfer.Clear();
             this.dstController.ParameterVariable.Clear();
             this.exchangeHistoryService.ClearPending();
             await Task.Delay(1);
@@ -184,7 +186,7 @@ namespace DEHPMatlab.ViewModel
             this.TransferInProgress = true;
             this.IsIndeterminate = true;
             this.statusBar.Append("Transfer in progress");
-
+            
             if (this.dstController.MappingDirection is MappingDirection.FromDstToHub)
             {
                 await this.dstController.TransferMappedThingsToHub();

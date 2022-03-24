@@ -56,7 +56,9 @@ namespace DEHPMatlab.DstController
     using DEHPMatlab.Services.MappingConfiguration;
     using DEHPMatlab.Services.MatlabConnector;
     using DEHPMatlab.Services.MatlabParser;
+    using DEHPMatlab.ViewModel.Dialogs;
     using DEHPMatlab.ViewModel.Row;
+    using DEHPMatlab.Views.Dialogs;
 
     using NLog;
 
@@ -69,6 +71,11 @@ namespace DEHPMatlab.DstController
     /// </summary>
     public class DstController : ReactiveObject, IDstController
     {
+        /// <summary>
+        /// The name used for creating the <see cref="Relationship" />
+        /// </summary>
+        private const string RelationShipName = "CoordinateSystemReference";
+
         /// <summary>
         /// Gets this running tool name
         /// </summary>
@@ -254,9 +261,9 @@ namespace DEHPMatlab.DstController
         public Dictionary<ParameterOrOverrideBase, MatlabWorkspaceRowViewModel> ParameterVariable { get; } = new();
 
         /// <summary>
-        /// Gets the colection of <see cref="ElementBase" /> that are selected to be transfered
+        /// Gets the colection of <see cref="ParameterOrOverrideBase" /> that are selected to be transfered
         /// </summary>
-        public ReactiveList<ElementBase> SelectedDstMapResultToTransfer { get; } = new();
+        public ReactiveList<ParameterOrOverrideBase> SelectedDstMapResultToTransfer { get; } = new();
 
         /// <summary>
         /// Gets the collection of <see cref="ParameterToMatlabVariableMappingRowViewModel" /> that are selected to be transfered
@@ -309,8 +316,8 @@ namespace DEHPMatlab.DstController
             this.MatlabAllWorkspaceRowViewModels.Clear();
             this.MatlabWorkspaceInputRowViewModels.Clear();
 
-            List<MatlabWorkspaceRowViewModel> detectedInputsWrapped = this.matlabParser.ParseMatlabScript(scriptPath,
-                out this.loadedScriptPath);
+            var detectedInputsWrapped = this.matlabParser.ParseMatlabScript(scriptPath,
+                out this.loadedScriptPath, out var duplicatedNodes);
 
             List<MatlabWorkspaceRowViewModel> detectedInputs = new();
 
@@ -329,6 +336,12 @@ namespace DEHPMatlab.DstController
             }
 
             this.MatlabWorkspaceInputRowViewModels.AddRange(detectedInputs);
+
+            if (duplicatedNodes.Any())
+            {
+                var duplicatedInputsWarningDialogViewModel = new DuplicatedInputsWarningDialogViewModel(duplicatedNodes);
+                this.navigationService.ShowDxDialog<DuplicatedInputsWarningDialog, DuplicatedInputsWarningDialogViewModel>(duplicatedInputsWarningDialogViewModel);
+            }
 
             this.LoadMapping();
         }
@@ -377,7 +390,7 @@ namespace DEHPMatlab.DstController
         {
             if (this.mappingEngine.Map(dstVariables) is (Dictionary<ParameterOrOverrideBase, MatlabWorkspaceRowViewModel> parameterNodeIds, List<ElementBase> elements) && elements.Any())
             {
-                foreach (KeyValuePair<ParameterOrOverrideBase, MatlabWorkspaceRowViewModel> keyValue in parameterNodeIds)
+                foreach (var keyValue in parameterNodeIds)
                 {
                     this.ParameterVariable[keyValue.Key] = keyValue.Value;
                 }
@@ -401,12 +414,12 @@ namespace DEHPMatlab.DstController
             {
                 foreach (var parameterToMatlabVariableMappingRowViewModel in variables)
                 {
-                    var paremeterAlreadyMapped = this.HubMapResult
+                    var parameterAlreadyMapped = this.HubMapResult
                         .FirstOrDefault(x => x.SelectedParameter.Iid == parameterToMatlabVariableMappingRowViewModel.SelectedParameter.Iid);
 
-                    if (paremeterAlreadyMapped != null)
+                    if (parameterAlreadyMapped != null)
                     {
-                        this.HubMapResult.Remove(paremeterAlreadyMapped);
+                        this.HubMapResult.Remove(parameterAlreadyMapped);
                     }
                 }
 
@@ -430,38 +443,23 @@ namespace DEHPMatlab.DstController
 
                 if (!(this.SelectedDstMapResultToTransfer.Any() && this.TrySupplyingAndCreatingLogEntry(transaction)))
                 {
+                    this.IsBusy = false;
                     return;
                 }
 
+                var elementBasesToUpdate = new Dictionary<Thing, List<ParameterOrOverrideBase>>();
+
                 foreach (var element in this.SelectedDstMapResultToTransfer.ToList())
                 {
-                    switch (element)
+                    if (!elementBasesToUpdate.ContainsKey(element.Container))
                     {
-                        case ElementDefinition elementDefinition:
-                        {
-                            var elementClone = this.CreateOrUpdateTransaction(transaction, elementDefinition, iterationClone.Element);
-
-                            foreach (var parameter in elementDefinition.Parameter)
-                            {
-                                this.CreateOrUpdateTransaction(transaction, parameter, elementClone.Parameter);
-                            }
-
-                            break;
-                        }
-                        case ElementUsage elementUsage:
-                        {
-                            var elementUsageClone = elementUsage.Clone(false);
-                            transaction.CreateOrUpdate(elementUsageClone);
-
-                            foreach (var parameterOverride in elementUsage.ParameterOverride)
-                            {
-                                this.CreateOrUpdateTransaction(transaction, parameterOverride, elementUsageClone.ParameterOverride);
-                            }
-
-                            break;
-                        }
+                        elementBasesToUpdate[element.Container] = new List<ParameterOrOverrideBase>();
                     }
+
+                    elementBasesToUpdate[element.Container].Add(element);
                 }
+
+                this.AddParameterOrOverrideToTransaction(elementBasesToUpdate, transaction, iterationClone);
 
                 transaction.CreateOrUpdate(iterationClone);
 
@@ -562,13 +560,23 @@ namespace DEHPMatlab.DstController
 
                 var workspaceVariable = this.matlabConnector.GetVariable(uniqueVariable);
 
+                if (workspaceVariable is null)
+                {
+                    return;
+                }
+
                 await Task.Run(() =>
                     {
                         if (workspaceVariable.ActualValue is object[,] allVariables)
                         {
                             foreach (var variable in allVariables)
                             {
-                                variables.Add(this.matlabConnector.GetVariable(variable.ToString()));
+                                var newVariable = this.matlabConnector.GetVariable(variable.ToString());
+
+                                if (newVariable is not null)
+                                {
+                                    variables.Add(newVariable);
+                                }
                             }
                         }
                     }
@@ -659,6 +667,49 @@ namespace DEHPMatlab.DstController
         }
 
         /// <summary>
+        /// Includes all the <see cref="ParameterOrOverrideBase" /> to the transactio for the transfer
+        /// </summary>
+        /// <param name="elementBasesToUpdate">The collection of <see cref="ParameterOrOverrideBase" /> to transfer</param>
+        /// <param name="transaction">The <see cref="IThingTransaction" /></param>
+        /// <param name="iterationClone">The <see cref="Iteration" /></param>
+        private void AddParameterOrOverrideToTransaction(Dictionary<Thing, List<ParameterOrOverrideBase>> elementBasesToUpdate, IThingTransaction transaction, Iteration iterationClone)
+        {
+            foreach (var element in elementBasesToUpdate.Keys.ToList())
+            {
+                switch (element)
+                {
+                    case ElementDefinition elementDefinition:
+                    {
+                        var elementClone = this.CreateOrUpdateTransaction(transaction, elementDefinition, iterationClone.Element);
+
+                        foreach (var parameter in elementBasesToUpdate[element])
+                        {
+                            var sourceThing = this.CreateOrUpdateTransaction(transaction, (Parameter) parameter, elementClone.Parameter);
+                            var targetThing = this.ParameterVariable[parameter].SelectedCoordinateSystem;
+                            this.CreateOrUpdateRelationShip(sourceThing, targetThing, iterationClone, transaction);
+                        }
+
+                        break;
+                    }
+                    case ElementUsage elementUsage:
+                    {
+                        var elementUsageClone = elementUsage.Clone(false);
+                        transaction.CreateOrUpdate(elementUsageClone);
+
+                        foreach (var parameterOverride in elementBasesToUpdate[element])
+                        {
+                            var sourceThing = this.CreateOrUpdateTransaction(transaction, (ParameterOverride) parameterOverride, elementUsageClone.ParameterOverride);
+                            var targetThing = this.ParameterVariable[parameterOverride].SelectedCoordinateSystem;
+                            this.CreateOrUpdateRelationShip(sourceThing, targetThing, iterationClone, transaction);
+                        }
+
+                        break;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
         /// Transfer all values from the <see cref="IValueSet" /> of a <see cref="ParameterOrOverrideBase" /> of type
         /// <see cref="SampledFunctionParameterType" />
         /// or of type <see cref="ArrayParameterType" />to DST
@@ -671,12 +722,12 @@ namespace DEHPMatlab.DstController
             switch (mappedElement.SelectedParameter.ParameterType)
             {
                 case SampledFunctionParameterType sampledFunctionParameterType:
-                    variable.ActualValue = sampledFunctionParameterType.ComputeArray(mappedElement.SelectedValue.Container, variable.RowColumnSelection,
-                        variable.SampledFunctionParameterParameterAssignementRows.ToList());
+                    variable.ActualValue = sampledFunctionParameterType.ComputeArray(mappedElement.SelectedValue.Container, variable.RowColumnSelectionToDst,
+                        variable.SampledFunctionParameterParameterAssignementToDstRows.ToList());
 
                     break;
                 case ArrayParameterType arrayParameterType:
-                    variable.ActualValue = arrayParameterType.ComputeArray(mappedElement.SelectedValue.Container);
+                    variable.ActualValue = arrayParameterType.ComputeArrayOfDouble(mappedElement.SelectedValue.Container);
                     break;
                 default:
                     return;
@@ -714,6 +765,8 @@ namespace DEHPMatlab.DstController
             this.MatlabWorkspaceInputRowViewModels.AddRange(newVariableToAdd);
 
             this.matlabConnector.PutVariable(variable);
+
+            this.MatlabWorkspaceInputRowViewModels.First(x => x.Name == variable.Name).ArrayValue = variable.ArrayValue;
         }
 
         /// <summary>
@@ -743,6 +796,49 @@ namespace DEHPMatlab.DstController
             }
 
             return (TThing) clone;
+        }
+
+        /// <summary>
+        /// Create or update a <see cref="Relationship" />
+        /// </summary>
+        /// <param name="sourceThing">The <see cref="Thing" /> source</param>
+        /// <param name="targetThing">The <see cref="Thing" />target</param>
+        /// <param name="iterationClone">The <see cref="Iteration" /></param>
+        /// <param name="transaction">The <see cref="IThingTransaction" /></param>
+        private void CreateOrUpdateRelationShip(Thing sourceThing, Thing targetThing, Iteration iterationClone, IThingTransaction transaction)
+        {
+            if (targetThing == null)
+            {
+                return;
+            }
+
+            var relationShip = iterationClone.Relationship
+                .OfType<BinaryRelationship>().FirstOrDefault(x =>
+                    x.Owner == this.hubController.CurrentDomainOfExpertise
+                    && x.Source.Iid == sourceThing.Iid && x.Name == RelationShipName);
+
+            if (relationShip == null)
+            {
+                relationShip = new BinaryRelationship
+                {
+                    Iid = Guid.NewGuid(),
+                    Source = sourceThing,
+                    Target = targetThing,
+                    Name = RelationShipName,
+                    Owner = this.hubController.CurrentDomainOfExpertise
+                };
+
+                transaction.Create(relationShip);
+                iterationClone.Relationship.Add(relationShip);
+                this.exchangeHistory.Append(relationShip, ChangeKind.Create);
+            }
+            else
+            {
+                relationShip = relationShip.Clone(false);
+                relationShip.Target = targetThing;
+                transaction.CreateOrUpdate(relationShip);
+                this.exchangeHistory.Append(relationShip, ChangeKind.Update);
+            }
         }
 
         /// <summary>
@@ -785,6 +881,24 @@ namespace DEHPMatlab.DstController
                 return 0;
             }
 
+            foreach (var mappedVariable in mappedVariables)
+            {
+                var variable = this.MatlabAllWorkspaceRowViewModels.FirstOrDefault(x => x.Identifier == mappedVariable.Identifier);
+
+                if (variable is null)
+                {
+                    continue;
+                }
+
+                variable.IsAveraged = mappedVariable.IsAveraged;
+                variable.RowColumnSelectionToHub = mappedVariable.RowColumnSelectionToHub;
+                variable.SampledFunctionParameterParameterAssignementToHubRows = mappedVariable.SampledFunctionParameterParameterAssignementToHubRows;
+                variable.SelectedTimeStep = mappedVariable.SelectedTimeStep;
+                variable.GetTimeDependentValues();
+                variable.ApplyTimeStep();
+                variable.SelectedCoordinateSystem = mappedVariable.SelectedCoordinateSystem;
+            }
+
             var validMappedVariables = mappedVariables.Where(x => x.IsValid()).ToList();
 
             if (!validMappedVariables.Any())
@@ -808,6 +922,19 @@ namespace DEHPMatlab.DstController
                 || !mappedElements.Any())
             {
                 return 0;
+            }
+
+            foreach (var mappedElement in mappedElements)
+            {
+                var inputVariable = this.MatlabWorkspaceInputRowViewModels.FirstOrDefault(x => x.Name == mappedElement.SelectedMatlabVariable.Name);
+
+                if (inputVariable is null)
+                {
+                    continue;
+                }
+
+                inputVariable.RowColumnSelectionToDst = mappedElement.SelectedMatlabVariable.RowColumnSelectionToDst;
+                inputVariable.SampledFunctionParameterParameterAssignementToDstRows = mappedElement.SelectedMatlabVariable.SampledFunctionParameterParameterAssignementToDstRows;
             }
 
             mappedElements.ForEach(x => x.VerifyValidity());
@@ -855,7 +982,7 @@ namespace DEHPMatlab.DstController
         private void UnwrapVariableAndCheckIfPresent(ICollection<MatlabWorkspaceRowViewModel> variablesToAdd, ICollection<MatlabWorkspaceRowViewModel> variablesToModify,
             MatlabWorkspaceRowViewModel matlabVariable)
         {
-            List<MatlabWorkspaceRowViewModel> unwrapped = matlabVariable.UnwrapVariableRowViewModels();
+            var unwrapped = matlabVariable.UnwrapVariableRowViewModels();
 
             foreach (var matlabWorkspaceBaseRowViewModel in unwrapped)
             {
@@ -881,8 +1008,8 @@ namespace DEHPMatlab.DstController
         {
             var (iterationClone, transaction) = this.GetIterationTransaction();
 
-            this.UpdateParametersValueSets(transaction, this.SelectedDstMapResultToTransfer.OfType<ElementDefinition>().SelectMany(x => x.Parameter));
-            this.UpdateParametersValueSets(transaction, this.SelectedDstMapResultToTransfer.OfType<ElementUsage>().SelectMany(x => x.ParameterOverride));
+            this.UpdateParametersValueSets(transaction, this.SelectedDstMapResultToTransfer.OfType<Parameter>());
+            this.UpdateParametersValueSets(transaction, this.SelectedDstMapResultToTransfer.OfType<ParameterOverride>());
 
             transaction.CreateOrUpdate(iterationClone);
 

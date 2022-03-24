@@ -69,6 +69,19 @@ namespace DEHPMatlab.ViewModel.Row
         }
 
         /// <summary>
+        /// Evaluate the difference between the two <see cref="MatlabWorkspaceRowViewModel"/>
+        /// </summary>
+        /// <param name="oldVariable">The old <see cref="MatlabWorkspaceRowViewModel"/></param>
+        /// <param name="newVariable">The new <see cref="MatlabWorkspaceRowViewModel"/></param>
+        public ParameterDifferenceViewModel(MatlabWorkspaceRowViewModel oldVariable, MatlabWorkspaceRowViewModel newVariable)
+        {
+            this.CalculateDiff(oldVariable?.ActualValue, newVariable.ActualValue, out var difference, out var percentDiff);
+            
+            this.ListOfParameters.Add(new MatlabVariableDifferenceRowViewModel(oldVariable, newVariable, newVariable.Name,
+                oldVariable?.ActualValue, newVariable.ActualValue, difference, percentDiff));
+        }
+
+        /// <summary>
         /// The Thing already on the data hub
         /// </summary>
         public Parameter OldThing { get; set; }
@@ -82,7 +95,7 @@ namespace DEHPMatlab.ViewModel.Row
         /// List of <see cref="ParameterDifferenceRowViewModel" /> to show in MainWindow,
         /// multiple item have the same Iid because the set of data can be different due to states and options
         /// </summary>
-        public List<ParameterDifferenceRowViewModel> ListOfParameters { get; set; } = new();
+        public List<DifferenceRowViewModel> ListOfParameters { get; set; } = new();
 
         /// <summary>
         /// Calculate the difference between the old and new value, if possible
@@ -258,15 +271,15 @@ namespace DEHPMatlab.ViewModel.Row
 
             if (isOptions && isState)
             {
-                name = name + $"\\{this.listofsetOfNewValues[index].ActualOption.ShortName}\\{this.listofsetOfNewValues[index].ActualState.ShortName}";
+                name += $"\\{this.listofsetOfNewValues[index].ActualOption.ShortName}\\{this.listofsetOfNewValues[index].ActualState.ShortName}";
             }
             else if (isOptions)
             {
-                name = name + $"\\{this.listofsetOfNewValues[index].ActualOption.ShortName}";
+                name += $"\\{this.listofsetOfNewValues[index].ActualOption.ShortName}";
             }
             else if (isState)
             {
-                name = name + $"{this.listofsetOfNewValues[index].ActualState.ShortName}";
+                name += $"{this.listofsetOfNewValues[index].ActualState.ShortName}";
             }
             else
             {

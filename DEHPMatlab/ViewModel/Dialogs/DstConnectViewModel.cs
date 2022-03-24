@@ -294,7 +294,7 @@ namespace DEHPMatlab.ViewModel.Dialogs
         {
             this.GenerateMatlabVersions(2014, 4, 6, 8, false);
             this.GenerateMatlabVersions(2016, 0, 11, 9, true);
-            this.MatlabVersionDictionary["Matlab.Autoserver"] = "Lastest Installed Version";
+            this.MatlabVersionDictionary["Matlab.Autoserver"] = "Latest Installed Version";
             this.MatlabVersionDictionary = this.MatlabVersionDictionary.Reverse().ToDictionary(x => x.Key, x => x.Value);
             this.SelectedMatlabVersion = this.MatlabVersionDictionary.SingleOrDefault(p => p.Key == "Matlab.Autoserver");
         }

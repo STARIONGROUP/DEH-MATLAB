@@ -25,10 +25,15 @@
 namespace DEHPMatlab.Services.MappingConfiguration
 {
     using System;
+    using System.Collections.Generic;
 
     using CDP4Common.EngineeringModelData;
+    using CDP4Common.SiteDirectoryData;
 
     using DEHPCommon.Enumerators;
+
+    using DEHPMatlab.Enumerator;
+    using DEHPMatlab.ViewModel.Row;
 
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
@@ -61,5 +66,36 @@ namespace DEHPMatlab.Services.MappingConfiguration
         /// </summary>
         [JsonConverter(typeof(StringEnumConverter))]
         public ParameterSwitchKind ParameterSwitchKind { get; set; }
+
+        /// <summary>
+        /// Gets or sets the <see cref="RowColumnSelection"/> if applicable
+        /// </summary>
+        [JsonConverter(typeof(StringEnumConverter))]
+        public RowColumnSelection RowColumnSelection { get; set; }
+
+        /// <summary>
+        /// Gets or sets the collection of <see cref="string"/> for the <see cref="SampledFunctionParameterParameterAssignementRowViewModel.Index"/> if applicable
+        /// </summary>
+        public List<string> SampledFunctionParameterParameterAssignementIndices { get; set; }
+
+        /// <summary>
+        /// Gets or sets the index of the <see cref="IParameterTypeAssignment"/> containing Time Tagged values
+        /// </summary>
+        public int? TimeTaggedIndex { get; set; }
+
+        /// <summary>
+        /// Gets or sets the asserts if the values has been averaged if applicable
+        /// </summary>
+        public bool IsAveraged { get; set; }
+
+        /// <summary>
+        /// Gets or sets the SelecteTimeStep value if applicable
+        /// </summary>
+        public double SelectedTimeStep { get; set; }
+
+        /// <summary>
+        /// Gets or sets the <see cref="Guid" /> of the <see cref="Parameter" /> used as reference for a coordinate system if applicable
+        /// </summary>
+        public Guid SelectedCoordinateSystem { get; set; }
     }
 }

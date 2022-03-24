@@ -36,8 +36,10 @@ namespace DEHPMatlab.Tests.NetChange
     using CDP4Common.Types;
 
     using CDP4Dal;
+    using CDP4Dal.Events;
     using CDP4Dal.Permission;
 
+    using DEHPCommon.Events;
     using DEHPCommon.HubController.Interfaces;
     using DEHPCommon.Services.ObjectBrowserTreeSelectorService;
     using DEHPCommon.UserInterfaces.ViewModels.Rows.ElementDefinitionTreeRows;
@@ -205,7 +207,7 @@ namespace DEHPMatlab.Tests.NetChange
 
             this.dstController = new Mock<IDstController>();
 
-            this.dstController.Setup(x => x.SelectedDstMapResultToTransfer).Returns(new ReactiveList<ElementBase>());
+            this.dstController.Setup(x => x.SelectedDstMapResultToTransfer).Returns(new ReactiveList<ParameterOrOverrideBase>());
 
             this.dstMapResult = new ReactiveList<ElementBase>()
             {
@@ -414,6 +416,15 @@ namespace DEHPMatlab.Tests.NetChange
 
             var parameterOverrideRow = elementUsageRow.ContainedRows.OfType<ParameterOverrideRowViewModel>().First();
             Assert.DoesNotThrow(() => this.viewModel.WhenItemSelectedChanges(parameterOverrideRow));
+
+            this.dstMapResult.Clear();
+        }
+
+        [Test]
+        public void VerifyCDPMessageBusListening()
+        {
+            Assert.DoesNotThrow(() => CDPMessageBus.Current.SendMessage(new UpdateObjectBrowserTreeEvent(true)));
+            Assert.DoesNotThrow(() => CDPMessageBus.Current.SendMessage(new UpdateObjectBrowserTreeEvent(false)));
         }
     }
 }

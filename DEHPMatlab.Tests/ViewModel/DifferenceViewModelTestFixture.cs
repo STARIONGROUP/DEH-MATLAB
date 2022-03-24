@@ -27,6 +27,7 @@ namespace DEHPMatlab.Tests.ViewModel
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Reactive.Concurrency;
 
     using CDP4Common.EngineeringModelData;
     using CDP4Common.SiteDirectoryData;
@@ -34,11 +35,16 @@ namespace DEHPMatlab.Tests.ViewModel
 
     using CDP4Dal;
 
+    using DEHPCommon.Events;
     using DEHPCommon.HubController.Interfaces;
+    using DEHPCommon.Services.NavigationService;
 
+    using DEHPMatlab.DstController;
     using DEHPMatlab.Events;
     using DEHPMatlab.ViewModel;
+    using DEHPMatlab.ViewModel.Dialogs;
     using DEHPMatlab.ViewModel.Row;
+    using DEHPMatlab.Views.Dialogs;
 
     using Moq;
 
@@ -51,6 +57,9 @@ namespace DEHPMatlab.Tests.ViewModel
     {
         private DifferenceViewModel viewModel;
         private Mock<IHubController> hubController;
+        private Mock<IDstController> dstController;
+        private Mock<INavigationService> navigationService;
+        private ReactiveList<MatlabWorkspaceRowViewModel> inputVariables;
 
         private Assembler assembler;
         private readonly Uri uri = new("http://test.com");
@@ -75,8 +84,19 @@ namespace DEHPMatlab.Tests.ViewModel
         [SetUp]
         public void SetUp()
         {
+            RxApp.MainThreadScheduler = Scheduler.CurrentThread;
+            
             this.hubController = new Mock<IHubController>();
-            this.viewModel = new DifferenceViewModel(this.hubController.Object);
+            this.dstController = new Mock<IDstController>();
+            this.inputVariables = new ReactiveList<MatlabWorkspaceRowViewModel>();
+            this.dstController.Setup(x => x.MatlabWorkspaceInputRowViewModels).Returns(this.inputVariables);
+
+            this.navigationService = new Mock<INavigationService>();
+
+            this.navigationService.Setup(x =>
+                x.ShowDxDialog<MatricesDifferenceDialog, MatricesDifferenceDialogViewModel>(It.IsAny<MatricesDifferenceDialogViewModel>()));
+
+            this.viewModel = new DifferenceViewModel(this.hubController.Object, this.dstController.Object, this.navigationService.Object);
 
             this.assembler = new Assembler(this.uri);
 
@@ -126,11 +146,17 @@ namespace DEHPMatlab.Tests.ViewModel
             this.option2 = new Option(Guid.NewGuid(), this.assembler.Cache, this.uri) { ShortName = "option2" };
         }
 
+        [TearDown]
+        public void Teardown()
+        {
+            CDPMessageBus.Current.ClearSubscriptions();
+        }
+
         [Test]
         public void VerifyDifferenceViewModel()
         {
             Assert.IsEmpty(this.viewModel.Parameters);
-            this.viewModel.Parameters = new ReactiveList<ParameterDifferenceRowViewModel>();
+            this.viewModel.Parameters = new ReactiveList<DifferenceRowViewModel>();
 
             //One Parameter No Option No States
             this.parameter1 = new Parameter(Guid.NewGuid(), this.assembler.Cache, this.uri)
@@ -404,12 +430,160 @@ namespace DEHPMatlab.Tests.ViewModel
         [Test]
         public void VerifyParameters()
         {
-            this.viewModel.Parameters = new ReactiveList<ParameterDifferenceRowViewModel>
+            this.viewModel.Parameters = new ReactiveList<DifferenceRowViewModel>
             {
-                new(new Parameter(), new Parameter(), "", "", "", "", "")
+                new ParameterDifferenceRowViewModel(new Parameter(),new Parameter(), "", "", "", "", "")
             };
 
             Assert.IsNotEmpty(this.viewModel.Parameters);
+            this.viewModel.SelectedThing = this.viewModel.Parameters.First();
+            Assert.IsFalse(this.viewModel.CanExecute);
+
+            var matlabVariable = new MatlabWorkspaceRowViewModel("a", 5);
+            this.viewModel.Parameters.Add(new MatlabVariableDifferenceRowViewModel(matlabVariable, matlabVariable, "n", "","","",""));
+            this.viewModel.Parameters.Add(new ParameterDifferenceRowViewModel(new Parameter(), new Parameter(), "n", "","","",""));
+            Assert.AreEqual(3, this.viewModel.Parameters.Count);
+
+            CDPMessageBus.Current.SendMessage(new UpdateObjectBrowserTreeEvent(true));
+            Assert.AreEqual(1, this.viewModel.Parameters.Count);
+
+            CDPMessageBus.Current.SendMessage(new UpdateDstVariableTreeEvent(true));
+            Assert.AreEqual(0, this.viewModel.Parameters.Count);
+        }
+
+        [Test]
+        public void VerifyListeningMatlabVariables()
+        {
+            Assert.DoesNotThrow(() => CDPMessageBus.Current.SendMessage(new DifferenceEvent<MatlabWorkspaceRowViewModel>(true, null)));
+
+            var variable = new MatlabWorkspaceRowViewModel("name", 45)
+            {
+                Identifier = "a-name"
+            };
+
+            Assert.DoesNotThrow(() => CDPMessageBus.Current.SendMessage(new DifferenceEvent<MatlabWorkspaceRowViewModel>(true, variable)));
+
+            this.inputVariables.Add(new MatlabWorkspaceRowViewModel(variable));
+            variable.ActualValue = 46;
+
+            Assert.DoesNotThrow(() => CDPMessageBus.Current.SendMessage(new DifferenceEvent<MatlabWorkspaceRowViewModel>(true, variable)));
+            Assert.AreEqual(1, this.viewModel.Parameters.Count);
+         
+            Assert.DoesNotThrow(() => CDPMessageBus.Current.SendMessage(new DifferenceEvent<MatlabWorkspaceRowViewModel>(false, variable)));
+            Assert.AreEqual(0, this.viewModel.Parameters.Count);
+
+            variable.ActualValue = new double[,] { { 1, 5 } };
+            variable.UnwrapVariableRowViewModels();
+
+            Assert.DoesNotThrow(() => CDPMessageBus.Current.SendMessage(new DifferenceEvent<MatlabWorkspaceRowViewModel>(true, variable)));
+            this.viewModel.SelectedThing = this.viewModel.Parameters.First();
+
+            Assert.IsTrue(this.viewModel.CanExecute);
+            Assert.DoesNotThrow(() => this.viewModel.MatricesDifferenceCommand.Execute(null));
+
+            this.inputVariables.First().ArrayValue = variable.ArrayValue;
+            Assert.DoesNotThrow(() => CDPMessageBus.Current.SendMessage(new DifferenceEvent<MatlabWorkspaceRowViewModel>(true, variable)));
+            this.viewModel.SelectedThing = this.viewModel.Parameters.First();
+
+            Assert.IsTrue(this.viewModel.CanExecute);
+            Assert.DoesNotThrow(() => this.viewModel.MatricesDifferenceCommand.Execute(null));
+           
+            this.navigationService.Verify(x => 
+                x.ShowDxDialog<MatricesDifferenceDialog, MatricesDifferenceDialogViewModel>(It.IsAny<MatricesDifferenceDialogViewModel>()), Times.Exactly(2));
+        }
+
+        [Test]
+        public void VerifyArrayAndSFPTListening()
+        {
+            var scale = new RatioScale() { NumberSet = NumberSetKind.REAL_NUMBER_SET };
+
+            var arrayParameter = new ArrayParameterType()
+            {
+                Name = "Array3x2",
+                ShortName = "array3x2",
+            };
+
+            arrayParameter.Dimension = new OrderedItemList<int>(arrayParameter) { 3, 2 };
+
+            var simpleQuantityKind = new SimpleQuantityKind()
+            {
+                Name = "aSimpleQuantity",
+                PossibleScale = { scale },
+                DefaultScale = scale
+            };
+
+            for (var i = 0; i < 6; i++)
+            {
+                arrayParameter.Component.Add(new ParameterTypeComponent()
+                {
+                    ParameterType = simpleQuantityKind,
+                    Scale = scale
+                });
+            }
+
+            var parameter = new Parameter()
+            {
+                Iid = new Guid(),
+                ParameterType = arrayParameter,
+                Container = new ElementDefinition(new Guid(), null, null),
+                ValueSet =
+                {
+                    new ParameterValueSet
+                    {
+                        Computed = new ValueArray<string>(new []{"1", "2", "3", "4", "5", "6"})
+                    }
+                }
+            };
+
+            Assert.DoesNotThrow(() => CDPMessageBus.Current.SendMessage(new DifferenceEvent<ParameterOrOverrideBase>(true, parameter)));
+            this.hubController.Setup(x => x.GetThingById(parameter.Iid, It.IsAny<Iteration>(), out parameter));
+            Assert.DoesNotThrow(() => CDPMessageBus.Current.SendMessage(new DifferenceEvent<ParameterOrOverrideBase>(true, parameter)));
+
+            var independentParameter = new SimpleQuantityKind()
+            {
+                Name = "time"
+            };
+
+            var dependentParameter = new SpecializedQuantityKind()
+            {
+                Name = "position"
+            };
+
+            var sampledFunction = new SampledFunctionParameterType()
+            {
+                IndependentParameterType =
+                {
+                    new IndependentParameterTypeAssignment()
+                    {
+                        ParameterType = independentParameter
+                    }
+                },
+                DependentParameterType =
+                {
+                    new DependentParameterTypeAssignment()
+                    {
+                        ParameterType = dependentParameter
+                    }
+                }
+            };
+
+            var parameterSfpt = new Parameter()
+            {
+                Iid = new Guid(),
+                ParameterType = sampledFunction,
+                Container = new ElementDefinition(new Guid(), null, null),
+                ValueSet =
+                {
+                    new ParameterValueSet
+                    {
+                        Computed = new ValueArray<string>(new []{"1", "2", "3", "4", "5", "6"})
+                    }
+                }
+            };
+
+            Assert.DoesNotThrow(() => CDPMessageBus.Current.SendMessage(new DifferenceEvent<ParameterOrOverrideBase>(true, parameterSfpt)));
+            this.hubController.Setup(x => x.GetThingById(parameterSfpt.Iid, It.IsAny<Iteration>(), out parameterSfpt));
+            Assert.DoesNotThrow(() => CDPMessageBus.Current.SendMessage(new DifferenceEvent<ParameterOrOverrideBase>(true, parameterSfpt)));
         }
     }
 }

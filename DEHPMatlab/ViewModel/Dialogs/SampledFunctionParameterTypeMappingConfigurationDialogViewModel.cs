@@ -25,11 +25,13 @@
 namespace DEHPMatlab.ViewModel.Dialogs
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Reactive.Linq;
 
     using CDP4Common.SiteDirectoryData;
 
+    using DEHPCommon.Enumerators;
     using DEHPCommon.UserInterfaces.Behaviors;
     using DEHPCommon.UserInterfaces.ViewModels.Interfaces;
 
@@ -50,21 +52,53 @@ namespace DEHPMatlab.ViewModel.Dialogs
         private readonly SampledFunctionParameterType sampledFunctionParameterType;
 
         /// <summary>
+        /// A collection of <see cref="IDisposable" />
+        /// </summary>
+        private readonly List<IDisposable> disposablesObservables = new();
+
+        /// <summary>
+        /// The <see cref="MappingDirection" />
+        /// </summary>
+        private readonly MappingDirection mappingDirection;
+
+        /// <summary>
+        /// Asserts if this viewmodel is allowed to clear and populates the
+        /// <see cref="SampledFunctionParameterParameterAssignementRows" />
+        /// </summary>
+        private bool isAllowedToGenerateRows;
+
+        /// <summary>
         /// Backing field for <see cref="IsMappingValid" />
         /// </summary>
         private bool isMappingValid;
+
+        /// <summary>
+        /// Backing field for <see cref="SelectedRowColumnSelection" />
+        /// </summary>
+        private RowColumnSelection selectedRowColumnSelection;
+
+        /// <summary>
+        /// Backing field for <see cref="IsTimeTaggedVisible" />
+        /// </summary>
+        private bool isTimeTaggedVisible;
 
         /// <summary>
         /// Initializes a new <see cref="SampledFunctionParameterParameterAssignementRowViewModel" />
         /// </summary>
         /// <param name="variable">A <see cref="MatlabWorkspaceRowViewModel" /></param>
         /// <param name="sampledFunctionParameterType">The <see cref="SampledFunctionParameterType" /></param>
-        public SampledFunctionParameterTypeMappingConfigurationDialogViewModel(MatlabWorkspaceRowViewModel variable, SampledFunctionParameterType sampledFunctionParameterType)
+        /// <param name="mappingDirection">The <see cref="MappingDirection" /></param>
+        public SampledFunctionParameterTypeMappingConfigurationDialogViewModel(MatlabWorkspaceRowViewModel variable, SampledFunctionParameterType sampledFunctionParameterType,
+            MappingDirection mappingDirection)
         {
+            this.mappingDirection = mappingDirection;
+            this.IsTimeTaggedVisible = this.mappingDirection == MappingDirection.FromDstToHub;
             this.Variable = variable;
             this.sampledFunctionParameterType = sampledFunctionParameterType;
-            this.InitializeObservables();
             this.UpdateProperties();
+            this.isAllowedToGenerateRows = !this.VerifyIfVariableHasAMapping();
+
+            this.InitializeCommandsAndObservables();
         }
 
         /// <summary>
@@ -77,9 +111,25 @@ namespace DEHPMatlab.ViewModel.Dialogs
         }
 
         /// <summary>
+        /// Asserts if the column of <see cref="SampledFunctionParameterParameterAssignementRowViewModel.IsTimeTaggedParameter" />
+        /// should be visible or not
+        /// </summary>
+        public bool IsTimeTaggedVisible
+        {
+            get => this.isTimeTaggedVisible;
+            set => this.RaiseAndSetIfChanged(ref this.isTimeTaggedVisible, value);
+        }
+
+        /// <summary>
         /// Gets the <see cref="MatlabWorkspaceRowViewModel" /> used for the mapping
         /// </summary>
         public MatlabWorkspaceRowViewModel Variable { get; }
+
+        /// <summary>
+        /// The <see cref="ReactiveCommand{T}" /> to assign the defined assignement to the
+        /// <see cref="MatlabWorkspaceRowViewModel" />
+        /// </summary>
+        public ReactiveCommand<object> ProceedSampledFunctionParameterParameterAssignementRowsCommand { get; private set; }
 
         /// <summary>
         /// A collection of <see cref="RowColumnSelection" />
@@ -87,9 +137,23 @@ namespace DEHPMatlab.ViewModel.Dialogs
         public ReactiveList<RowColumnSelection> RowColumnValues { get; } = new();
 
         /// <summary>
-        /// Gets a collection of all avaible index
+        /// A collection of <see cref="SampledFunctionParameterParameterAssignementRowViewModel" />
+        /// </summary>
+        public ReactiveList<SampledFunctionParameterParameterAssignementRowViewModel> SampledFunctionParameterParameterAssignementRows { get; } = new() { ChangeTrackingEnabled = true };
+
+        /// <summary>
+        /// Gets a collection of all available index
         /// </summary>
         public ReactiveList<string> AvailableIndexes { get; } = new();
+
+        /// <summary>
+        /// The selected <see cref="RowColumnSelection" />
+        /// </summary>
+        public RowColumnSelection SelectedRowColumnSelection
+        {
+            get => this.selectedRowColumnSelection;
+            set => this.RaiseAndSetIfChanged(ref this.selectedRowColumnSelection, value);
+        }
 
         /// <summary>
         /// The <see cref="ICloseWindowBehavior" />
@@ -97,40 +161,92 @@ namespace DEHPMatlab.ViewModel.Dialogs
         public ICloseWindowBehavior CloseWindowBehavior { get; set; }
 
         /// <summary>
-        /// Define the <see cref="IParameterTypeAssignment" /> to all
-        /// <see cref="SampledFunctionParameterParameterAssignementRowViewModel" /> of the
-        /// <see cref="MatlabWorkspaceRowViewModel" />
+        /// Initialize all <see cref="ReactiveCommand" /> and <see cref="Observable" /> of this view model
         /// </summary>
-        private void DefineParameterTypeAssignmentProperty()
+        private void InitializeCommandsAndObservables()
         {
-            if (this.Variable.SampledFunctionParameterParameterAssignementRows.Count == 0)
+            this.WhenAnyValue(x => x.SelectedRowColumnSelection)
+                .Subscribe(_ => this.PopulateSampledFunctionParametersCollection());
+
+            this.ProceedSampledFunctionParameterParameterAssignementRowsCommand =
+                ReactiveCommand.Create(this.WhenAnyValue(x => x.IsMappingValid));
+
+            this.ProceedSampledFunctionParameterParameterAssignementRowsCommand
+                .Subscribe(_ => this.ProceedSampledFunctionParameterParameterAssignementRowsCommandExecute());
+        }
+
+        /// <summary>
+        /// Initialize all <see cref="Observable" /> related to <see cref="SampledFunctionParameterParameterAssignementRows" />
+        /// </summary>
+        private void InitializesReactiveListObservables()
+        {
+            foreach (var disposable in this.disposablesObservables)
             {
+                disposable.Dispose();
+            }
+
+            this.disposablesObservables.Clear();
+
+            this.disposablesObservables.Add(this.SampledFunctionParameterParameterAssignementRows.ItemChanged.Subscribe(_ => this.VerifyIsMappingValid()));
+            this.disposablesObservables.Add(this.SampledFunctionParameterParameterAssignementRows.ItemChanged.Subscribe(this.VerifyTimeTaggedParameter));
+            this.VerifyIsMappingValid();
+        }
+
+        /// <summary>
+        /// Populates the <see cref="SampledFunctionParameterParameterAssignementRows" /> collection
+        /// </summary>
+        private void PopulateSampledFunctionParametersCollection()
+        {
+            if (!this.isAllowedToGenerateRows)
+            {
+                this.isAllowedToGenerateRows = true;
                 return;
             }
+
+            this.SampledFunctionParameterParameterAssignementRows.Clear();
 
             var listIndex = 0;
 
             foreach (IndependentParameterTypeAssignment independentParameterTypeAssignment in this.sampledFunctionParameterType.IndependentParameterType)
             {
-                this.Variable.SampledFunctionParameterParameterAssignementRows[listIndex++].SelectedParameterTypeAssignment = independentParameterTypeAssignment;
+                var sampledFunctionParameterAssignement = new SampledFunctionParameterParameterAssignementRowViewModel(listIndex++.ToString())
+                {
+                    SelectedParameterTypeAssignment = independentParameterTypeAssignment
+                };
+
+                this.SampledFunctionParameterParameterAssignementRows.Add(sampledFunctionParameterAssignement);
             }
 
             foreach (DependentParameterTypeAssignment dependentParameterTypeAssignment in this.sampledFunctionParameterType.DependentParameterType)
             {
-                this.Variable.SampledFunctionParameterParameterAssignementRows[listIndex++].SelectedParameterTypeAssignment = dependentParameterTypeAssignment;
+                var sampledFunctionParameterAssignement = new SampledFunctionParameterParameterAssignementRowViewModel(listIndex++.ToString())
+                {
+                    SelectedParameterTypeAssignment = dependentParameterTypeAssignment
+                };
+
+                this.SampledFunctionParameterParameterAssignementRows.Add(sampledFunctionParameterAssignement);
             }
+
+            this.InitializesReactiveListObservables();
         }
 
         /// <summary>
-        /// Initialize all <see cref="Observable" /> of this view model
+        /// Executes the <see cref="ProceedSampledFunctionParameterParameterAssignementRowsCommand" />
         /// </summary>
-        private void InitializeObservables()
+        private void ProceedSampledFunctionParameterParameterAssignementRowsCommandExecute()
         {
-            this.Variable.SampledFunctionParameterParameterAssignementRows
-                .CountChanged.Subscribe(_ => this.DefineParameterTypeAssignmentProperty());
-
-            this.Variable.SampledFunctionParameterParameterAssignementRows
-                .ItemChanged.Subscribe(_ => this.VerifyIsMappingValid());
+            if (this.mappingDirection == MappingDirection.FromDstToHub)
+            {
+                this.Variable.RowColumnSelectionToHub = this.SelectedRowColumnSelection;
+                this.Variable.SampledFunctionParameterParameterAssignementToHubRows.Clear();
+                this.Variable.SampledFunctionParameterParameterAssignementToHubRows.AddRange(this.SampledFunctionParameterParameterAssignementRows);
+            }
+            else
+            {
+                this.Variable.RowColumnSelectionToDst = this.SelectedRowColumnSelection;
+                this.Variable.SampledFunctionParameterParameterAssignementToDstRows.Clear();
+                this.Variable.SampledFunctionParameterParameterAssignementToDstRows.AddRange(this.SampledFunctionParameterParameterAssignementRows);
+            }
         }
 
         /// <summary>
@@ -138,36 +254,50 @@ namespace DEHPMatlab.ViewModel.Dialogs
         /// </summary>
         private void UpdateProperties()
         {
+            if (this.Variable.ArrayValue is not Array arrayValue)
+            {
+                return;
+            }
+
             var parameterCount = this.sampledFunctionParameterType.NumberOfValues;
-            var arrayValue = (Array) this.Variable.ArrayValue;
 
             if (arrayValue.GetLength(0) == parameterCount)
             {
                 this.RowColumnValues.Add(RowColumnSelection.Row);
-                this.Variable.RowColumnSelection = RowColumnSelection.Row;
+                this.SelectedRowColumnSelection = RowColumnSelection.Row;
             }
 
             if (arrayValue.GetLength(1) == parameterCount)
             {
                 this.RowColumnValues.Add(RowColumnSelection.Column);
-                this.Variable.RowColumnSelection = RowColumnSelection.Column;
+                this.SelectedRowColumnSelection = RowColumnSelection.Column;
             }
 
             for (var index = 0; index < parameterCount; index++)
             {
                 this.AvailableIndexes.Add(index.ToString());
             }
+        }
 
-            this.VerifyIsMappingValid();
+        /// <summary>
+        /// Verify if the <see cref="MatlabWorkspaceRowViewModel" /> already have a mapping configuration for this
+        /// <see cref="sampledFunctionParameterType" />
+        /// </summary>
+        /// <returns>Asserts if the <see cref="MatlabWorkspaceRowViewModel" /> has a mapping configuration</returns>
+        private bool VerifyIfVariableHasAMapping()
+        {
+            return this.mappingDirection == MappingDirection.FromHubToDst ? this.VerifyMappingToDst() : this.VerifyMappingToHub();
         }
 
         /// <summary>
         /// Verify if each row or column of the <see cref="MatlabWorkspaceRowViewModel" /> array as been assigned to a
-        /// <see cref="IParameterTypeAssignment" />
+        /// <see cref="IParameterTypeAssignment" /> and that there is at most one
+        /// <see cref="SampledFunctionParameterParameterAssignementRowViewModel.IsTimeTaggedParameter" />
+        /// assigned
         /// </summary>
         private void VerifyIsMappingValid()
         {
-            var assignedIndex = this.Variable.SampledFunctionParameterParameterAssignementRows.Select(x => x.Index).ToList();
+            var assignedIndex = this.SampledFunctionParameterParameterAssignementRows.Select(x => x.Index).ToList();
 
             if (this.AvailableIndexes.Any(availableIndex => assignedIndex.Count(x => x == availableIndex) != 1))
             {
@@ -176,6 +306,93 @@ namespace DEHPMatlab.ViewModel.Dialogs
             }
 
             this.IsMappingValid = true;
+        }
+
+        /// <summary>
+        /// Verify that all conditions are respected for applying a previous
+        /// <see cref="SampledFunctionParameterParameterAssignementRowViewModel" /> mapping to Dst
+        /// </summary>
+        /// <returns>Asserts that all conditions are respected</returns>
+        private bool VerifyMappingToDst()
+        {
+            if (!this.RowColumnValues.Contains(this.Variable.RowColumnSelectionToDst) || !this.Variable.SampledFunctionParameterParameterAssignementToDstRows.Any())
+            {
+                return false;
+            }
+
+            foreach (IndependentParameterTypeAssignment independentParameter in this.sampledFunctionParameterType.IndependentParameterType)
+            {
+                if (this.Variable.SampledFunctionParameterParameterAssignementToDstRows.All(x => x.SelectedParameterTypeAssignment != independentParameter))
+                {
+                    return false;
+                }
+            }
+
+            foreach (DependentParameterTypeAssignment dependentParameter in this.sampledFunctionParameterType.DependentParameterType)
+            {
+                if (this.Variable.SampledFunctionParameterParameterAssignementToDstRows.All(x => x.SelectedParameterTypeAssignment != dependentParameter))
+                {
+                    return false;
+                }
+            }
+
+            this.SelectedRowColumnSelection = this.Variable.RowColumnSelectionToDst;
+            this.SampledFunctionParameterParameterAssignementRows.AddRange(this.Variable.SampledFunctionParameterParameterAssignementToDstRows);
+            this.InitializesReactiveListObservables();
+            return true;
+        }
+
+        /// <summary>
+        /// Verify that all conditions are respected for applying a previous
+        /// <see cref="SampledFunctionParameterParameterAssignementRowViewModel" /> mapping to Hub
+        /// </summary>
+        /// <returns>Asserts that all conditions are respected</returns>
+        private bool VerifyMappingToHub()
+        {
+            if (!this.RowColumnValues.Contains(this.Variable.RowColumnSelectionToHub) || !this.Variable.SampledFunctionParameterParameterAssignementToHubRows.Any())
+            {
+                return false;
+            }
+
+            foreach (IndependentParameterTypeAssignment independentParameter in this.sampledFunctionParameterType.IndependentParameterType)
+            {
+                if (this.Variable.SampledFunctionParameterParameterAssignementToHubRows.All(x => x.SelectedParameterTypeAssignment != independentParameter))
+                {
+                    return false;
+                }
+            }
+
+            foreach (DependentParameterTypeAssignment dependentParameter in this.sampledFunctionParameterType.DependentParameterType)
+            {
+                if (this.Variable.SampledFunctionParameterParameterAssignementToHubRows.All(x => x.SelectedParameterTypeAssignment != dependentParameter))
+                {
+                    return false;
+                }
+            }
+
+            this.SelectedRowColumnSelection = this.Variable.RowColumnSelectionToHub;
+            this.SampledFunctionParameterParameterAssignementRows.AddRange(this.Variable.SampledFunctionParameterParameterAssignementToHubRows);
+            this.InitializesReactiveListObservables();
+            return true;
+        }
+
+        /// <summary>
+        /// Verify that there is only one
+        /// <see cref="SampledFunctionParameterParameterAssignementRowViewModel.IsTimeTaggedParameter" /> ticked
+        /// </summary>
+        /// <param name="args">The event args</param>
+        private void VerifyTimeTaggedParameter(IReactivePropertyChangedEventArgs<SampledFunctionParameterParameterAssignementRowViewModel> args)
+        {
+            if (args.PropertyName == nameof(SampledFunctionParameterParameterAssignementRowViewModel.IsTimeTaggedParameter) && args.Sender.IsTimeTaggedParameter)
+            {
+                foreach (var sampledFunctionParameterParameterAssignementRowViewModel in this.SampledFunctionParameterParameterAssignementRows)
+                {
+                    if (sampledFunctionParameterParameterAssignementRowViewModel != args.Sender)
+                    {
+                        sampledFunctionParameterParameterAssignementRowViewModel.IsTimeTaggedParameter = false;
+                    }
+                }
+            }
         }
     }
 }
