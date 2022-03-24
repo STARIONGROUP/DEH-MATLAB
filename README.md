@@ -3,7 +3,7 @@
 The DEHP MATLAB is a WPF C# Application that make use of the [Digital Engineering Hub Pathfinder Common library](https://github.com/RHEAGROUP/DEHP-Common)
 Which is available as Nuget package.
 
-The DEHP MATLAB allows users to interactivly exchange data between models built with [MATLAB](https://www.matlab.com/) software and a ECSS-E-TM-10-25A data source.
+The DEHP MATLAB allows users to interactivly exchange data between models built with [MATLAB](https://nl.mathworks.com/products/matlab.html) software and a ECSS-E-TM-10-25A data source.
 
 ## Build status
 
