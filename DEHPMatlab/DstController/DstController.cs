@@ -56,7 +56,9 @@ namespace DEHPMatlab.DstController
     using DEHPMatlab.Services.MappingConfiguration;
     using DEHPMatlab.Services.MatlabConnector;
     using DEHPMatlab.Services.MatlabParser;
+    using DEHPMatlab.ViewModel.Dialogs;
     using DEHPMatlab.ViewModel.Row;
+    using DEHPMatlab.Views.Dialogs;
 
     using NLog;
 
@@ -315,7 +317,7 @@ namespace DEHPMatlab.DstController
             this.MatlabWorkspaceInputRowViewModels.Clear();
 
             var detectedInputsWrapped = this.matlabParser.ParseMatlabScript(scriptPath,
-                out this.loadedScriptPath);
+                out this.loadedScriptPath, out var duplicatedNodes);
 
             List<MatlabWorkspaceRowViewModel> detectedInputs = new();
 
@@ -334,6 +336,12 @@ namespace DEHPMatlab.DstController
             }
 
             this.MatlabWorkspaceInputRowViewModels.AddRange(detectedInputs);
+
+            if (duplicatedNodes.Any())
+            {
+                var duplicatedInputsWarningDialogViewModel = new DuplicatedInputsWarningDialogViewModel(duplicatedNodes);
+                this.navigationService.ShowDxDialog<DuplicatedInputsWarningDialog, DuplicatedInputsWarningDialogViewModel>(duplicatedInputsWarningDialogViewModel);
+            }
 
             this.LoadMapping();
         }

@@ -54,7 +54,9 @@ namespace DEHPMatlab.Tests.DstController
     using DEHPMatlab.Services.MappingConfiguration;
     using DEHPMatlab.Services.MatlabConnector;
     using DEHPMatlab.Services.MatlabParser;
+    using DEHPMatlab.ViewModel.Dialogs;
     using DEHPMatlab.ViewModel.Row;
+    using DEHPMatlab.Views.Dialogs;
 
     using Moq;
 
@@ -130,6 +132,10 @@ namespace DEHPMatlab.Tests.DstController
             this.hubController.Setup(x => x.Write(It.IsAny<ThingTransaction>())).Returns(Task.CompletedTask);
 
             this.navigationService = new Mock<INavigationService>();
+            
+            this.navigationService.Setup(x => 
+                x.ShowDxDialog<DuplicatedInputsWarningDialog, DuplicatedInputsWarningDialogViewModel>(It.IsAny<DuplicatedInputsWarningDialogViewModel>()))
+                .Returns(true);
 
             this.exchangeHistory = new Mock<IExchangeHistoryService>();
 

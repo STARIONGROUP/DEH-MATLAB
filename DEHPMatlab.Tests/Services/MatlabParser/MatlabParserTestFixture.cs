@@ -25,12 +25,10 @@
 namespace DEHPMatlab.Tests.Services.MatlabParser
 {
     using System;
-    using System.Collections.Generic;
     using System.IO;
     using System.Linq;
 
     using DEHPMatlab.Services.MatlabParser;
-    using DEHPMatlab.ViewModel.Row;
 
     using NUnit.Framework;
 
@@ -49,10 +47,12 @@ namespace DEHPMatlab.Tests.Services.MatlabParser
         public void VerifyParsing()
         {
             string modifiedScriptFilePath;
-            Assert.Throws<FileNotFoundException>(()=> this.parser.ParseMatlabScript("anInvalidPath", out modifiedScriptFilePath));
 
-            List<MatlabWorkspaceRowViewModel> matlabWorkspaceViewModels = this.parser.ParseMatlabScript(Path.Combine(TestContext.CurrentContext.TestDirectory,
-                "Resources", "GNC_Lab4.m"), out modifiedScriptFilePath);
+            Assert.Throws<FileNotFoundException>(()=> this.parser.ParseMatlabScript("anInvalidPath", out modifiedScriptFilePath,
+                out _));
+
+            var matlabWorkspaceViewModels = this.parser.ParseMatlabScript(Path.Combine(TestContext.CurrentContext.TestDirectory,
+                "Resources", "GNC_Lab4.m"), out modifiedScriptFilePath, out var duplicatedNodes );
 
             Assert.AreEqual(20, matlabWorkspaceViewModels.Count);
             Assert.IsTrue((double)matlabWorkspaceViewModels.First().ActualValue < 0);
@@ -63,6 +63,9 @@ namespace DEHPMatlab.Tests.Services.MatlabParser
             Assert.AreEqual(4, arrayValue.GetLength(0));
             Assert.AreEqual(3, arrayValue.GetLength(1));
             File.Delete(modifiedScriptFilePath);
+            Assert.IsTrue(matlabWorkspaceViewModels.All(x => x.Name != "A"));
+            Assert.IsTrue(matlabWorkspaceViewModels.All(x => !x.Name.Contains("diplucation")));
+            Assert.AreEqual(2, duplicatedNodes.Count);
         }
     }
 }

@@ -51,11 +51,14 @@ namespace DEHPMatlab.Services.MatlabParser
         /// </summary>
         /// <param name="originalScriptFilePath">The path of original script</param>
         /// <param name="scriptWithoutInputsFilePath">The path of the modified script</param>
+        /// <param name="duplicatedNodes">A collection of duplicated nodes to warn the user of those duplicates</param>
         /// <returns>The list of all <see cref="MatlabWorkspaceRowViewModel" /> found</returns>
-        public List<MatlabWorkspaceRowViewModel> ParseMatlabScript(string originalScriptFilePath, out string scriptWithoutInputsFilePath)
+        public List<MatlabWorkspaceRowViewModel> ParseMatlabScript(string originalScriptFilePath, out string scriptWithoutInputsFilePath, out List<string> duplicatedNodes)
         {
             List<MatlabWorkspaceRowViewModel> rowViewModels = new();
             scriptWithoutInputsFilePath = string.Empty;
+            this.logger.Info($"Parsing from {originalScriptFilePath} started");
+            duplicatedNodes = new List<string>();
 
             try
             {
@@ -63,6 +66,8 @@ namespace DEHPMatlab.Services.MatlabParser
                 var parsedTree = mParser.Parse();
                 List<(SyntaxNode node, TokenKind tokenKind)> inputNodes = new();
                 inputNodes.AddRange(this.DetectInputsSyntaxNodes(parsedTree.Root));
+
+                duplicatedNodes.AddRange(this.DetectDuplicationNodes(inputNodes));
 
                 scriptWithoutInputsFilePath = this.SaveModifiedScript(Path.GetDirectoryName(originalScriptFilePath),
                     this.RemoveInputsFromScript(inputNodes, parsedTree.Root.FullText));
@@ -75,7 +80,34 @@ namespace DEHPMatlab.Services.MatlabParser
                 throw;
             }
 
+            this.logger.Info($"Parsing from {originalScriptFilePath} ended");
             return rowViewModels;
+        }
+
+        /// <summary>
+        /// Detect if there is any duplicated nodes inside the script
+        /// </summary>
+        /// <param name="inputNodes">The input nodes detected</param>
+        /// <returns>The list of duplicated nodes</returns>
+        private IEnumerable<string> DetectDuplicationNodes(List<(SyntaxNode node, TokenKind tokenKind)> inputNodes)
+        {
+            List<(string name, SyntaxNode node)> nodeNames = inputNodes.Select(inputNode =>
+                (inputNode.node.GetChildNodesAndTokens().First().AsNode()!.Text, inputNode.node)).ToList();
+
+            var duplicatedNames = nodeNames.GroupBy(x => x.name).Where(x => x.Skip(1).Any())
+                .Select(x => x.Key).ToList();
+
+            foreach (var (_, syntaxNode) in duplicatedNames.SelectMany(duplicatedName => nodeNames.Where(x => x.name == duplicatedName)))
+            {
+                inputNodes.RemoveAll(x => x.node == syntaxNode);
+            }
+
+            foreach (var duplicatedName in duplicatedNames)
+            {
+                this.logger.Info($"{duplicatedName} removed from detected input, due to duplication");
+            }
+
+            return duplicatedNames;
         }
 
         /// <summary>
@@ -236,23 +268,27 @@ namespace DEHPMatlab.Services.MatlabParser
 
                 var childAsNode = childrenNodes[i].AsNode();
 
-                if (childAsNode is { Kind: TokenKind.AssignmentExpression })
+                switch (childAsNode)
                 {
-                    if (this.CheckIfNodeIsPositiveValueAssignment(childAsNode))
-                    {
+                    case { Kind: TokenKind.ForStatement }:
+                        continue;
+                    case { Kind: TokenKind.AssignmentExpression } when this.CheckIfNodeIsPositiveValueAssignment(childAsNode):
                         inputsSyntaxNodes.Add((childAsNode, TokenKind.NumberLiteralExpression));
-                    }
-                    else if (this.CheckIfNodeIsNegativeValueAssignment(childAsNode))
-                    {
+                        break;
+                    case { Kind: TokenKind.AssignmentExpression } when this.CheckIfNodeIsNegativeValueAssignment(childAsNode):
                         inputsSyntaxNodes.Add((childAsNode, TokenKind.UnaryPrefixOperationExpression));
-                    }
-                    else if (this.CheckIfNodeIsArrayAssignment(childAsNode))
-                    {
+                        break;
+                    case { Kind: TokenKind.AssignmentExpression } when this.CheckIfNodeIsArrayAssignment(childAsNode):
                         inputsSyntaxNodes.Add((childAsNode, TokenKind.ArrayLiteralExpression));
-                    }
-                    else if (this.CheckIfNodeIsUnaryPostfixOperationExpression(childAsNode))
+                        break;
+                    case { Kind: TokenKind.AssignmentExpression }:
                     {
-                        inputsSyntaxNodes.Add((childAsNode, TokenKind.UnaryPostfixOperationExpression));
+                        if (this.CheckIfNodeIsUnaryPostfixOperationExpression(childAsNode))
+                        {
+                            inputsSyntaxNodes.Add((childAsNode, TokenKind.UnaryPostfixOperationExpression));
+                        }
+
+                        break;
                     }
                 }
 
@@ -317,10 +353,11 @@ namespace DEHPMatlab.Services.MatlabParser
         /// <returns>The modified scipt</returns>
         private string RemoveInputsFromScript(IEnumerable<(SyntaxNode node, TokenKind tokenKind)> inputNodes, string originalScript)
         {
-            List<string> inputsText = inputNodes.Select(x => x.node.Text).ToList();
+            var inputsText = inputNodes.Select(x => x.node.Text).ToList();
 
             foreach (var inputText in inputsText)
             {
+                this.logger.Info($"{inputText} removed from script");
                 originalScript = originalScript.Replace($"{inputText};", "\n");
             }
 
