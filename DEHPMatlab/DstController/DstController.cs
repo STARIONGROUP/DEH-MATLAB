@@ -184,7 +184,7 @@ namespace DEHPMatlab.DstController
             this.navigationService = navigationService;
             this.exchangeHistory = exchangeHistory;
             this.mappingConfigurationService = mappingConfiguration;
-
+            
             this.InitializeObservables();
         }
 
@@ -685,8 +685,14 @@ namespace DEHPMatlab.DstController
                         foreach (var parameter in elementBasesToUpdate[element])
                         {
                             var sourceThing = this.CreateOrUpdateTransaction(transaction, (Parameter) parameter, elementClone.Parameter);
-                            var targetThing = this.ParameterVariable[parameter].SelectedCoordinateSystem;
-                            this.CreateOrUpdateRelationShip(sourceThing, targetThing, iterationClone, transaction);
+
+                            var key = this.ParameterVariable.Keys.FirstOrDefault(x => x.Iid == parameter.Iid);
+
+                            if (key != null)
+                            {
+                                var targetThing = this.ParameterVariable[key].SelectedCoordinateSystem;
+                                this.CreateOrUpdateRelationShip(sourceThing, targetThing, iterationClone, transaction);
+                            }
                         }
 
                         break;
@@ -699,8 +705,14 @@ namespace DEHPMatlab.DstController
                         foreach (var parameterOverride in elementBasesToUpdate[element])
                         {
                             var sourceThing = this.CreateOrUpdateTransaction(transaction, (ParameterOverride) parameterOverride, elementUsageClone.ParameterOverride);
-                            var targetThing = this.ParameterVariable[parameterOverride].SelectedCoordinateSystem;
-                            this.CreateOrUpdateRelationShip(sourceThing, targetThing, iterationClone, transaction);
+
+                            var key = this.ParameterVariable.Keys.FirstOrDefault(x => x.Iid == parameterOverride.Iid);
+
+                            if (key != null)
+                            {
+                                var targetThing = this.ParameterVariable[key].SelectedCoordinateSystem;
+                                this.CreateOrUpdateRelationShip(sourceThing, targetThing, iterationClone, transaction);
+                            }
                         }
 
                         break;

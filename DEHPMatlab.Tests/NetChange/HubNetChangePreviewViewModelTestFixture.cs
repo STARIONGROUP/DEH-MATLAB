@@ -36,7 +36,6 @@ namespace DEHPMatlab.Tests.NetChange
     using CDP4Common.Types;
 
     using CDP4Dal;
-    using CDP4Dal.Events;
     using CDP4Dal.Permission;
 
     using DEHPCommon.Events;
@@ -131,6 +130,14 @@ namespace DEHPMatlab.Tests.NetChange
                 Parameter = { this.parameter },
                 Container = this.iteration
             };
+
+            var parameterGroup1 = new ParameterGroup(Guid.NewGuid(), null, null);
+            var parameterGroup2 = new ParameterGroup(Guid.NewGuid(), null, null);
+            parameterGroup2.ContainingGroup = parameterGroup1;
+            parameterGroup1.Container = this.elementDefinition0;
+            this.elementDefinition0.ParameterGroup.Add(parameterGroup1);
+            this.elementDefinition0.ParameterGroup.Add(parameterGroup2);
+            this.elementDefinition0.Parameter.First().Group = parameterGroup2;
 
             this.elementDefinition1 = new ElementDefinition(Guid.NewGuid(), null, null)
             {
@@ -327,8 +334,8 @@ namespace DEHPMatlab.Tests.NetChange
             Assert.AreEqual(3, elements.Count);
             Assert.DoesNotThrow(() => this.viewModel.ComputeValuesWrapper());
 
-            var parameterRowViewModels = elements.First(x => x.Thing.Iid == this.elementDefinition0.Iid)
-                .ContainedRows.OfType<ParameterRowViewModel>();
+            var parameterRowViewModels = elements.First(x => x.Thing.Iid == this.elementDefinition0.Iid).ContainedRows.First().ContainedRows.First()
+                .ContainedRows.OfType<ParameterOrOverrideBaseRowViewModel>();
 
             Assert.AreEqual("2", parameterRowViewModels.First().Value);
 
@@ -404,7 +411,7 @@ namespace DEHPMatlab.Tests.NetChange
             this.parameterVariable[this.parameter] = new MatlabWorkspaceRowViewModel("a", 45);
             Assert.DoesNotThrow(() => this.viewModel.WhenItemSelectedChanges(elementDefinitionRow));
 
-            var parameterRow = elementDefinitionRow.ContainedRows.OfType<ParameterRowViewModel>().First();
+            var parameterRow = elementDefinitionRow.ContainedRows.First().ContainedRows.First().ContainedRows.OfType<ParameterRowViewModel>().First();
             Assert.DoesNotThrow(() => this.viewModel.WhenItemSelectedChanges(parameterRow));
 
             var elementDefinitionRow2 = elements.First(x => x.Thing.Iid == this.elementDefinition2.Iid);
@@ -413,9 +420,6 @@ namespace DEHPMatlab.Tests.NetChange
             
             this.parameterVariable[this.parameterOverride] = new MatlabWorkspaceRowViewModel("a", 45);
             Assert.DoesNotThrow(() => this.viewModel.WhenItemSelectedChanges(elementUsageRow));
-
-            var parameterOverrideRow = elementUsageRow.ContainedRows.OfType<ParameterOverrideRowViewModel>().First();
-            Assert.DoesNotThrow(() => this.viewModel.WhenItemSelectedChanges(parameterOverrideRow));
 
             this.dstMapResult.Clear();
         }
