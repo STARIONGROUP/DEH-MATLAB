@@ -14,7 +14,7 @@
         xmlns:dialogs="clr-namespace:DEHPMatlab.Views.Dialogs"
         Title="Mapping Configuration Dialog" MinWidth="800"
         WindowStartupLocation="CenterScreen"
-        MinHeight="600" mc:Ignorable="d" Topmost="True">
+        MinHeight="600" mc:Ignorable="d" Topmost="True" MaxWidth="1200" MaxHeight="1000">
     <dx:DXDialogWindow.Resources>
         <ResourceDictionary>
             <converters:ListToElementUsageConverter x:Key="ListToElementUsageConverter" />
@@ -23,15 +23,19 @@
     <dxmvvm:Interaction.Behaviors>
         <behaviors:CloseWindowBehavior />
     </dxmvvm:Interaction.Behaviors>
-    
+
     <dx:LoadingDecorator BorderEffect="Default" BorderEffectColor="Blue" IsSplashScreenShown="{Binding IsBusy}" OwnerLock="LoadingContent">
         <Grid Margin="10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="15*"/>
+                <ColumnDefinition Width="11*"/>
+            </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="300"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
-            <GroupBox Grid.Row="0" x:Name="MainContainer" Header="Select Value Set To Map" Margin="10" Padding="10">
+            <GroupBox Grid.Row="0" x:Name="MainContainer" Header="Select Value Set To Map" Margin="10,10,10,10" Padding="10" Grid.ColumnSpan="2">
                 <dxg:TreeListControl ItemsSource="{Binding Variables}" SelectedItem="{Binding SelectedThing}">
                     <dxg:TreeListControl.View>
                         <dxg:TreeListView Name="View" AllowEditing="False" AutoWidth="False" ExpandCollapseNodesOnNavigation="True" ExpandStateFieldName="IsExpanded" FixedLineWidth="0" HorizontalScrollbarVisibility="Auto"
@@ -86,7 +90,7 @@
                     </dxg:TreeListControl.Columns>
                 </dxg:TreeListControl>
             </GroupBox>
-            <GroupBox Grid.Row="1" Header="Select Value Set" Margin="10" Padding="10">
+            <GroupBox Grid.Row="1" Header="Select Value Set" Margin="10,10,10,10" Padding="10" Grid.ColumnSpan="2">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -118,7 +122,7 @@
                                          SelectedItems="{Binding SelectedThing.SelectedValues, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                          SelectionMode="Row"
                                          ToolTip="The representation of all time tagged values" AutoGenerateColumns="None">
-                            
+
                             <dxg:GridControl.View>
                                 <dxg:TableView HorizontalAlignment="Stretch" VerticalAlignment="Stretch" AllowColumnMoving="False"  
                                                AllowGrouping="False" IsDetailButtonVisibleBinding="{x:Null}" RetainSelectionOnClickOutsideCheckBoxSelector="True" 
@@ -126,16 +130,16 @@
                                                ShowGroupPanel="False" VerticalScrollbarVisibility="Auto"
                                                AllowEditing="False" AllowSorting="False" AllowFilterEditor="False"
                                                HorizontalScrollbarVisibility="Auto" CheckBoxSelectorColumnWidth="45">
-                                <dxg:TableView.CheckBoxSelectorColumnHeaderTemplate>
-                                    <DataTemplate>
-                                        <dx:MeasurePixelSnapper HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-                                            <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-                                                <CheckBox Command="{Binding RelativeSource={RelativeSource FindAncestor, 
+                                    <dxg:TableView.CheckBoxSelectorColumnHeaderTemplate>
+                                        <DataTemplate>
+                                            <dx:MeasurePixelSnapper HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                                                <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                                                    <CheckBox Command="{Binding RelativeSource={RelativeSource FindAncestor, 
                                                             AncestorType={x:Type dialogs:DstMappingConfigurationDialog}},
                                                             Path=DataContext.SelectAllValuesCommand}" />
-                                            </Grid>
-                                        </dx:MeasurePixelSnapper>
-                                    </DataTemplate>
+                                                </Grid>
+                                            </dx:MeasurePixelSnapper>
+                                        </DataTemplate>
                                     </dxg:TableView.CheckBoxSelectorColumnHeaderTemplate>
                                 </dxg:TableView>
                             </dxg:GridControl.View>
@@ -187,12 +191,14 @@
                         </dxe:ComboBoxEdit>
                         <Label Grid.Row="2" Grid.Column="0" Content="Update Element Usages:" />
                         <dxe:ComboBoxEdit Grid.Row="2" Grid.Column="1" Margin="2" AllowNullInput="True" AutoComplete="True" ClearSelectionOnBackspace="True" DisplayMember="ElementDefinition.ShortName"
-                                                      EditValue="{Binding SelectedThing.SelectedElementUsages, Converter={StaticResource ListToElementUsageConverter}}"
-                                                      ItemsSource="{Binding AvailableElementUsages}" 
+                                                      SelectedIndex="{Binding ElementUsageSelectedIndex}"
+                                                        EditValue="{Binding SelectedThing.SelectedElementUsages, Converter={StaticResource ListToElementUsageConverter}}"
+                                                      ItemsSource="{Binding AvailableElementUsages}"
+                                                      AllowUpdateTwoWayBoundPropertiesOnSynchronization="True"
                                                       ToolTip="Select one or more ElementUsage. &#x0a;When selecting ElementUsages of one ElementDefinition, &#x0a;All the parameterOverrides of the selected Parameter will be updated"
                                                       NullText="Select Element Usages" NullValueButtonPlacement="EditBox" ShowNullTextForEmptyValue="True" ValidateOnTextInput="False">
                             <dxe:ComboBoxEdit.StyleSettings>
-                                <dxe:CheckedTokenComboBoxStyleSettings AllowEditTokens="False" NewTokenPosition="Far" />
+                                <dxe:CheckedTokenComboBoxStyleSettings AllowEditTokens="False" NewTokenPosition="Far"/>
                             </dxe:ComboBoxEdit.StyleSettings>
                         </dxe:ComboBoxEdit>
                         <Grid HorizontalAlignment="Stretch" Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2">
@@ -262,18 +268,18 @@
                                               ValueMember="Name" AllowNullInput="True" 
                                               ToolTip="Select an Option when mapping to an option dependant Parameter"/>
                         <Label Grid.Row="8" Grid.Column="0" Content="Coordinate System:" />
-                        <dxe:ComboBoxEdit Grid.Row="8" Grid.Column="1" Margin="2" DisplayMember="UserFriendlyName"
+                        <dxe:ComboBoxEdit Grid.Row="8" Grid.Column="1" Margin="2" DisplayMember="UserFriendlyName" AutoComplete="True" 
+                                          ClearSelectionOnBackspace="True" ApplyItemTemplateToSelectedItem="True"
                                           ItemsSource="{Binding AvailableCoordinateSystems}" NullText="Select a parameter"
-                                          ClearSelectionOnBackspace="False"
                                           SelectedItem="{Binding SelectedThing.SelectedCoordinateSystem}" NullValueButtonPlacement="EditBox"
                                           ShowNullTextForEmptyValue="True" ValidateOnTextInput="False" 
                                           AllowNullInput="True" ValueMember="Iid"
                                           ToolTip="Select a Parameter for linking a Coordinate System"/>
                     </Grid>
                 </Grid>
-                
+
             </GroupBox>
-            <Grid Grid.Row="2">
+            <Grid Grid.Row="1" Grid.ColumnSpan="2" Margin="0,300,0,0" Grid.RowSpan="2">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition />
                     <ColumnDefinition Width="Auto" />

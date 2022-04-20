@@ -139,7 +139,7 @@
                                     <ColumnDefinition Width="1267*"/>
                                     <ColumnDefinition Width="146*" />
                                 </Grid.ColumnDefinitions>
-                                <dx:DXTabControl Grid.ColumnSpan="3" Margin="0,0,146,-0.2">
+                                <dx:DXTabControl Grid.ColumnSpan="2" Margin="0,0,0,-0.2">
                                     <dx:DXTabItem>
                                         <dx:DXTabItem.Header>
                                             <TextBlock Text="Mapping" />

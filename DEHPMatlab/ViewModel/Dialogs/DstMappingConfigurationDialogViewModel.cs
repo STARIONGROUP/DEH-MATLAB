@@ -77,6 +77,11 @@ namespace DEHPMatlab.ViewModel.Dialogs
         private bool isDialogOpened;
 
         /// <summary>
+        /// Backing field for <see cref="ElementUsageSelectedIndex"/>
+        /// </summary>
+        private int elementUsageSelectedIndex;
+
+        /// <summary>
         /// Initializes a new <see cref="DstMappingConfigurationDialogViewModel" />
         /// </summary>
         /// <param name="hubController">The <see cref="IHubController" /></param>
@@ -105,6 +110,15 @@ namespace DEHPMatlab.ViewModel.Dialogs
         {
             get => this.canContinue;
             set => this.RaiseAndSetIfChanged(ref this.canContinue, value);
+        }
+
+        /// <summary>
+        /// The index of the selected index inside the <see cref="MatlabWorkspaceRowViewModel.SelectedElementUsages" />
+        /// </summary>
+        public int ElementUsageSelectedIndex
+        {
+            get => this.elementUsageSelectedIndex;
+            set => this.RaiseAndSetIfChanged(ref this.elementUsageSelectedIndex, value);
         }
 
         /// <summary>
@@ -293,7 +307,7 @@ namespace DEHPMatlab.ViewModel.Dialogs
             {
                 var elementUsages = this.AvailableElementDefinitions
                     .SelectMany(d => d.ContainedElement)
-                    .Where(u => u.ElementDefinition.Iid == elementDefinition.Iid);
+                    .Where(u => u.ElementDefinition.Iid == elementDefinition.Iid && u.ParameterOverride.Any());
 
                 if (this.SelectedThing.SelectedOption is { } option)
                 {
@@ -318,6 +332,11 @@ namespace DEHPMatlab.ViewModel.Dialogs
 
             var parameters = element.Parameter.ToList();
 
+            foreach (var elementUsage in this.SelectedThing?.SelectedElementUsages)
+            {
+                parameters.RemoveAll(x => elementUsage.ParameterOverride.All(parameterOverride => parameterOverride.Parameter.Iid != x.Iid));
+            }
+
             if (element.Iid != Guid.Empty)
             {
                 parameters = parameters.Where(x => this.HubController
@@ -333,6 +352,11 @@ namespace DEHPMatlab.ViewModel.Dialogs
         public void UpdateAvailableParameterType()
         {
             this.AvailableParameterTypes.Clear();
+
+            if (this.SelectedThing?.SelectedElementUsages.Count != 0)
+            {
+                return;
+            }
 
             var isAnArray = this.SelectedThing?.ArrayValue != null;
 
@@ -370,8 +394,13 @@ namespace DEHPMatlab.ViewModel.Dialogs
         /// </summary>
         public void UpdateAvailableOptions()
         {
-            this.AvailableOptions.AddRange(this.HubController.OpenIteration.Option
-                .Where(x => this.AvailableOptions.All(o => o.Iid != x.Iid)));
+            this.AvailableOptions.Clear();
+
+            if (this.SelectedThing?.SelectedParameter?.IsOptionDependent == true)
+            {
+                this.AvailableOptions.AddRange(this.HubController.OpenIteration.Option
+                    .Where(x => this.AvailableOptions.All(o => o.Iid != x.Iid)));
+            }
         }
 
         /// <summary>
@@ -472,6 +501,15 @@ namespace DEHPMatlab.ViewModel.Dialogs
                 });
             });
 
+            this.disposables.Add(this.WhenAnyValue(x => x.ElementUsageSelectedIndex)
+                .ObserveOn(RxApp.MainThreadScheduler)
+                .Subscribe(_ => this.UpdateHubFields(() =>
+                {
+                    this.UpdateAvailableParameters();
+                    this.UpdateAvailableParameterType();
+                    this.CheckCanExecute();
+                })));
+
             this.disposables.Add(this.WhenAnyValue(x => x.SelectedThing.SelectedElementDefinition)
                 .ObserveOn(RxApp.MainThreadScheduler)
                 .Subscribe(_ => this.UpdateHubFields(() =>
@@ -499,6 +537,7 @@ namespace DEHPMatlab.ViewModel.Dialogs
                 {
                     this.UpdateSelectedParameterType();
                     this.UpdateAvailableActualFiniteStates();
+                    this.UpdateAvailableOptions();
                     this.CheckCanExecute();
                 })));
 
@@ -554,7 +593,7 @@ namespace DEHPMatlab.ViewModel.Dialogs
                 return;
             }
 
-            var coordinateSystem = this.AvailableCoordinateSystems.FirstOrDefault(x => x.Iid == this.SelectedThing.SelectedCoordinateSystem.Iid);
+            var coordinateSystem = this.AvailableCoordinateSystems.FirstOrDefault(x => x.Iid == this.SelectedThing.SelectedCoordinateSystem?.Iid);
 
             if (coordinateSystem != null)
             {

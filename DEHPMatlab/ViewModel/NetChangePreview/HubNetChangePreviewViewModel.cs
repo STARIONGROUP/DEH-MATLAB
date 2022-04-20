@@ -154,9 +154,7 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
 
                     if (parameterRow.ContainerViewModel is ElementDefinitionRowViewModel definitionRowViewModel)
                     {
-                        definitionRowViewModel.IsSelectedForTransfer = definitionRowViewModel.ContainedRows
-                            .OfType<ParameterOrOverrideBaseRowViewModel>()
-                            .Any(x => x.IsSelectedForTransfer);
+                        definitionRowViewModel.IsSelectedForTransfer = this.IsAnyChildrenSelectedForTransfer(definitionRowViewModel);
                     }
 
                     CDPMessageBus.Current.SendMessage(new DifferenceEvent<ParameterOrOverrideBase>(parameterRow.IsSelectedForTransfer, parameterRow.Thing));
@@ -171,9 +169,7 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
 
                     if (parameterOverrideRow.ContainerViewModel is ElementUsageRowViewModel definitionRowViewModel)
                     {
-                        definitionRowViewModel.IsSelectedForTransfer = definitionRowViewModel.ContainedRows
-                            .OfType<ParameterOrOverrideBaseRowViewModel>()
-                            .Any(x => x.IsSelectedForTransfer);
+                        definitionRowViewModel.IsSelectedForTransfer = this.IsAnyChildrenSelectedForTransfer(definitionRowViewModel);
                     }
 
                     this.AddOrRemoveToSelectedThingsToTransfer(parameterOverrideRow);
@@ -183,7 +179,7 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
                 {
                     elementDefinitionRow.IsSelectedForTransfer = !elementDefinitionRow.IsSelectedForTransfer;
 
-                    foreach (var parameter in elementDefinitionRow.ContainedRows.OfType<ParameterRowViewModel>().Where(this.IsThingTransferable))
+                    foreach (var parameter in this.GetAllTransferableRows(elementDefinitionRow))
                     {
                         parameter.IsSelectedForTransfer = elementDefinitionRow.IsSelectedForTransfer;
                     }
@@ -205,7 +201,7 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
                         this.AddOrRemoveToSelectedThingsToTransfer(definitionRowViewModel);
                     }
 
-                    foreach (var parameterOverride in elementUsageRow.ContainedRows.OfType<ParameterOverrideRowViewModel>().Where(this.IsThingTransferable))
+                    foreach (var parameterOverride in this.GetAllTransferableRows(elementUsageRow))
                     {
                         parameterOverride.IsSelectedForTransfer = elementUsageRow.IsSelectedForTransfer;
                     }
@@ -214,6 +210,18 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
                     break;
                 }
             }
+        }
+
+        /// <summary>
+        /// Calls the <see cref="ComputeValues" /> with some household
+        /// </summary>
+        public void ComputeValuesWrapper()
+        {
+            this.IsBusy = true;
+            var isExpanded = this.Things.First().IsExpanded;
+            this.ComputeValues();
+            this.Things.First().IsExpanded = isExpanded;
+            this.IsBusy = false;
         }
 
         /// <summary>
@@ -241,10 +249,7 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
 
                     definitionViewModel.IsSelectedForTransfer = areSelected;
 
-                    foreach (var parameterRow in definitionViewModel.ContainedRows.OfType<ParameterRowViewModel>())
-                    {
-                        parameterRow.IsSelectedForTransfer = areSelected && this.IsThingTransferable(parameterRow);
-                    }
+                    this.AddOrRemoveToSelectedThingsToTransfer(areSelected, definitionViewModel);
 
                     this.AddOrRemoveToSelectedThingsToTransfer(definitionViewModel);
                     break;
@@ -260,15 +265,48 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
 
                     usageViewModel.IsSelectedForTransfer = areSelected;
 
-                    foreach (var parameterRow in usageViewModel.ContainedRows.OfType<ParameterOverrideRowViewModel>())
-                    {
-                        parameterRow.IsSelectedForTransfer = areSelected && this.IsThingTransferable(parameterRow);
-                    }
+                    this.AddOrRemoveToSelectedThingsToTransfer(areSelected, usageViewModel);
 
                     this.AddOrRemoveToSelectedThingsToTransfer(usageViewModel);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException($"{nameof(element)} is of type {element.ClassKind} which is unsuported at this point.");
+            }
+        }
+
+        /// <summary>
+        /// Adds or removes the all transferable rows contained inside the <see cref="IHaveContainedRows"/>
+        /// </summary>
+        /// <param name="areSelected">A value indicating whether to selected the element</param>
+        /// <param name="containerRows">The <see cref="IHaveContainedRows"/></param>
+        private void AddOrRemoveToSelectedThingsToTransfer(bool areSelected, IHaveContainedRows containerRows)
+        {
+            foreach (var parameterRow in containerRows.ContainedRows.OfType<ParameterOrOverrideBaseRowViewModel>())
+            {
+                parameterRow.IsSelectedForTransfer = areSelected && this.IsThingTransferable(parameterRow);
+            }
+
+            foreach (var parameterGroup in containerRows.ContainedRows.OfType<ParameterGroupRowViewModel>())
+            {
+                this.AddOrRemoveToSelectedThingsToTransfer(parameterGroup, areSelected);
+            }
+        }
+
+        /// <summary>
+        /// Adds or removed the selected parameters contained inside the <see cref="ParameterGroupRowViewModel" />
+        /// </summary>
+        /// <param name="parameterGroup">TThe <see cref="ParameterGroupRowViewModel" /></param>
+        /// <param name="areSelected">A value indicating whether to selected the element</param>
+        private void AddOrRemoveToSelectedThingsToTransfer(ParameterGroupRowViewModel parameterGroup, bool areSelected)
+        {
+            foreach (var parameterRow in parameterGroup.ContainedRows.OfType<ParameterOrOverrideBaseRowViewModel>())
+            {
+                parameterRow.IsSelectedForTransfer = areSelected && this.IsThingTransferable(parameterRow);
+            }
+
+            foreach (var subParameterGroup in parameterGroup.ContainedRows.OfType<ParameterGroupRowViewModel>())
+            {
+                this.AddOrRemoveToSelectedThingsToTransfer(subParameterGroup, areSelected);
             }
         }
 
@@ -280,7 +318,7 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
         {
             (parameterRow.ContainerViewModel switch
             {
-                RowViewModelBase<ElementDefinition> definitionRowViewModel => (Action) (() =>
+                RowViewModelBase<ElementDefinition> definitionRowViewModel => (Action)(() =>
                     this.AddOrRemoveToSelectedThingsToTransfer(definitionRowViewModel)),
                 RowViewModelBase<ElementUsage> usageRowViewModelBase => () =>
                     this.AddOrRemoveToSelectedThingsToTransfer(usageRowViewModelBase),
@@ -338,8 +376,7 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
         private void AddOrRemoveToSelectedThingsToTransfer<TParameter>(IHaveContainedRows parentViewModel,
             ContainerList<TParameter> parameters, List<TParameter> parametersToAdd) where TParameter : ParameterOrOverrideBase
         {
-            var selectedParameters = parentViewModel.ContainedRows
-                .OfType<ParameterOrOverrideBaseRowViewModel>()
+            var selectedParameters = this.GetAllParameterOrOverrideBaseRowViewModels(parentViewModel)
                 .Where(x => x.IsSelectedForTransfer)
                 .Select(x => x.Thing as TParameter)
                 .Where(x => x is { })
@@ -376,7 +413,7 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
                     elementDefinition.Parameter.Remove(parameter);
                 }
 
-                elementDefinition.Parameter.Add((Parameter) parameterOrOverride);
+                elementDefinition.Parameter.Add((Parameter)parameterOrOverride);
             }
 
             else if (updatedElement is ElementUsage elementUsage)
@@ -436,6 +473,16 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
                     parameterRow.ClearRowHighlighting();
 
                     break;
+
+                case ParameterGroupRowViewModel parameterGroup:
+                    parameterGroup.ClearRowHighlighting();
+
+                    foreach (var parameterGroupContainedRow in parameterGroup.ContainedRows)
+                    {
+                        this.ClearRowAndChildren(parameterGroupContainedRow);
+                    }
+
+                    break;
             }
         }
 
@@ -444,24 +491,12 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
         /// </summary>
         private void ClearTree()
         {
-            foreach (IViewModelBase<ElementBase> hightlightedRow in this.highlightedRows)
+            foreach (var hightlightedRow in this.highlightedRows)
             {
                 this.ClearRowAndChildren(hightlightedRow);
             }
 
             this.highlightedRows.Clear();
-        }
-
-        /// <summary>
-        /// Calls the <see cref="ComputeValues" /> with some household
-        /// </summary>
-        public void ComputeValuesWrapper()
-        {
-            this.IsBusy = true;
-            var isExpanded = this.Things.First().IsExpanded;
-            this.ComputeValues();
-            this.Things.First().IsExpanded = isExpanded;
-            this.IsBusy = false;
         }
 
         /// <summary>
@@ -484,6 +519,31 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
                 result.AddRange(elementDefinitionRow.ContainedRows
                     .OfType<IRowViewModelBase<ParameterOrOverrideBase>>()
                     .Where(parameterRow => VerifyRowContainsTheParameter(parameter, parameterRow)));
+
+                result.AddRange(this.FindInParameterGroups(elementDefinitionRow.ContainedRows
+                    .OfType<ParameterGroupRowViewModel>(), parameter));
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Search inside all <see cref="ParameterGroupRowViewModel" /> if it contains the <see cref="ParameterBase" />
+        /// </summary>
+        /// <param name="parameterGroups">A collection of <see cref="ParameterGroupRowViewModel" /></param>
+        /// <param name="parameter">the <see cref="ParameterBase" /> to find</param>
+        /// <returns>A collection of <see cref="IRowViewModelBase{T}" /></returns>
+        private IEnumerable<IRowViewModelBase<ParameterOrOverrideBase>> FindInParameterGroups(IEnumerable<ParameterGroupRowViewModel> parameterGroups,
+            ParameterBase parameter)
+        {
+            var result = new List<IRowViewModelBase<ParameterOrOverrideBase>>();
+
+            foreach (var parameterGroup in parameterGroups.ToList())
+            {
+                result.AddRange(parameterGroup.ContainedRows.OfType<IRowViewModelBase<ParameterOrOverrideBase>>()
+                    .Where(parameterRow => VerifyRowContainsTheParameter(parameter, parameterRow)));
+
+                result.AddRange(this.FindInParameterGroups(parameterGroup.ContainedRows.OfType<ParameterGroupRowViewModel>(), parameter));
             }
 
             return result;
@@ -532,12 +592,12 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
             CDPMessageBus.Current.Listen<SessionEvent>(this.HubController.Session)
                 .Where(x => x.Status == SessionStatus.EndUpdate && this.HubController.OpenIteration != null)
                 .ObserveOn(RxApp.MainThreadScheduler)
-                .Subscribe(_ =>  this.ComputeValuesWrapper());
+                .Subscribe(_ => this.ComputeValuesWrapper());
 
             CDPMessageBus.Current.Listen<SessionEvent>(this.HubController.Session)
                 .Where(x => x.Status == SessionStatus.EndUpdate)
                 .ObserveOn(RxApp.MainThreadScheduler)
-                .Subscribe(_ =>  this.UpdateTreeBasedOnSelectionHandler(this.previousSelection));
+                .Subscribe(_ => this.UpdateTreeBasedOnSelectionHandler(this.previousSelection));
 
             CDPMessageBus.Current.Listen<UpdateObjectBrowserTreeEvent>()
                 .ObserveOn(RxApp.MainThreadScheduler)
@@ -600,7 +660,7 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
 
             foreach (var parameterOrOverrideBase in allParameters)
             {
-                var container = (ElementBase) parameterOrOverrideBase.Container;
+                var container = (ElementBase)parameterOrOverrideBase.Container;
 
                 var alreadyPresent = elementBases.Keys.FirstOrDefault(x => x.Iid == container.Iid);
 
@@ -616,11 +676,11 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
 
             foreach (var elementBase in elementBases)
             {
-                var elementClone = elementBase.Key.Clone(true);
+                var elementClone = elementBase.Key.Clone(false);
 
                 foreach (var parameterOrOverrideBase in elementBase.Value)
                 {
-                    this.AddOrReplaceParameter(elementClone, parameterOrOverrideBase);
+                    this.AddOrReplaceParameter(elementClone, parameterOrOverrideBase.Clone(false));
                 }
 
                 var elementRow = this.VerifyElementIsInTheTree(elementBase.Value.First());
@@ -690,7 +750,7 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
 
             var elementDefinitionRow = iterationRow.ContainedRows.OfType<ElementDefinitionRowViewModel>()
                 .FirstOrDefault(e => e.Thing.Iid == parameterOrOverrideBase.Container.Iid
-                                     && e.Thing.Name == ((INamedThing) parameterOrOverrideBase.Container).Name);
+                                     && e.Thing.Name == ((INamedThing)parameterOrOverrideBase.Container).Name);
 
             if (elementDefinitionRow is null)
             {
@@ -721,6 +781,73 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
                                          && parameter.ParameterType.Iid == parameterRow.Thing.ParameterType.Iid;
 
             return containerIsTheRightOne && parameterIsTheRightOne;
+        }
+
+        /// <summary>
+        /// Verifies in all children of this row if there is any row selected for transfer
+        /// </summary>
+        /// <param name="row">The row to check the children</param>
+        /// <returns>True if any of the children is selected</returns>
+        private bool IsAnyChildrenSelectedForTransfer(IHaveContainedRows row)
+        {
+            foreach (var children in row.ContainedRows)
+            {
+                switch (children)
+                {
+                    case ParameterGroupRowViewModel parameterGroupRowViewModel when this.IsAnyChildrenSelectedForTransfer(parameterGroupRowViewModel):
+                    case ParameterOrOverrideBaseRowViewModel { IsSelectedForTransfer: true }:
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Retrieves all transferable rows contained inside a row
+        /// </summary>
+        /// <param name="row">The row</param>
+        /// <returns>A collection of transferable row</returns>
+        private List<ParameterOrOverrideBaseRowViewModel> GetAllTransferableRows(IHaveContainedRows row)
+        {
+            var transferableRows = new List<ParameterOrOverrideBaseRowViewModel>();
+
+            foreach (var containedRow in row.ContainedRows)
+            {
+                if (containedRow is ParameterGroupRowViewModel parameterGroup)
+                {
+                    transferableRows.AddRange(this.GetAllTransferableRows(parameterGroup));
+                }
+                else if (containedRow is ParameterOrOverrideBaseRowViewModel parameterOrOverrideBaseRowViewModel
+                         && this.IsThingTransferable(parameterOrOverrideBaseRowViewModel))
+                {
+                    transferableRows.Add(parameterOrOverrideBaseRowViewModel);
+                }
+            }
+
+            return transferableRows;
+        }
+
+        /// <summary>
+        /// Retrieves all contained rows of type <see cref="ParameterOrOverrideBaseRowViewModel" />
+        /// </summary>
+        /// <param name="row">The row to get the contained rows</param>
+        /// <returns>A collection of <see cref="ParameterOrOverrideBaseRowViewModel" /></returns>
+        private List<ParameterOrOverrideBaseRowViewModel> GetAllParameterOrOverrideBaseRowViewModels(IHaveContainedRows row)
+        {
+            var transferableRows = new List<ParameterOrOverrideBaseRowViewModel>();
+
+            transferableRows.AddRange(row.ContainedRows.OfType<ParameterOrOverrideBaseRowViewModel>());
+
+            foreach (var containedRow in row.ContainedRows)
+            {
+                if (containedRow is ParameterGroupRowViewModel parameterGroup)
+                {
+                    transferableRows.AddRange(this.GetAllTransferableRows(parameterGroup));
+                }
+            }
+
+            return transferableRows;
         }
     }
 }
