@@ -302,8 +302,8 @@ namespace DEHPMatlab.Services.MappingConfiguration
                     ElementDefinition elementDefinition => () => element.SelectedElementDefinition = elementDefinition.Clone(true),
                     ElementUsage elementUsage => () => element.SelectedElementUsages.Add(elementUsage.Clone(true)),
                     Parameter parameter => () => element.SelectedParameter = parameter.Clone(true),
-                    Option option => () => element.SelectedOption = option.Clone(false),
-                    ActualFiniteState state => () => element.SelectedActualFiniteState = state.Clone(false),
+                    Option option => () => element.SelectedOption = option,
+                    ActualFiniteState state => () => element.SelectedActualFiniteState = state,
                     _ => null
                 };
 

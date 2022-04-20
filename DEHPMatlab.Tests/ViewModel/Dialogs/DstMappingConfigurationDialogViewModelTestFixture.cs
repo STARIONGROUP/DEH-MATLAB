@@ -356,7 +356,11 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
         {
             this.iteration.Option.Add(new Option());
             Assert.DoesNotThrow(() => this.viewModel.UpdateAvailableOptions());
-            Assert.AreEqual(1, this.viewModel.AvailableOptions.Count);
+            Assert.AreEqual(0, this.viewModel.AvailableOptions.Count);
+            this.viewModel.SelectedThing = new MatlabWorkspaceRowViewModel("a", 45);
+            this.viewModel.SelectedThing.SelectedParameter = new Parameter(){IsOptionDependent = true};
+            Assert.DoesNotThrow(() => this.viewModel.UpdateAvailableOptions());
+            Assert.AreEqual(2, this.viewModel.AvailableOptions.Count);
         }
 
         [Test]
@@ -436,9 +440,15 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
 
             session.Setup(x => x.PermissionService).Returns(permissionService.Object);
             this.hubController.Setup(x => x.Session).Returns(session.Object);
-
+            
+            this.viewModel.AvailableElementDefinitions.Add(element0);
             this.viewModel.SelectedThing = variable;
             Assert.DoesNotThrow(() => this.viewModel.UpdateAvailableElementsUsages());
+            Assert.IsNotEmpty(this.viewModel.AvailableElementUsages);
+            Assert.AreEqual(3, this.viewModel.AvailableParameters.Count);
+            this.viewModel.SelectedThing.SelectedElementUsages.Add(element0.ContainedElement.First());
+            this.viewModel.ElementUsageSelectedIndex = 1;
+            Assert.AreEqual(1, this.viewModel.AvailableParameters.Count);
         }
 
         [Test]
