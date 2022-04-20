@@ -184,7 +184,7 @@ namespace DEHPMatlab.DstController
             this.navigationService = navigationService;
             this.exchangeHistory = exchangeHistory;
             this.mappingConfigurationService = mappingConfiguration;
-            
+
             this.InitializeObservables();
         }
 
@@ -684,15 +684,8 @@ namespace DEHPMatlab.DstController
 
                         foreach (var parameter in elementBasesToUpdate[element])
                         {
-                            var sourceThing = this.CreateOrUpdateTransaction(transaction, (Parameter) parameter, elementClone.Parameter);
-
-                            var key = this.ParameterVariable.Keys.FirstOrDefault(x => x.Iid == parameter.Iid);
-
-                            if (key != null)
-                            {
-                                var targetThing = this.ParameterVariable[key].SelectedCoordinateSystem;
-                                this.CreateOrUpdateRelationShip(sourceThing, targetThing, iterationClone, transaction);
-                            }
+                            var sourceThing = this.CreateOrUpdateTransaction(transaction, (Parameter)parameter, elementClone.Parameter);
+                            this.VerifyRelationShip(transaction, iterationClone, parameter, sourceThing);
                         }
 
                         break;
@@ -704,20 +697,33 @@ namespace DEHPMatlab.DstController
 
                         foreach (var parameterOverride in elementBasesToUpdate[element])
                         {
-                            var sourceThing = this.CreateOrUpdateTransaction(transaction, (ParameterOverride) parameterOverride, elementUsageClone.ParameterOverride);
-
-                            var key = this.ParameterVariable.Keys.FirstOrDefault(x => x.Iid == parameterOverride.Iid);
-
-                            if (key != null)
-                            {
-                                var targetThing = this.ParameterVariable[key].SelectedCoordinateSystem;
-                                this.CreateOrUpdateRelationShip(sourceThing, targetThing, iterationClone, transaction);
-                            }
+                            var sourceThing = this.CreateOrUpdateTransaction(transaction, (ParameterOverride)parameterOverride, elementUsageClone.ParameterOverride);
+                            this.VerifyRelationShip(transaction, iterationClone, parameterOverride, sourceThing);
                         }
 
                         break;
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// Verifies if the given <see cref="ParameterOrOverrideBase" /> has a Coordinate System linked and create the
+        /// <see cref="Relationship" /> if applicable
+        /// </summary>
+        /// <param name="transaction">The <see cref="IThingTransaction" /></param>
+        /// <param name="iterationClone">The <see cref="Iteration" /></param>
+        /// <param name="parameter">The <see cref="ParameterOrOverrideBase" /></param>
+        /// <param name="sourceThing">The source of the <see cref="Relationship" /></param>
+        private void VerifyRelationShip(IThingTransaction transaction, Iteration iterationClone,
+            ParameterOrOverrideBase parameter, Thing sourceThing)
+        {
+            var key = this.ParameterVariable.Keys.FirstOrDefault(x => x.Iid == parameter.Iid);
+
+            if (key != null)
+            {
+                var targetThing = this.ParameterVariable[key].SelectedCoordinateSystem;
+                this.CreateOrUpdateRelationShip(sourceThing, targetThing, iterationClone, transaction);
             }
         }
 
@@ -798,7 +804,7 @@ namespace DEHPMatlab.DstController
                 clone.Iid = Guid.NewGuid();
                 thing.Iid = clone.Iid;
                 transaction.Create(clone);
-                containerClone.Add((TThing) clone);
+                containerClone.Add((TThing)clone);
                 this.exchangeHistory.Append(clone, ChangeKind.Create);
             }
             else
@@ -807,7 +813,7 @@ namespace DEHPMatlab.DstController
                 this.exchangeHistory.Append(clone, ChangeKind.Update);
             }
 
-            return (TThing) clone;
+            return (TThing)clone;
         }
 
         /// <summary>
@@ -1119,12 +1125,12 @@ namespace DEHPMatlab.DstController
 
                 try
                 {
-                    ((Array) parentRowViewModel.ArrayValue).SetValue(sender.ActualValue, rowIndex, columnIndex);
+                    ((Array)parentRowViewModel.ArrayValue).SetValue(sender.ActualValue, rowIndex, columnIndex);
                 }
                 catch (Exception)
                 {
                     this.statusBar.Append($"The type of the value '{sender.ActualValue}' is not compatible", StatusBarMessageSeverity.Warning);
-                    sender.ActualValue = ((Array) parentRowViewModel.ArrayValue).GetValue(rowIndex, columnIndex);
+                    sender.ActualValue = ((Array)parentRowViewModel.ArrayValue).GetValue(rowIndex, columnIndex);
                 }
 
                 this.matlabConnector.PutVariable(parentRowViewModel);

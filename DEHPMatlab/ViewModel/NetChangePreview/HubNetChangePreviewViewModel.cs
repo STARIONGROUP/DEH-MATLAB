@@ -249,15 +249,7 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
 
                     definitionViewModel.IsSelectedForTransfer = areSelected;
 
-                    foreach (var parameterRow in definitionViewModel.ContainedRows.OfType<ParameterRowViewModel>())
-                    {
-                        parameterRow.IsSelectedForTransfer = areSelected && this.IsThingTransferable(parameterRow);
-                    }
-
-                    foreach (var parameterGroup in definitionViewModel.ContainedRows.OfType<ParameterGroupRowViewModel>())
-                    {
-                        this.AddOrRemoveToSelectedThingsToTransfer(parameterGroup, areSelected);
-                    }
+                    this.AddOrRemoveToSelectedThingsToTransfer(areSelected, definitionViewModel);
 
                     this.AddOrRemoveToSelectedThingsToTransfer(definitionViewModel);
                     break;
@@ -273,20 +265,30 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
 
                     usageViewModel.IsSelectedForTransfer = areSelected;
 
-                    foreach (var parameterRow in usageViewModel.ContainedRows.OfType<ParameterOverrideRowViewModel>())
-                    {
-                        parameterRow.IsSelectedForTransfer = areSelected && this.IsThingTransferable(parameterRow);
-                    }
-
-                    foreach (var parameterGroup in usageViewModel.ContainedRows.OfType<ParameterGroupRowViewModel>())
-                    {
-                        this.AddOrRemoveToSelectedThingsToTransfer(parameterGroup, areSelected);
-                    }
+                    this.AddOrRemoveToSelectedThingsToTransfer(areSelected, usageViewModel);
 
                     this.AddOrRemoveToSelectedThingsToTransfer(usageViewModel);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException($"{nameof(element)} is of type {element.ClassKind} which is unsuported at this point.");
+            }
+        }
+
+        /// <summary>
+        /// Adds or removes the all transferable rows contained inside the <see cref="IHaveContainedRows"/>
+        /// </summary>
+        /// <param name="areSelected">A value indicating whether to selected the element</param>
+        /// <param name="containerRows">The <see cref="IHaveContainedRows"/></param>
+        private void AddOrRemoveToSelectedThingsToTransfer(bool areSelected, IHaveContainedRows containerRows)
+        {
+            foreach (var parameterRow in containerRows.ContainedRows.OfType<ParameterOrOverrideBaseRowViewModel>())
+            {
+                parameterRow.IsSelectedForTransfer = areSelected && this.IsThingTransferable(parameterRow);
+            }
+
+            foreach (var parameterGroup in containerRows.ContainedRows.OfType<ParameterGroupRowViewModel>())
+            {
+                this.AddOrRemoveToSelectedThingsToTransfer(parameterGroup, areSelected);
             }
         }
 
