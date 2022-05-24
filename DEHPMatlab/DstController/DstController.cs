@@ -278,8 +278,10 @@ namespace DEHPMatlab.DstController
         public async Task Connect(string matlabVersion)
         {
             this.matlabConnector.Connect(matlabVersion);
-            this.MatlabWorkspaceInputRowViewModels.Clear();
+            this.DisposeCollection(this.MatlabAllWorkspaceRowViewModels);
+            this.DisposeCollection(this.MatlabWorkspaceInputRowViewModels);
             this.MatlabAllWorkspaceRowViewModels.Clear();
+            this.MatlabWorkspaceInputRowViewModels.Clear();
             this.ClearMappingCollections();
             await this.LoadMatlabWorkspace();
         }
@@ -291,6 +293,7 @@ namespace DEHPMatlab.DstController
         {
             this.DstMapResult.Clear();
             this.ParameterVariable.Clear();
+            this.DisposeCollection(this.HubMapResult);
             this.HubMapResult.Clear();
             this.SelectedDstMapResultToTransfer.Clear();
             this.SelectedHubMapResultToTransfer.Clear();
@@ -313,6 +316,8 @@ namespace DEHPMatlab.DstController
         {
             this.UnloadScript();
 
+            this.DisposeCollection(this.MatlabAllWorkspaceRowViewModels);
+            this.DisposeCollection(this.MatlabWorkspaceInputRowViewModels);
             this.MatlabAllWorkspaceRowViewModels.Clear();
             this.MatlabWorkspaceInputRowViewModels.Clear();
 
@@ -365,6 +370,7 @@ namespace DEHPMatlab.DstController
                 File.Delete(this.loadedScriptPath);
             }
 
+            this.matlabConnector.ExecuteFunction("clear");
             this.LoadedScriptName = string.Empty;
             this.IsScriptLoaded = false;
         }
@@ -631,6 +637,8 @@ namespace DEHPMatlab.DstController
                     workspaceVariable.ActualValue = newVariable.ActualValue;
                     variablesToModify.Remove(newVariable);
                 }
+
+                newVariable?.Dispose();
             }
 
             this.MatlabAllWorkspaceRowViewModels.AddRange(variablesToAdd);
@@ -886,6 +894,29 @@ namespace DEHPMatlab.DstController
             this.MatlabWorkspaceInputRowViewModels.ItemChanged
                 .ObserveOn(RxApp.MainThreadScheduler)
                 .Subscribe(this.UpdateVariable);
+
+            this.HubMapResult.ItemsRemoved.Subscribe(this.DisposeDisable);
+        }
+
+        /// <summary>
+        /// Dispose all collection of <see cref="IDisposable" /> when before" being cleared
+        /// </summary>
+        /// <param name="disposables">The <see cref="IDisposable" /> collection</param>
+        private void DisposeCollection(IEnumerable<IDisposable> disposables)
+        {
+            foreach (var disposable in disposables)
+            {
+                this.DisposeDisable(disposable);
+            }
+        }
+
+        /// <summary>
+        /// Dispose a <see cref="IDisposable" />
+        /// </summary>
+        /// <param name="disposable">The <see cref="IDisposable" /></param>
+        private void DisposeDisable(IDisposable disposable)
+        {
+            disposable.Dispose();
         }
 
         /// <summary>

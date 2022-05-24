@@ -46,8 +46,13 @@ namespace DEHPMatlab.ViewModel.Row
     /// <summary>
     /// The <see cref="MatlabWorkspaceRowViewModel" /> stores the value of variable from the Matlab Workspace
     /// </summary>
-    public class MatlabWorkspaceRowViewModel : ReactiveObject
+    public class MatlabWorkspaceRowViewModel : ReactiveObject, IDisposable
     {
+        /// <summary>
+        /// A collection of <see cref="IDisposable" />
+        /// </summary>
+        private readonly List<IDisposable> disposables = new();
+
         /// <summary>
         /// Backing field for <see cref="IsHighlighted" />
         /// </summary>
@@ -154,7 +159,7 @@ namespace DEHPMatlab.ViewModel.Row
         private bool isAveraged;
 
         /// <summary>
-        /// Backing field for <see cref="SelectedCoordinateSystem"/>
+        /// Backing field for <see cref="SelectedCoordinateSystem" />
         /// </summary>
         private Parameter selectedCoordinateSystem;
 
@@ -195,16 +200,16 @@ namespace DEHPMatlab.ViewModel.Row
                 this.InitialValue = actualValue;
             }
 
-            this.WhenAnyValue(x => x.ArrayValue)
-                .Subscribe(_ => this.CheckIfIsEditable());
+            this.disposables.Add(this.WhenAnyValue(x => x.ArrayValue)
+                .Subscribe(_ => this.CheckIfIsEditable()));
 
-            this.SampledFunctionParameterParameterAssignementToHubRows.IsEmptyChanged
-                .Where(x => !x).Subscribe(_ => this.GetTimeDependentValues());
+            this.disposables.Add(this.SampledFunctionParameterParameterAssignementToHubRows.IsEmptyChanged
+                .Where(x => !x).Subscribe(_ => this.GetTimeDependentValues()));
 
-            CDPMessageBus.Current.Listen<DstHighlightEvent>()
+            this.disposables.Add(CDPMessageBus.Current.Listen<DstHighlightEvent>()
                 .Where(x => x.TargetThingId.ToString() == this.Identifier)
                 .ObserveOn(RxApp.MainThreadScheduler)
-                .Subscribe(x => this.IsHighlighted = x.ShouldHighlight);
+                .Subscribe(x => this.IsHighlighted = x.ShouldHighlight));
         }
 
         /// <summary>
@@ -444,6 +449,15 @@ namespace DEHPMatlab.ViewModel.Row
         public ReactiveList<TimeTaggedValuesRowViewModel> TimeTaggedValues { get; set; } = new();
 
         /// <summary>
+        /// Disposes all <see cref="IDisposable" /> contained in the <see cref="disposables" /> collections
+        /// </summary>
+        public void Dispose()
+        {
+            this.Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
         /// Updates the <see cref="SelectedValues" /> based on <see cref="SelectedTimeStep" />
         /// </summary>
         public void ApplyTimeStep()
@@ -525,7 +539,7 @@ namespace DEHPMatlab.ViewModel.Row
                 var timeRowIndex = this.RowColumnSelectionToHub == RowColumnSelection.Column ? timeTaggedValueIndex : timeTaggedIndex;
                 var timeColumnIndex = this.RowColumnSelectionToHub == RowColumnSelection.Row ? timeTaggedValueIndex : timeTaggedIndex;
 
-                timeTaggedValueList.Add(new TimeTaggedValuesRowViewModel((double) currentArrayValue.GetValue(timeRowIndex, timeColumnIndex),
+                timeTaggedValueList.Add(new TimeTaggedValuesRowViewModel((double)currentArrayValue.GetValue(timeRowIndex, timeColumnIndex),
                     this.GetTimeDependentValues(currentArrayValue, orderedIndexes, timeTaggedValueIndex)));
             }
 
@@ -561,8 +575,8 @@ namespace DEHPMatlab.ViewModel.Row
         /// <returns>An assert</returns>
         public bool IsValid()
         {
-            var result = (this.SelectedParameter != null || this.SelectedParameterType != null && this.SelectedParameter is null)
-                         && (this.SelectedElementUsages.IsEmpty || this.SelectedElementDefinition != null && this.SelectedParameter != null);
+            var result = (this.SelectedParameter != null || (this.SelectedParameterType != null && this.SelectedParameter is null))
+                         && (this.SelectedElementUsages.IsEmpty || (this.SelectedElementDefinition != null && this.SelectedParameter != null));
 
             if (this.SelectedParameterType is SampledFunctionParameterType && this.TimeTaggedValues.Any())
             {
@@ -601,7 +615,7 @@ namespace DEHPMatlab.ViewModel.Row
             if (this.ActualValue != null && this.ActualValue.GetType().IsArray)
             {
                 this.ArrayValue = this.ActualValue;
-                var array = (Array) this.ActualValue;
+                var array = (Array)this.ActualValue;
 
                 for (var i = 0; i < array.GetLength(0); i++)
                 {
@@ -633,6 +647,23 @@ namespace DEHPMatlab.ViewModel.Row
             }
 
             return unwrappedArray;
+        }
+
+        /// <summary>
+        /// Dispose this <see cref="MatlabWorkspaceRowViewModel" />
+        /// </summary>
+        /// <param name="disposing">A value indicating if it should dispose or not</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                foreach (var disposable in this.disposables)
+                {
+                    disposable.Dispose();
+                }
+
+                this.disposables.Clear();
+            }
         }
 
         /// <summary>
