@@ -161,6 +161,7 @@ namespace DEHPMatlab.ViewModel.Row
         public void Dispose()
         {
             this.Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         /// <summary>
