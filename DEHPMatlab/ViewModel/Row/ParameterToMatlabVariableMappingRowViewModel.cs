@@ -24,53 +24,52 @@
 
 namespace DEHPMatlab.ViewModel.Row
 {
-    using CDP4Common.EngineeringModelData;
-
-    using ReactiveUI;
-
     using System;
     using System.Linq;
 
+    using CDP4Common.EngineeringModelData;
     using CDP4Common.SiteDirectoryData;
 
+    using ReactiveUI;
+
     /// <summary>
-    /// Represents an association between an <see cref="ElementBase"/> and a <see cref="MatlabWorkspaceRowViewModel"/> for
-    /// update the <see cref="MatlabWorkspaceRowViewModel"/> value
+    /// Represents an association between an <see cref="ElementBase" /> and a <see cref="MatlabWorkspaceRowViewModel" /> for
+    /// update the <see cref="MatlabWorkspaceRowViewModel" /> value
     /// </summary>
-    public class ParameterToMatlabVariableMappingRowViewModel : ReactiveObject
+    public class ParameterToMatlabVariableMappingRowViewModel : ReactiveObject, IDisposable
     {
         /// <summary>
-        /// Backing field for <see cref="SelectedParameter"/>
+        /// Backing field for <see cref="SelectedParameter" />
         /// </summary>
         private ParameterOrOverrideBase selectedParameter;
 
         /// <summary>
-        /// Backing field for <see cref="SelectedOption"/>
+        /// Backing field for <see cref="SelectedOption" />
         /// </summary>
         private Option selectedOption;
 
         /// <summary>
-        /// Backing field for <see cref="SelectedState"/>
+        /// Backing field for <see cref="SelectedState" />
         /// </summary>
         private ActualFiniteState selectedState;
 
         /// <summary>
-        /// Backing field for <see cref="SelectedMatlabVariable"/>
+        /// Backing field for <see cref="SelectedMatlabVariable" />
         /// </summary>
         private MatlabWorkspaceRowViewModel selectedMatlabVariable;
 
         /// <summary>
-        /// Backing field for <see cref="IsValid"/>
+        /// Backing field for <see cref="IsValid" />
         /// </summary>
         private bool isValid;
 
         /// <summary>
-        /// Backing field for <see cref="SelectedValue"/>
+        /// Backing field for <see cref="SelectedValue" />
         /// </summary>
         private ValueSetValueRowViewModel selectedValue;
 
         /// <summary>
-        /// Initializes a new <see cref="ParameterToMatlabVariableMappingRowViewModel"/>
+        /// Initializes a new <see cref="ParameterToMatlabVariableMappingRowViewModel" />
         /// </summary>
         public ParameterToMatlabVariableMappingRowViewModel()
         {
@@ -81,11 +80,11 @@ namespace DEHPMatlab.ViewModel.Row
         }
 
         /// <summary>
-        /// Initializes a new <see cref="ParameterToMatlabVariableMappingRowViewModel"/>
+        /// Initializes a new <see cref="ParameterToMatlabVariableMappingRowViewModel" />
         /// </summary>
-        /// <param name="valueSet">The <see cref="IValueSet"/></param>
+        /// <param name="valueSet">The <see cref="IValueSet" /></param>
         /// <param name="valueIndex">The value index</param>
-        /// <param name="switchKind">The <see cref="ParameterSwitchKind"/></param>
+        /// <param name="switchKind">The <see cref="ParameterSwitchKind" /></param>
         public ParameterToMatlabVariableMappingRowViewModel(IValueSet valueSet, int valueIndex, ParameterSwitchKind switchKind) : this()
         {
             this.SelectedParameter = (valueSet as ParameterValueSet)?.GetContainerOfType<ParameterOrOverrideBase>();
@@ -103,7 +102,7 @@ namespace DEHPMatlab.ViewModel.Row
         }
 
         /// <summary>
-        /// Gets or sets the selected <see cref="ParameterOrOverrideBase"/> of this view model
+        /// Gets or sets the selected <see cref="ParameterOrOverrideBase" /> of this view model
         /// </summary>
         public ParameterOrOverrideBase SelectedParameter
         {
@@ -112,7 +111,7 @@ namespace DEHPMatlab.ViewModel.Row
         }
 
         /// <summary>
-        /// Gets or sets the selected <see cref="Option"/> of this view model
+        /// Gets or sets the selected <see cref="Option" /> of this view model
         /// </summary>
         public Option SelectedOption
         {
@@ -121,7 +120,7 @@ namespace DEHPMatlab.ViewModel.Row
         }
 
         /// <summary>
-        /// Gets or sets the selected <see cref="ActualFiniteState"/> of this view model
+        /// Gets or sets the selected <see cref="ActualFiniteState" /> of this view model
         /// </summary>
         public ActualFiniteState SelectedState
         {
@@ -130,7 +129,7 @@ namespace DEHPMatlab.ViewModel.Row
         }
 
         /// <summary>
-        /// Gets or sets the selected <see cref="MatlabWorkspaceRowViewModel"/> of this view model
+        /// Gets or sets the selected <see cref="MatlabWorkspaceRowViewModel" /> of this view model
         /// </summary>
         public MatlabWorkspaceRowViewModel SelectedMatlabVariable
         {
@@ -139,7 +138,7 @@ namespace DEHPMatlab.ViewModel.Row
         }
 
         /// <summary>
-        /// Asserts the validity for the mapping of this <see cref="ParameterToMatlabVariableMappingRowViewModel"/>
+        /// Asserts the validity for the mapping of this <see cref="ParameterToMatlabVariableMappingRowViewModel" />
         /// </summary>
         public bool IsValid
         {
@@ -148,7 +147,7 @@ namespace DEHPMatlab.ViewModel.Row
         }
 
         /// <summary>
-        /// The value of the parameter for the selected <see cref="Option"/> and the selected <see cref="ActualFiniteState"/>
+        /// The value of the parameter for the selected <see cref="Option" /> and the selected <see cref="ActualFiniteState" />
         /// </summary>
         public ValueSetValueRowViewModel SelectedValue
         {
@@ -157,7 +156,16 @@ namespace DEHPMatlab.ViewModel.Row
         }
 
         /// <summary>
-        /// Verify the validity of this <see cref="ParameterToMatlabVariableMappingRowViewModel"/>
+        /// Dispose the <see cref="MatlabWorkspaceRowViewModel" />
+        /// </summary>
+        public void Dispose()
+        {
+            this.Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Verify the validity of this <see cref="ParameterToMatlabVariableMappingRowViewModel" />
         /// </summary>
         public void VerifyValidity()
         {
@@ -166,6 +174,18 @@ namespace DEHPMatlab.ViewModel.Row
             if (this.IsValid && this.SelectedParameter?.ParameterType is SampledFunctionParameterType or ArrayParameterType)
             {
                 this.IsValid = this.SelectedValue!.Container.ActualValue.All(x => x != "-");
+            }
+        }
+
+        /// <summary>
+        /// Dispose this <see cref="ParameterToMatlabVariableMappingRowViewModel" />
+        /// </summary>
+        /// <param name="disposing">A value indicating if it sould dispose or not</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                this.SelectedMatlabVariable?.Dispose();
             }
         }
     }
