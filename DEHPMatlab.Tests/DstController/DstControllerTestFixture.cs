@@ -295,7 +295,11 @@ namespace DEHPMatlab.Tests.DstController
 
             var parameter = new Parameter
             {
-                ParameterType = new SimpleQuantityKind(),
+                Iid = Guid.Empty,
+                ParameterType = new SimpleQuantityKind()
+                {
+                    Name = "Mass"
+                },
                 ValueSet =
                 {
                     new ParameterValueSet
@@ -303,16 +307,16 @@ namespace DEHPMatlab.Tests.DstController
                         Computed = new ValueArray<string>(new[] { "654321" }),
                         ValueSwitch = ParameterSwitchKind.COMPUTED
                     }
-                }
+                },
             };
 
-            var elementDefinition = new ElementDefinition
+            var elementDefinition = new ElementDefinition()
             {
-                Parameter =
-                {
-                    parameter
-                }
+                Iid = Guid.NewGuid(),
+                Name = "ElementDefinition"
             };
+
+            elementDefinition.Parameter.Add(parameter);
 
             this.dstController.SelectedDstMapResultToTransfer.Add(parameter);
 
@@ -334,8 +338,15 @@ namespace DEHPMatlab.Tests.DstController
 
             var param = new Parameter()
             {
-                ParameterType = new BooleanParameterType(),
+                Iid = Guid.NewGuid(),
+                ParameterType = new BooleanParameterType()
+                {
+                    Name = "Bool"
+                },
                 Container = new ElementDefinition()
+                {
+                    Name = "EL"
+                }
             };
 
             var variable = new MatlabWorkspaceRowViewModel("a", 0)
@@ -405,7 +416,7 @@ namespace DEHPMatlab.Tests.DstController
                 x.Append(It.IsAny<Thing>(), It.IsAny<ChangeKind>()), Times.Exactly(5));
 
             this.exchangeHistory.Verify(x =>
-                x.Append(It.IsAny<ParameterValueSetBase>(), It.IsAny<IValueSet>()), Times.Exactly(2));
+                x.Append(It.IsAny<ParameterValueSetBase>(), It.IsAny<IValueSet>(), ParameterSwitchKind.COMPUTED), Times.Exactly(2));
 
             this.iteration.Relationship.Add(new BinaryRelationship()
             {

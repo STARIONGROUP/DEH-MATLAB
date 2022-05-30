@@ -38,7 +38,8 @@
             <GroupBox Grid.Row="0" x:Name="MainContainer" Header="Select Value Set To Map" Margin="10,10,10,10" Padding="10" Grid.ColumnSpan="2">
                 <dxg:TreeListControl ItemsSource="{Binding Variables}" SelectedItem="{Binding SelectedThing}">
                     <dxg:TreeListControl.View>
-                        <dxg:TreeListView Name="View" AllowEditing="False" AutoWidth="False" ExpandCollapseNodesOnNavigation="True" ExpandStateFieldName="IsExpanded" FixedLineWidth="0" HorizontalScrollbarVisibility="Auto"
+                        <dxg:TreeListView Name="View" AllowEditing="False" AutoWidth="False" ExpandCollapseNodesOnNavigation="True" 
+                                          ExpandStateFieldName="IsExpanded" FixedLineWidth="0" HorizontalScrollbarVisibility="Auto"
                                           NavigationStyle="Cell" ShowHorizontalLines="False" ShowIndicator="False" ShowVerticalLines="False" AllowSorting="True"
                                           TreeLineStyle="Solid" VerticalScrollbarVisibility="Auto">
                             <dxmvvm:Interaction.Behaviors>
@@ -239,7 +240,8 @@
                             </dxg:LookUpEdit>
                             <dxe:ComboBoxEdit Grid.Column="2" Margin="2" AllowNullInput="True" ApplyItemTemplateToSelectedItem="True" AutoComplete="True" ClearSelectionOnBackspace="True"
                                           DisplayMember="ShortName"
-                                          ItemsSource="{Binding SelectedThing.SelectedParameterType.AllPossibleScale}"
+                                          AllowUpdateTwoWayBoundPropertiesOnSynchronization="True"
+                                          ItemsSource="{Binding AvailableScales}"
                                           NullText="-" NullValueButtonPlacement="EditBox"
                                           SelectedItem="{Binding SelectedThing.SelectedScale}"
                                           ToolTip="Select a scale if the parameter type allows to do so"

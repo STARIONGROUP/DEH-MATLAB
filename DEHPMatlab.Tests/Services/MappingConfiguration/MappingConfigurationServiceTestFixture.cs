@@ -150,7 +150,13 @@ namespace DEHPMatlab.Tests.Services.MappingConfiguration
 
             variable.SampledFunctionParameterParameterAssignementToDstRows.AddRange(variable.SampledFunctionParameterParameterAssignementToHubRows);
 
-            this.parameterType = new SimpleQuantityKind(Guid.NewGuid(), null, null);
+            this.parameterType = new SimpleQuantityKind()
+            {
+                Iid = Guid.NewGuid(),
+                Name = "SimpleQuantityKind",
+                PossibleScale = { this.scale }
+            };
+
             this.person = new Person(Guid.NewGuid(), null, null) { GivenName = "test", DefaultDomain = this.domain };
 
             this.participant = new Participant(Guid.NewGuid(), null, null)
@@ -312,6 +318,7 @@ namespace DEHPMatlab.Tests.Services.MappingConfiguration
                     new IdCorrespondence() { InternalThing = Guid.NewGuid(), ExternalId = JsonConvert.SerializeObject(this.externalIdentifiers[2]) },
                     new IdCorrespondence() { InternalThing = this.parameterSampledFunctionParameter.Iid, ExternalId = JsonConvert.SerializeObject(this.externalIdentifiers[3]) },
                     new IdCorrespondence() { InternalThing = this.parameterSampledFunctionParameter.ValueSet.First().Iid, ExternalId = JsonConvert.SerializeObject(this.externalIdentifiers[4]) },
+                    new IdCorrespondence() { InternalThing = this.scale.Iid, ExternalId = JsonConvert.SerializeObject(this.externalIdentifiers[1]) },
                 }
             };
         }
@@ -386,12 +393,25 @@ namespace DEHPMatlab.Tests.Services.MappingConfiguration
             this.mappingConfiguration.AddToExternalIdentifierMap(mappedElements.Last());
             Assert.AreEqual(3,this.mappingConfiguration.ExternalIdentifierMap.Correspondence.Count);
 
+            var option = new Option()
+            {
+                Iid = Guid.NewGuid()
+            };
+
+            var actualFiniteState = new ActualFiniteState()
+            {
+                Iid = Guid.NewGuid()
+            };
+
             this.mappingConfiguration.AddToExternalIdentifierMap(new Dictionary<ParameterOrOverrideBase, MatlabWorkspaceRowViewModel>()
             {
                 {
                     this.parameter, new MatlabWorkspaceRowViewModel("c", 45)
                     {
-                        Identifier = "c-b"
+                        Identifier = "c-b",
+                        SelectedScale = this.scale,
+                        SelectedOption = option,
+                        SelectedActualFiniteState = actualFiniteState
                     }
                 },
                 {
@@ -402,10 +422,10 @@ namespace DEHPMatlab.Tests.Services.MappingConfiguration
                 }
             });
 
-            Assert.AreEqual(7, this.mappingConfiguration.ExternalIdentifierMap.Correspondence.Count);
+            Assert.AreEqual(10, this.mappingConfiguration.ExternalIdentifierMap.Correspondence.Count);
 
             this.mappingConfiguration.AddToExternalIdentifierMap(internalId, "10N.h", MappingDirection.FromHubToDst);
-            Assert.AreEqual(8, this.mappingConfiguration.ExternalIdentifierMap.Correspondence.Count);
+            Assert.AreEqual(11, this.mappingConfiguration.ExternalIdentifierMap.Correspondence.Count);
 
             this.mappingConfiguration.ExternalIdentifierMap = new ExternalIdentifierMap()
             {
@@ -413,7 +433,7 @@ namespace DEHPMatlab.Tests.Services.MappingConfiguration
                 {
                     new IdCorrespondence(internalId, null, null)
                     {
-                        Iid = new Guid()
+                        Iid = Guid.NewGuid()
                     }
                 }
             };
@@ -438,7 +458,7 @@ namespace DEHPMatlab.Tests.Services.MappingConfiguration
 
             Assert.AreEqual(1, this.iteration.ExternalIdentifierMap.Count);
             transactionMock.Verify(x => x.CreateOrUpdate(It.IsAny<Thing>()), Times.Exactly(3));
-            transactionMock.Verify(x => x.Create(It.IsAny<Thing>(), null), Times.Exactly(5));
+            transactionMock.Verify(x => x.Create(It.IsAny<Thing>(), null), Times.Exactly(6));
         }
 
         [Test]
@@ -521,7 +541,7 @@ namespace DEHPMatlab.Tests.Services.MappingConfiguration
             Assert.IsNotNull(mappedVariables);
             Assert.AreEqual(2, mappedVariables.Count);
 
-            this.hubController.Verify(x => x.GetThingById(It.IsAny<Guid>(), It.IsAny<Iteration>(), out thing), Times.Exactly(13));
+            this.hubController.Verify(x => x.GetThingById(It.IsAny<Guid>(), It.IsAny<Iteration>(), out thing), Times.Exactly(19));
         }
 
         [Test]
@@ -541,7 +561,7 @@ namespace DEHPMatlab.Tests.Services.MappingConfiguration
 
             Assert.AreEqual(1, iterationClone.ExternalIdentifierMap.Count);
             transactionMock.Verify(x => x.CreateOrUpdate(It.IsAny<Thing>()), Times.Exactly(3));
-            transactionMock.Verify(x => x.Create(It.IsAny<Thing>(), null), Times.Exactly(5));
+            transactionMock.Verify(x => x.Create(It.IsAny<Thing>(), null), Times.Exactly(6));
         }
     }
 }

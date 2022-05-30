@@ -349,6 +349,8 @@ namespace DEHPMatlab.DstController
             }
 
             this.LoadMapping();
+
+            CDPMessageBus.Current.SendMessage(new UpdateHubPreviewBasedOnSelectionEvent(new List<MatlabWorkspaceRowViewModel>(), null, false));
         }
 
         /// <summary>
@@ -399,6 +401,11 @@ namespace DEHPMatlab.DstController
                 foreach (var keyValue in parameterNodeIds)
                 {
                     this.ParameterVariable[keyValue.Key] = keyValue.Value;
+                }
+
+                foreach (var elementBase in elements)
+                {
+                    this.DstMapResult.RemoveAll(this.DstMapResult.Where(x => x.Iid == elementBase.Iid).ToList());
                 }
 
                 this.DstMapResult.AddRange(elements);
@@ -692,8 +699,7 @@ namespace DEHPMatlab.DstController
 
                         foreach (var parameter in elementBasesToUpdate[element])
                         {
-                            var sourceThing = this.CreateOrUpdateTransaction(transaction, (Parameter)parameter, elementClone.Parameter);
-                            this.VerifyRelationShip(transaction, iterationClone, parameter, sourceThing);
+                            this.AddParameterToTransaction(transaction, iterationClone, parameter, elementClone);
                         }
 
                         break;
@@ -712,6 +718,34 @@ namespace DEHPMatlab.DstController
                         break;
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// Add a <see cref="Parameter"/> to the transaction and update its <see cref="Parameter.Iid"/> if needed
+        /// </summary>
+        /// <param name="transaction">The <see cref="IThingTransaction"/></param>
+        /// <param name="iterationClone">The <see cref="Iteration"/> clone</param>
+        /// <param name="parameter">The <see cref="Parameter"/></param>
+        /// <param name="elementClone">The <see cref="ElementDefinition"/> container of the <see cref="Parameter"/></param>
+        private void AddParameterToTransaction(IThingTransaction transaction, Iteration iterationClone, ParameterOrOverrideBase parameter, ElementDefinition elementClone)
+        {
+            var needToUpdateParameterIid = parameter.Iid == Guid.Empty;
+            var sourceThing = this.CreateOrUpdateTransaction(transaction, (Parameter)parameter, elementClone.Parameter);
+            this.VerifyRelationShip(transaction, iterationClone, parameter, sourceThing);
+
+            if (!needToUpdateParameterIid)
+            {
+                return;
+            }
+
+            foreach (var parameterVariable in this.ParameterVariable.Keys
+                         .Where(x => x.ParameterType.Name == parameter.ParameterType.Name
+                                     && x.Iid == Guid.Empty
+                                     && x.Container is ElementDefinition container
+                                     && container.Name == elementClone.Name).ToList())
+            {
+                parameterVariable.Iid = sourceThing.Iid;
             }
         }
 
@@ -895,7 +929,11 @@ namespace DEHPMatlab.DstController
                 .ObserveOn(RxApp.MainThreadScheduler)
                 .Subscribe(this.UpdateVariable);
 
-            this.HubMapResult.ItemsRemoved.Subscribe(this.DisposeDisable);
+            this.HubMapResult.ItemsRemoved.Subscribe(this.DisposeDisposable);
+
+            CDPMessageBus.Current.Listen<HubSessionControlEvent>()
+                .ObserveOn(RxApp.MainThreadScheduler)
+                .Subscribe(_ => this.LoadMapping());
         }
 
         /// <summary>
@@ -906,7 +944,7 @@ namespace DEHPMatlab.DstController
         {
             foreach (var disposable in disposables)
             {
-                this.DisposeDisable(disposable);
+                this.DisposeDisposable(disposable);
             }
         }
 
@@ -914,7 +952,7 @@ namespace DEHPMatlab.DstController
         /// Dispose a <see cref="IDisposable" />
         /// </summary>
         /// <param name="disposable">The <see cref="IDisposable" /></param>
-        private void DisposeDisable(IDisposable disposable)
+        private void DisposeDisposable(IDisposable disposable)
         {
             disposable.Dispose();
         }
@@ -925,7 +963,8 @@ namespace DEHPMatlab.DstController
         /// <returns>The number of mapped things loaded</returns>
         private int LoadMappingFromDstToHub()
         {
-            if (this.mappingConfigurationService.LoadMappingFromDstToHub(this.MatlabAllWorkspaceRowViewModels) is not { } mappedVariables || !mappedVariables.Any())
+            if (this.mappingConfigurationService.LoadMappingFromDstToHub(this.MatlabAllWorkspaceRowViewModels) is not { } mappedVariables 
+                || !mappedVariables.Any())
             {
                 return 0;
             }
@@ -967,23 +1006,23 @@ namespace DEHPMatlab.DstController
         /// <returns>The number of mapped things loaded</returns>
         private int LoadMappingFromHubToDst()
         {
-            if (this.mappingConfigurationService.LoadMappingFromHubToDst(this.MatlabWorkspaceInputRowViewModels) is not { } mappedElements
+            if (this.mappingConfigurationService.LoadMappingFromHubToDst(this.MatlabWorkspaceInputRowViewModels) is not { } mappedElements 
                 || !mappedElements.Any())
             {
                 return 0;
             }
 
-            foreach (var mappedElement in mappedElements)
+            foreach (var mappedElement in mappedElements.Select(x => x.SelectedMatlabVariable))
             {
-                var inputVariable = this.MatlabWorkspaceInputRowViewModels.FirstOrDefault(x => x.Name == mappedElement.SelectedMatlabVariable.Name);
+                var inputVariable = this.MatlabWorkspaceInputRowViewModels.FirstOrDefault(x => x.Name == mappedElement.Name);
 
                 if (inputVariable is null)
                 {
                     continue;
                 }
 
-                inputVariable.RowColumnSelectionToDst = mappedElement.SelectedMatlabVariable.RowColumnSelectionToDst;
-                inputVariable.SampledFunctionParameterParameterAssignementToDstRows = mappedElement.SelectedMatlabVariable.SampledFunctionParameterParameterAssignementToDstRows;
+                inputVariable.RowColumnSelectionToDst = mappedElement.RowColumnSelectionToDst;
+                inputVariable.SampledFunctionParameterParameterAssignementToDstRows = mappedElement.SampledFunctionParameterParameterAssignementToDstRows;
             }
 
             mappedElements.ForEach(x => x.VerifyValidity());

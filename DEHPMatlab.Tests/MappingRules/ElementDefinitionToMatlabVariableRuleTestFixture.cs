@@ -134,7 +134,6 @@ namespace DEHPMatlab.Tests.MappingRules
                             }
                         }
                     },
-                    SelectedValue = new ValueSetValueRowViewModel(new ParameterValueSet(), "15", null)
                 }
             };
         }
@@ -150,7 +149,7 @@ namespace DEHPMatlab.Tests.MappingRules
             Assert.AreEqual(3, variables.Count);
             Assert.AreEqual("5", firstVariable.SelectedValue.Value);
             Assert.AreEqual(0.5d, initialMatlabVariables.First().ActualValue);
-            Assert.AreEqual("15", lastVariable.SelectedValue.Value);
+            Assert.AreEqual("-15", lastVariable.SelectedValue.Value);
             Assert.AreEqual(this.option1, lastVariable.SelectedOption);
             Assert.AreEqual(this.state2, lastVariable.SelectedState);
             Assert.AreNotEqual(this.option1, this.elements.First().SelectedMatlabVariable.SelectedOption);
