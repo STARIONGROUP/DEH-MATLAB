@@ -147,6 +147,11 @@ namespace DEHPMatlab.ViewModel.Dialogs
         public ReactiveList<ParameterOrOverrideBase> AvailableParameters { get; } = new();
 
         /// <summary>
+        /// Gets the collections of the available <see cref="MeasurementScale" /> from the current <see cref="ParameterType"/>
+        /// </summary>
+        public ReactiveList<MeasurementScale> AvailableScales { get; } = new();
+
+        /// <summary>
         /// Gets the collection of the available <see cref="ActualFiniteState" />s depending on the selected
         /// <see cref="Parameter" />
         /// </summary>
@@ -219,10 +224,9 @@ namespace DEHPMatlab.ViewModel.Dialogs
                 return;
             }
 
-            this.SelectedThing.SelectedScale =
-                this.SelectedThing.SelectedParameterType is QuantityKind quantityKind
-                    ? quantityKind.DefaultScale
-                    : null;
+            this.SelectedThing.SelectedScale ??= this.SelectedThing.SelectedParameterType is QuantityKind quantityKind
+                ? quantityKind.DefaultScale
+                : null;
         }
 
         /// <summary>
@@ -296,6 +300,26 @@ namespace DEHPMatlab.ViewModel.Dialogs
         }
 
         /// <summary>
+        /// Update the <see cref="AvailableScales"/> collection
+        /// </summary>
+        public void UpdateAvailableScales()
+        {
+            var previousScale = this.SelectedThing?.SelectedScale;
+
+            this.AvailableScales.Clear();
+
+            if (this.SelectedThing?.SelectedParameterType is QuantityKind quantityKind)
+            {
+                this.AvailableScales.AddRange(quantityKind.AllPossibleScale);
+            }
+
+            if (previousScale != null && this.AvailableScales.Any(x => x.Iid == previousScale.Iid))
+            {
+                this.SelectedThing.SelectedScale = previousScale;
+            }
+        }
+
+        /// <summary>
         /// Update the <see cref="AvailableElementUsages" /> collection
         /// </summary>
         public void UpdateAvailableElementsUsages()
@@ -351,6 +375,8 @@ namespace DEHPMatlab.ViewModel.Dialogs
         /// </summary>
         public void UpdateAvailableParameterType()
         {
+            var parameterTypeWasNull = this.SelectedThing?.SelectedParameterType == null;
+
             this.AvailableParameterTypes.Clear();
 
             if (this.SelectedThing?.SelectedElementUsages.Count != 0)
@@ -375,6 +401,11 @@ namespace DEHPMatlab.ViewModel.Dialogs
                 .OrderBy(x => x.Name);
 
             this.AvailableParameterTypes.AddRange(filteredParameterTypes);
+
+            if (this.SelectedThing != null && parameterTypeWasNull)
+            {
+                this.SelectedThing.SelectedParameterType = null;
+            }
         }
 
         /// <summary>
@@ -484,6 +515,8 @@ namespace DEHPMatlab.ViewModel.Dialogs
 
             this.ContinueCommand.Subscribe(_ =>
             {
+                this.DisposeAllDisposables();
+
                 if (this.Variables.Any(x => x.IsVariableMappingValid is false)
                     && this.navigationService.ShowDxDialog<MappingValidationErrorDialog>() is false)
                 {
@@ -524,6 +557,7 @@ namespace DEHPMatlab.ViewModel.Dialogs
                 .ObserveOn(RxApp.MainThreadScheduler)
                 .Subscribe(_ => this.UpdateHubFields(() =>
                 {
+                    this.UpdateAvailableScales();
                     this.UpdateSelectedParameter();
                     this.UpdateSelectedScale();
                     this.VerifyIfParameterTypeIsSampledFunctionParameterType();

@@ -662,7 +662,7 @@ namespace DEHPMatlab.ViewModel.NetChangePreview
             {
                 var container = (ElementBase)parameterOrOverrideBase.Container;
 
-                var alreadyPresent = elementBases.Keys.FirstOrDefault(x => x.Iid == container.Iid);
+                var alreadyPresent = elementBases.Keys.FirstOrDefault(x => x.Iid == container.Iid && x.Name == container.Name);
 
                 if (alreadyPresent is null)
                 {
