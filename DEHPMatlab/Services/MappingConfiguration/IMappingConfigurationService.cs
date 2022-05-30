@@ -46,6 +46,11 @@ namespace DEHPMatlab.Services.MappingConfiguration
         ExternalIdentifierMap ExternalIdentifierMap { get; set; }
 
         /// <summary>
+        /// Get a value indicating wheter the current <see cref="ExternalIdentifierMap" /> is the default one
+        /// </summary>
+        bool IsTheCurrentIdentifierMapTemporary { get; }
+
+        /// <summary>
         /// Adds one correspondance to the <see cref="MappingConfigurationService.ExternalIdentifierMap" />
         /// </summary>
         /// <param name="internalId">The thing that <see cref="externalId" /> corresponds to</param>
@@ -82,8 +87,9 @@ namespace DEHPMatlab.Services.MappingConfiguration
         /// The model name to use for creating the new
         /// <see cref="MappingConfigurationService.ExternalIdentifierMap" />
         /// </param>
+        /// <param name="addTheTemporyMapping">a value indicating whether the current temporary should be transfered to new one</param>
         /// <returns>A newly created <see cref="MappingConfigurationService.ExternalIdentifierMap" /></returns>
-        ExternalIdentifierMap CreateExternalIdentifierMap(string newName);
+        ExternalIdentifierMap CreateExternalIdentifierMap(string newName, bool addTheTemporyMapping);
 
         /// <summary>
         /// Updates the configured mapping, registering the <see cref="MappingConfigurationService.ExternalIdentifierMap" /> and
@@ -91,8 +97,8 @@ namespace DEHPMatlab.Services.MappingConfiguration
         /// to a <see name="IThingTransaction" />
         /// </summary>
         /// <param name="transaction">The <see cref="IThingTransaction" /></param>
-        /// <param name="iteration">The <see cref="Iteration" /> clone</param>
-        void PersistExternalIdentifierMap(IThingTransaction transaction, Iteration iteration);
+        /// <param name="iterationClone">The <see cref="Iteration" /> clone</param>
+        void PersistExternalIdentifierMap(IThingTransaction transaction, Iteration iterationClone);
 
         /// <summary>
         /// Refreshes the <see cref="MappingConfigurationService.ExternalIdentifierMap" /> usually done after a session write
