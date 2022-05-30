@@ -405,7 +405,7 @@ namespace DEHPMatlab.Tests.DstController
                 x.Append(It.IsAny<Thing>(), It.IsAny<ChangeKind>()), Times.Exactly(5));
 
             this.exchangeHistory.Verify(x =>
-                x.Append(It.IsAny<ParameterValueSetBase>(), It.IsAny<IValueSet>()), Times.Exactly(2));
+                x.Append(It.IsAny<ParameterValueSetBase>(), It.IsAny<IValueSet>(), ParameterSwitchKind.COMPUTED), Times.Exactly(2));
 
             this.iteration.Relationship.Add(new BinaryRelationship()
             {
