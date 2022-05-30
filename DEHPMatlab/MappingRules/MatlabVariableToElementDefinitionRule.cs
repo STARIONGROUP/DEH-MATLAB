@@ -200,7 +200,6 @@ namespace DEHPMatlab.MappingRules
                         x.ParameterType.Iid == matlabVariable.SelectedParameterType.Iid) is { } parameter)
                 {
                     matlabVariable.SelectedParameter = parameter;
-                    matlabVariable.SelectedParameter.Scale = matlabVariable.SelectedScale;
                 }
                 else
                 {
@@ -224,6 +223,7 @@ namespace DEHPMatlab.MappingRules
                 }
             }
 
+            matlabVariable.SelectedParameter.Scale = matlabVariable.SelectedScale;
             this.UpdateValueSet(matlabVariable, matlabVariable.SelectedParameter);
             this.parameterNodeIdIdentifier[matlabVariable.SelectedParameter] = matlabVariable;
         }

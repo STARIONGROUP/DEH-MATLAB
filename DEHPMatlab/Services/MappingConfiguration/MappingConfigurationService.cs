@@ -202,6 +202,8 @@ namespace DEHPMatlab.Services.MappingConfiguration
                     SelectedCoordinateSystem = variable.Value.SelectedCoordinateSystem?.Iid ?? Guid.Empty
                 });
 
+                this.AddToExternalIdentifierMap(variable.Value);
+
                 if (variable.Key.GetContainerOfType<ElementUsage>() is { } elementUsage)
                 {
                     this.AddToExternalIdentifierMap(elementUsage.Iid, new ExternalIdentifier
@@ -217,6 +219,38 @@ namespace DEHPMatlab.Services.MappingConfiguration
                         Identifier = variable.Value.Identifier
                     });
                 }
+            }
+        }
+
+        /// <summary>
+        /// Adds as many correspondence as <paramref name="variable" /> values
+        /// </summary>
+        /// <param name="variable">The <see cref="MatlabWorkspaceRowViewModel" />
+        /// </param>
+        private void AddToExternalIdentifierMap(MatlabWorkspaceRowViewModel variable)
+        {
+            if (variable.SelectedActualFiniteState != null)
+            {
+                this.AddToExternalIdentifierMap(variable.SelectedActualFiniteState.Iid, new ExternalIdentifier
+                {
+                    Identifier = variable.Identifier
+                });
+            }
+
+            if (variable.SelectedOption != null)
+            {
+                this.AddToExternalIdentifierMap(variable.SelectedOption.Iid, new ExternalIdentifier
+                {
+                    Identifier = variable.Identifier
+                });
+            }
+
+            if (variable.SelectedScale != null)
+            {
+                this.AddToExternalIdentifierMap(variable.SelectedScale.Iid, new ExternalIdentifier
+                {
+                    Identifier = variable.Identifier
+                });
             }
         }
 
@@ -290,7 +324,7 @@ namespace DEHPMatlab.Services.MappingConfiguration
         /// <param name="idCorrespondences">The collection of <see cref="IdCorrespondence" /></param>
         private void LoadCorrespondences(MatlabWorkspaceRowViewModel element, IEnumerable<(Guid InternalId, ExternalIdentifier ExternalIdentifier, Guid Iid)> idCorrespondences)
         {
-            foreach (var idCorrespondence in idCorrespondences)
+            foreach (var idCorrespondence in idCorrespondences.ToList())
             {
                 if (!this.hubController.GetThingById(idCorrespondence.InternalId, this.hubController.OpenIteration, out Thing thing))
                 {
@@ -309,7 +343,10 @@ namespace DEHPMatlab.Services.MappingConfiguration
 
                 if (element.SelectedParameter is { } selectedParameter)
                 {
-                    Application.Current.Dispatcher.Invoke(() => element.SelectedParameterType = selectedParameter.ParameterType);
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        element.SelectedParameterType = selectedParameter.ParameterType;
+                    });
                 }
 
                 action?.Invoke();
@@ -485,6 +522,14 @@ namespace DEHPMatlab.Services.MappingConfiguration
 
                 element.MappingConfigurations.AddRange(this.ExternalIdentifierMap.Correspondence
                     .Where(x => idCorrespondences.Any(c => c.Iid == x.Iid)).ToList());
+
+                if (element.SelectedParameter is { ParameterType: QuantityKind quantityKind } selectedParameter)
+                {
+                    var scaleIid = idCorrespondences.FirstOrDefault(x =>
+                        quantityKind.AllPossibleScale.Any(scale => scale.Iid == x.InternalId)).InternalId;
+
+                    element.SelectedScale = quantityKind.AllPossibleScale.FirstOrDefault(x => x.Iid == scaleIid) ?? selectedParameter.Scale;
+                }
 
                 foreach (var (internalId, externalId, _) in idCorrespondences)
                 {

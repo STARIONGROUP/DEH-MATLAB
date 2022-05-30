@@ -349,6 +349,12 @@ namespace DEHPMatlab.Tests.ViewModel.Dialogs
 
             Assert.DoesNotThrow(() => this.viewModel.UpdateSelectedScale());
             Assert.AreEqual(this.scale, this.viewModel.SelectedThing.SelectedScale);
+
+            this.viewModel.SelectedThing.SelectedScale = new CyclicRatioScale();
+            Assert.DoesNotThrow(() => this.viewModel.UpdateAvailableScales());
+
+            this.viewModel.SelectedThing.SelectedScale = ratioScale;
+            Assert.DoesNotThrow(() => this.viewModel.UpdateAvailableScales());
         }
 
         [Test]

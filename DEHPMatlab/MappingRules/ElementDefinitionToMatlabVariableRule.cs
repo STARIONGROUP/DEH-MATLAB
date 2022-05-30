@@ -27,6 +27,10 @@ namespace DEHPMatlab.MappingRules
     using System.Collections.Generic;
     using System.Linq;
 
+    using CDP4Common.EngineeringModelData;
+    using CDP4Common.SiteDirectoryData;
+    using CDP4Common.Types;
+
     using DEHPCommon.MappingEngine;
     using DEHPCommon.MappingRules.Core;
 
@@ -51,10 +55,26 @@ namespace DEHPMatlab.MappingRules
         {
             return input.Select(x =>
             {
+                x.SelectedValue = x.SelectedParameter.ParameterType is SampledFunctionParameterType or ArrayParameterType
+                    ? new ValueSetValueRowViewModel(x.SelectedParameter)
+                    : x.SelectedParameter.ValueSets.SelectMany(x => this.ComputesValueRow(x, x.ActualValue, null)).FirstOrDefault(); 
+
                 x.SelectedMatlabVariable = new MatlabWorkspaceRowViewModel(x.SelectedMatlabVariable);
 
                 return x;
             }).ToList();
+        }
+
+        /// <summary>
+        /// Computes the value row of one value array i.e. <see cref="IValueSet.Computed"/>
+        /// </summary>
+        /// <param name="valueSet">The <see cref="IValueSet"/> container</param>
+        /// <param name="values">The collection of values</param>
+        /// <param name="scale">The <see cref="MeasurementScale"/></param>
+        /// <returns></returns>
+        private IEnumerable<ValueSetValueRowViewModel> ComputesValueRow(IValueSet valueSet, ValueArray<string> values, MeasurementScale scale)
+        {
+            return values.Select(value => new ValueSetValueRowViewModel(valueSet, value, scale));
         }
     }
 }
