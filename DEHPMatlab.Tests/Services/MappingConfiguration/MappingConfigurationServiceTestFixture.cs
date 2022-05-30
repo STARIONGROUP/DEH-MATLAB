@@ -393,12 +393,25 @@ namespace DEHPMatlab.Tests.Services.MappingConfiguration
             this.mappingConfiguration.AddToExternalIdentifierMap(mappedElements.Last());
             Assert.AreEqual(3,this.mappingConfiguration.ExternalIdentifierMap.Correspondence.Count);
 
+            var option = new Option()
+            {
+                Iid = Guid.NewGuid()
+            };
+
+            var actualFiniteState = new ActualFiniteState()
+            {
+                Iid = Guid.NewGuid()
+            };
+
             this.mappingConfiguration.AddToExternalIdentifierMap(new Dictionary<ParameterOrOverrideBase, MatlabWorkspaceRowViewModel>()
             {
                 {
                     this.parameter, new MatlabWorkspaceRowViewModel("c", 45)
                     {
-                        Identifier = "c-b"
+                        Identifier = "c-b",
+                        SelectedScale = this.scale,
+                        SelectedOption = option,
+                        SelectedActualFiniteState = actualFiniteState
                     }
                 },
                 {
@@ -409,10 +422,10 @@ namespace DEHPMatlab.Tests.Services.MappingConfiguration
                 }
             });
 
-            Assert.AreEqual(7, this.mappingConfiguration.ExternalIdentifierMap.Correspondence.Count);
+            Assert.AreEqual(10, this.mappingConfiguration.ExternalIdentifierMap.Correspondence.Count);
 
             this.mappingConfiguration.AddToExternalIdentifierMap(internalId, "10N.h", MappingDirection.FromHubToDst);
-            Assert.AreEqual(8, this.mappingConfiguration.ExternalIdentifierMap.Correspondence.Count);
+            Assert.AreEqual(11, this.mappingConfiguration.ExternalIdentifierMap.Correspondence.Count);
 
             this.mappingConfiguration.ExternalIdentifierMap = new ExternalIdentifierMap()
             {
@@ -420,7 +433,7 @@ namespace DEHPMatlab.Tests.Services.MappingConfiguration
                 {
                     new IdCorrespondence(internalId, null, null)
                     {
-                        Iid = new Guid()
+                        Iid = Guid.NewGuid()
                     }
                 }
             };

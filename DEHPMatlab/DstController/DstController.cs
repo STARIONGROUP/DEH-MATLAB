@@ -699,23 +699,7 @@ namespace DEHPMatlab.DstController
 
                         foreach (var parameter in elementBasesToUpdate[element])
                         {
-                            var needToUpdateParameterIid = parameter.Iid == Guid.Empty;
-                            var sourceThing = this.CreateOrUpdateTransaction(transaction, (Parameter)parameter, elementClone.Parameter);
-                            this.VerifyRelationShip(transaction, iterationClone, parameter, sourceThing);
-
-                            if (!needToUpdateParameterIid)
-                            {
-                                continue;
-                            }
-
-                            foreach (var parameterVariable in this.ParameterVariable.Keys
-                                         .Where(x => x.ParameterType.Name == parameter.ParameterType.Name
-                                                     && x.Iid == Guid.Empty 
-                                                     && x.Container is ElementDefinition container 
-                                                     && container.Name == elementDefinition.Name).ToList())
-                            {
-                                parameterVariable.Iid = sourceThing.Iid;
-                            }
+                            this.AddParameterToTransaction(transaction, iterationClone, parameter, elementClone);
                         }
 
                         break;
@@ -734,6 +718,34 @@ namespace DEHPMatlab.DstController
                         break;
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// Add a <see cref="Parameter"/> to the transaction and update its <see cref="Parameter.Iid"/> if needed
+        /// </summary>
+        /// <param name="transaction">The <see cref="IThingTransaction"/></param>
+        /// <param name="iterationClone">The <see cref="Iteration"/> clone</param>
+        /// <param name="parameter">The <see cref="Parameter"/></param>
+        /// <param name="elementClone">The <see cref="ElementDefinition"/> container of the <see cref="Parameter"/></param>
+        private void AddParameterToTransaction(IThingTransaction transaction, Iteration iterationClone, ParameterOrOverrideBase parameter, ElementDefinition elementClone)
+        {
+            var needToUpdateParameterIid = parameter.Iid == Guid.Empty;
+            var sourceThing = this.CreateOrUpdateTransaction(transaction, (Parameter)parameter, elementClone.Parameter);
+            this.VerifyRelationShip(transaction, iterationClone, parameter, sourceThing);
+
+            if (!needToUpdateParameterIid)
+            {
+                return;
+            }
+
+            foreach (var parameterVariable in this.ParameterVariable.Keys
+                         .Where(x => x.ParameterType.Name == parameter.ParameterType.Name
+                                     && x.Iid == Guid.Empty
+                                     && x.Container is ElementDefinition container
+                                     && container.Name == elementClone.Name).ToList())
+            {
+                parameterVariable.Iid = sourceThing.Iid;
             }
         }
 
