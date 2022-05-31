@@ -44,6 +44,8 @@ namespace DEHPMatlab.Services.MappingConfiguration
 
     using Newtonsoft.Json;
 
+    using NLog;
+
     /// <summary>
     /// The <see cref="MappingConfigurationService" /> takes care of handling all operation
     /// related to saving and loading configured mapping.
@@ -56,6 +58,11 @@ namespace DEHPMatlab.Services.MappingConfiguration
         /// including the deserialized external identifier
         /// </summary>
         private readonly List<(Guid InternalId, ExternalIdentifier ExternalIdentifier, Guid Iid)> correspondences = new();
+
+        /// <summary>
+        /// Gets the current class logger
+        /// </summary>
+        private readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         /// <summary>
         /// The <see cref="IHubController" />
@@ -81,7 +88,15 @@ namespace DEHPMatlab.Services.MappingConfiguration
         {
             this.hubController = hubController;
             this.statusBar = statusBar;
+
+            this.ExternalIdentifierMap = new ExternalIdentifierMap();
         }
+
+        /// <summary>
+        /// Get a value indicating wheter the current <see cref="ExternalIdentifierMap" /> is the default one
+        /// </summary>
+        public bool IsTheCurrentIdentifierMapTemporary => this.ExternalIdentifierMap.Iid == Guid.Empty
+                                                          && string.IsNullOrWhiteSpace(this.ExternalIdentifierMap.Name);
 
         /// <summary>
         /// Gets or sets the <see cref="ExternalIdentifierMap" />
@@ -100,16 +115,24 @@ namespace DEHPMatlab.Services.MappingConfiguration
         /// Creates the <see cref="ExternalIdentifierMap" />
         /// </summary>
         /// <param name="newName">The model name to use for creating the new <see cref="ExternalIdentifierMap" /></param>
+        /// <param name="addTheTemporyMapping">a value indicating whether the current temporary should be transfered to new one</param>
         /// <returns>A newly created <see cref="ExternalIdentifierMap" /></returns>
-        public ExternalIdentifierMap CreateExternalIdentifierMap(string newName)
+        public ExternalIdentifierMap CreateExternalIdentifierMap(string newName, bool addTheTemporyMapping)
         {
-            return new()
+            var newExternalIdentifierMap = new ExternalIdentifierMap
             {
                 Name = newName,
                 ExternalToolName = DstController.ThisToolName,
                 ExternalModelName = newName,
                 Owner = this.hubController.CurrentDomainOfExpertise
             };
+
+            if (addTheTemporyMapping)
+            {
+                newExternalIdentifierMap.Correspondence.AddRange(this.ExternalIdentifierMap.Correspondence);
+            }
+
+            return newExternalIdentifierMap;
         }
 
         /// <summary>
@@ -163,7 +186,7 @@ namespace DEHPMatlab.Services.MappingConfiguration
         {
             var (index, switchKind) = mappedElement.SelectedValue.GetValueIndexAndParameterSwitchKind();
 
-            this.AddToExternalIdentifierMap(((Thing) mappedElement.SelectedValue.Container).Iid, new ExternalIdentifier
+            this.AddToExternalIdentifierMap(((Thing)mappedElement.SelectedValue.Container).Iid, new ExternalIdentifier
             {
                 Identifier = mappedElement.SelectedMatlabVariable.Identifier,
                 MappingDirection = MappingDirection.FromHubToDst,
@@ -223,38 +246,6 @@ namespace DEHPMatlab.Services.MappingConfiguration
         }
 
         /// <summary>
-        /// Adds as many correspondence as <paramref name="variable" /> values
-        /// </summary>
-        /// <param name="variable">The <see cref="MatlabWorkspaceRowViewModel" />
-        /// </param>
-        private void AddToExternalIdentifierMap(MatlabWorkspaceRowViewModel variable)
-        {
-            if (variable.SelectedActualFiniteState != null)
-            {
-                this.AddToExternalIdentifierMap(variable.SelectedActualFiniteState.Iid, new ExternalIdentifier
-                {
-                    Identifier = variable.Identifier
-                });
-            }
-
-            if (variable.SelectedOption != null)
-            {
-                this.AddToExternalIdentifierMap(variable.SelectedOption.Iid, new ExternalIdentifier
-                {
-                    Identifier = variable.Identifier
-                });
-            }
-
-            if (variable.SelectedScale != null)
-            {
-                this.AddToExternalIdentifierMap(variable.SelectedScale.Iid, new ExternalIdentifier
-                {
-                    Identifier = variable.Identifier
-                });
-            }
-        }
-
-        /// <summary>
         /// Updates the configured mapping, registering the <see cref="ExternalIdentifierMap" /> and its
         /// <see cref="IdCorrespondence" />
         /// to a <see name="IThingTransaction" />
@@ -263,6 +254,12 @@ namespace DEHPMatlab.Services.MappingConfiguration
         /// <param name="iterationClone">The <see cref="Iteration" /> clone</param>
         public void PersistExternalIdentifierMap(IThingTransaction transaction, Iteration iterationClone)
         {
+            if (this.IsTheCurrentIdentifierMapTemporary)
+            {
+                this.logger.Error($"The current mapping with {this.ExternalIdentifierMap.Correspondence.Count} correspondences will not be saved as it is temporary");
+                return;
+            }
+
             if (this.ExternalIdentifierMap.Iid == Guid.Empty)
             {
                 this.ExternalIdentifierMap = this.ExternalIdentifierMap.Clone(true);
@@ -293,6 +290,11 @@ namespace DEHPMatlab.Services.MappingConfiguration
         /// </summary>
         public void RefreshExternalIdentifierMap()
         {
+            if (this.IsTheCurrentIdentifierMapTemporary)
+            {
+                return;
+            }
+
             this.hubController.GetThingById(this.ExternalIdentifierMap.Iid, this.hubController.OpenIteration, out ExternalIdentifierMap map);
             this.ExternalIdentifierMap = map.Clone(true);
         }
@@ -315,6 +317,39 @@ namespace DEHPMatlab.Services.MappingConfiguration
         public List<MatlabWorkspaceRowViewModel> LoadMappingFromDstToHub(IList<MatlabWorkspaceRowViewModel> variables)
         {
             return this.LoadMapping(this.MapElementsFromTheExternalIdentifierMapToHub, variables);
+        }
+
+        /// <summary>
+        /// Adds as many correspondence as <paramref name="variable" /> values
+        /// </summary>
+        /// <param name="variable">
+        /// The <see cref="MatlabWorkspaceRowViewModel" />
+        /// </param>
+        private void AddToExternalIdentifierMap(MatlabWorkspaceRowViewModel variable)
+        {
+            if (variable.SelectedActualFiniteState != null)
+            {
+                this.AddToExternalIdentifierMap(variable.SelectedActualFiniteState.Iid, new ExternalIdentifier
+                {
+                    Identifier = variable.Identifier
+                });
+            }
+
+            if (variable.SelectedOption != null)
+            {
+                this.AddToExternalIdentifierMap(variable.SelectedOption.Iid, new ExternalIdentifier
+                {
+                    Identifier = variable.Identifier
+                });
+            }
+
+            if (variable.SelectedScale != null)
+            {
+                this.AddToExternalIdentifierMap(variable.SelectedScale.Iid, new ExternalIdentifier
+                {
+                    Identifier = variable.Identifier
+                });
+            }
         }
 
         /// <summary>
@@ -343,10 +378,7 @@ namespace DEHPMatlab.Services.MappingConfiguration
 
                 if (element.SelectedParameter is { } selectedParameter)
                 {
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        element.SelectedParameterType = selectedParameter.ParameterType;
-                    });
+                    Application.Current.Dispatcher.Invoke(() => { element.SelectedParameterType = selectedParameter.ParameterType; });
                 }
 
                 action?.Invoke();
@@ -382,8 +414,8 @@ namespace DEHPMatlab.Services.MappingConfiguration
             var mappedElements = new List<ParameterToMatlabVariableMappingRowViewModel>();
 
             foreach (var idCorrespondences in this.correspondences
-                .Where(x => x.ExternalIdentifier.MappingDirection == MappingDirection.FromHubToDst)
-                .GroupBy(x => x.ExternalIdentifier.Identifier))
+                         .Where(x => x.ExternalIdentifier.MappingDirection == MappingDirection.FromHubToDst)
+                         .GroupBy(x => x.ExternalIdentifier.Identifier))
             {
                 if (variables.FirstOrDefault(x => x.Identifier.Equals(idCorrespondences.Key)) is not { } element)
                 {
@@ -510,8 +542,8 @@ namespace DEHPMatlab.Services.MappingConfiguration
             var mappedVariables = new List<MatlabWorkspaceRowViewModel>();
 
             foreach (var idCorrespondences in this.correspondences
-                .Where(x => x.ExternalIdentifier.MappingDirection == MappingDirection.FromDstToHub)
-                .GroupBy(x => x.ExternalIdentifier.Identifier))
+                         .Where(x => x.ExternalIdentifier.MappingDirection == MappingDirection.FromDstToHub)
+                         .GroupBy(x => x.ExternalIdentifier.Identifier))
             {
                 if (variables.FirstOrDefault(x => x.Identifier.Equals(idCorrespondences.Key)) is not { } element)
                 {
@@ -543,7 +575,7 @@ namespace DEHPMatlab.Services.MappingConfiguration
                         this.LoadSampledFunctionParameterTypeMappingConfiguration(element, externalId, parameterOrOverride);
                     }
 
-                    if (externalId.SelectedCoordinateSystem != Guid.Empty && 
+                    if (externalId.SelectedCoordinateSystem != Guid.Empty &&
                         this.hubController.GetThingById(externalId.SelectedCoordinateSystem, this.hubController.OpenIteration, out Parameter coordinateSystem))
                     {
                         element.SelectedCoordinateSystem = coordinateSystem;

@@ -311,6 +311,7 @@ namespace DEHPMatlab.Tests.Services.MappingConfiguration
 
             this.externalIdentifierMap = new ExternalIdentifierMap(Guid.NewGuid(), null, null)
             {
+                Name = "AName",
                 Correspondence =
                 {
                     new IdCorrespondence() { InternalThing = this.elementDefinition0.Iid, ExternalId = JsonConvert.SerializeObject(this.externalIdentifiers[0]) },
@@ -326,8 +327,8 @@ namespace DEHPMatlab.Tests.Services.MappingConfiguration
         [Test]
         public void VerifyCreateExternalIdentifierMap()
         {
-            Assert.IsNull(this.mappingConfiguration.ExternalIdentifierMap);
-            var newExternalIdentifierMap = this.mappingConfiguration.CreateExternalIdentifierMap("Name");
+            Assert.IsNotNull(this.mappingConfiguration.ExternalIdentifierMap);
+            var newExternalIdentifierMap = this.mappingConfiguration.CreateExternalIdentifierMap("Name", false);
             this.mappingConfiguration.ExternalIdentifierMap = newExternalIdentifierMap;
             Assert.AreEqual("Name", this.mappingConfiguration.ExternalIdentifierMap.Name);
             Assert.AreEqual("Name", this.mappingConfiguration.ExternalIdentifierMap.ExternalModelName);
@@ -338,7 +339,7 @@ namespace DEHPMatlab.Tests.Services.MappingConfiguration
         [Test]
         public void VerifyAddToExternalIdentifierMap()
         {
-            this.mappingConfiguration.ExternalIdentifierMap = this.mappingConfiguration.CreateExternalIdentifierMap("cfg");
+            this.mappingConfiguration.ExternalIdentifierMap = this.mappingConfiguration.CreateExternalIdentifierMap("cfg", true);
 
             var internalId = Guid.NewGuid();
 
@@ -443,25 +444,6 @@ namespace DEHPMatlab.Tests.Services.MappingConfiguration
         }
 
         [Test]
-        public void VerifyPersistExternalIdentifierMap()
-        {
-            this.mappingConfiguration.ExternalIdentifierMap = this.externalIdentifierMap;
-            var transactionMock = new Mock<IThingTransaction>();
-            Assert.DoesNotThrow(() => this.mappingConfiguration.PersistExternalIdentifierMap(transactionMock.Object, this.iteration));
-
-            this.mappingConfiguration.ExternalIdentifierMap = new ExternalIdentifierMap()
-            {
-                Correspondence = { new IdCorrespondence(Guid.NewGuid(), null, null) }
-            };
-
-            Assert.DoesNotThrow(() => this.mappingConfiguration.PersistExternalIdentifierMap(transactionMock.Object, this.iteration));
-
-            Assert.AreEqual(1, this.iteration.ExternalIdentifierMap.Count);
-            transactionMock.Verify(x => x.CreateOrUpdate(It.IsAny<Thing>()), Times.Exactly(3));
-            transactionMock.Verify(x => x.Create(It.IsAny<Thing>(), null), Times.Exactly(6));
-        }
-
-        [Test]
         public void VerifyRefresh()
         {
             this.mappingConfiguration.ExternalIdentifierMap = this.externalIdentifierMap;
@@ -558,8 +540,12 @@ namespace DEHPMatlab.Tests.Services.MappingConfiguration
             };
 
             Assert.DoesNotThrow(() => this.mappingConfiguration.PersistExternalIdentifierMap(transactionMock.Object, iterationClone));
+            Assert.AreEqual(0, iterationClone.ExternalIdentifierMap.Count);
 
+            this.mappingConfiguration.ExternalIdentifierMap.Name = "Name";
+            Assert.DoesNotThrow(() => this.mappingConfiguration.PersistExternalIdentifierMap(transactionMock.Object, iterationClone));
             Assert.AreEqual(1, iterationClone.ExternalIdentifierMap.Count);
+
             transactionMock.Verify(x => x.CreateOrUpdate(It.IsAny<Thing>()), Times.Exactly(3));
             transactionMock.Verify(x => x.Create(It.IsAny<Thing>(), null), Times.Exactly(6));
         }

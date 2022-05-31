@@ -27,14 +27,17 @@ namespace DEHPMatlab.ViewModel
     using System;
 
     using DEHPCommon.Enumerators;
+    using DEHPCommon.HubController.Interfaces;
     using DEHPCommon.Services.NavigationService;
     using DEHPCommon.UserInterfaces.Behaviors;
     using DEHPCommon.UserInterfaces.ViewModels.Interfaces;
     using DEHPCommon.UserInterfaces.Views.ExchangeHistory;
 
     using DEHPMatlab.DstController;
+    using DEHPMatlab.Services.MappingConfiguration;
     using DEHPMatlab.ViewModel.Interfaces;
     using DEHPMatlab.ViewModel.NetChangePreview.Interfaces;
+    using DEHPMatlab.Views.Dialogs;
 
     using ReactiveUI;
 
@@ -54,9 +57,24 @@ namespace DEHPMatlab.ViewModel
         private readonly INavigationService navigationService;
 
         /// <summary>
+        /// The <see cref="IHubController" />
+        /// </summary>
+        private readonly IHubController hubController;
+
+        /// <summary>
+        /// The <see cref="IMappingConfigurationService" />
+        /// </summary>
+        private readonly IMappingConfigurationService mappingConfiguration;
+
+        /// <summary>
         /// Backing field for <see cref="CurrentMappingDirection" />
         /// </summary>
         private int currentMappingDirection;
+
+        /// <summary>
+        /// Backing field for <see cref="CurrentMappingConfigurationName" />
+        /// </summary>
+        private string currentMappingConfigurationName;
 
         /// <summary>
         /// Create a new instance of <see cref="MainWindowViewModel" />
@@ -71,10 +89,13 @@ namespace DEHPMatlab.ViewModel
         /// <param name="dstNetChange">The <see cref="IDstNetChangePreviewViewModel" /></param>
         /// <param name="hubNetChange">The <see cref="IHubNetChangePreviewViewModel" /></param>
         /// <param name="differenceView">The <see cref="IDifferenceViewModel" /></param>
+        /// <param name="hubController">The <see cref="IHubController" /></param>
+        /// <param name="mappingConfiguration">The <see cref="IMappingConfigurationService" /></param>
         public MainWindowViewModel(IHubDataSourceViewModel hubDataSourceViewModel, IStatusBarControlViewModel statusBarControlViewModel,
             IDstDataSourceViewModel dstDataSourceViewModel, IDstController dstController, ITransferControlViewModel transferControlView,
             INavigationService navigationService, IMappingViewModel mappingViewModel, IDstNetChangePreviewViewModel dstNetChange,
-            IHubNetChangePreviewViewModel hubNetChange, IDifferenceViewModel differenceView)
+            IHubNetChangePreviewViewModel hubNetChange, IDifferenceViewModel differenceView, IHubController hubController,
+            IMappingConfigurationService mappingConfiguration)
         {
             this.HubDataSourceViewModel = hubDataSourceViewModel;
             this.StatusBarControlViewModel = statusBarControlViewModel;
@@ -86,8 +107,10 @@ namespace DEHPMatlab.ViewModel
             this.DstNetChangePreviewViewModel = dstNetChange;
             this.HubNetChangePreviewViewModel = hubNetChange;
             this.DifferenceViewModel = differenceView;
+            this.mappingConfiguration = mappingConfiguration;
+            this.hubController = hubController;
 
-            this.InitializeCommands();
+            this.InitializeCommandsAndObservables();
         }
 
         /// <summary>
@@ -97,6 +120,15 @@ namespace DEHPMatlab.ViewModel
         {
             get => this.currentMappingDirection;
             set => this.RaiseAndSetIfChanged(ref this.currentMappingDirection, value);
+        }
+
+        /// <summary>
+        /// Gets or sets the name of the current <see cref="IMappingConfigurationService.ExternalIdentifierMap" />
+        /// </summary>
+        public string CurrentMappingConfigurationName
+        {
+            get => this.currentMappingConfigurationName;
+            set => this.RaiseAndSetIfChanged(ref this.currentMappingConfigurationName, value);
         }
 
         /// <summary>
@@ -145,6 +177,11 @@ namespace DEHPMatlab.ViewModel
         public IDifferenceViewModel DifferenceViewModel { get; private set; }
 
         /// <summary>
+        /// Opens a dialog to setup the mapping configuration
+        /// </summary>
+        public ReactiveCommand<object> OpenMappingConfigurationDialog { get; private set; }
+
+        /// <summary>
         /// Gets or sets the <see cref="ISwitchLayoutPanelOrderBehavior" />
         /// </summary>
         public ISwitchLayoutPanelOrderBehavior SwitchPanelBehavior { get; set; }
@@ -163,19 +200,50 @@ namespace DEHPMatlab.ViewModel
 
             this.dstController.MappingDirection = this.SwitchPanelBehavior?.MappingDirection ?? MappingDirection.FromDstToHub;
 
-            this.CurrentMappingDirection = (int) this.dstController.MappingDirection;
+            this.CurrentMappingDirection = (int)this.dstController.MappingDirection;
         }
 
         /// <summary>
         /// Initiliaze all <see cref="ReactiveCommand{T}" /> of this viewmodel
         /// </summary>
-        private void InitializeCommands()
+        private void InitializeCommandsAndObservables()
         {
             this.ChangeMappingDirection = ReactiveCommand.Create();
             this.ChangeMappingDirection.Subscribe(_ => this.ChangeMappingDirectionExecute());
 
             this.OpenExchangeHistory = ReactiveCommand.Create();
             this.OpenExchangeHistory.Subscribe(_ => this.navigationService.ShowDialog<ExchangeHistory>());
+
+            this.OpenMappingConfigurationDialog = ReactiveCommand.Create(this.WhenAny(x => x.hubController.OpenIteration,
+                iteration => iteration.Value != null));
+
+            this.OpenMappingConfigurationDialog.Subscribe(_ => this.OpenMappingConfigurationDialogExecute());
+
+            this.WhenAny(x => x.hubController.OpenIteration,
+                iteration => iteration.Value == null).Subscribe(_ => this.UpdateProperties());
+        }
+
+        /// <summary>
+        /// Update this viewModel properties
+        /// </summary>
+        private void UpdateProperties()
+        {
+            this.CurrentMappingConfigurationName = string.IsNullOrWhiteSpace(this.mappingConfiguration.ExternalIdentifierMap.Name)
+                ? ""
+                : $"Current Mapping: {this.mappingConfiguration.ExternalIdentifierMap.Name}";
+        }
+
+        /// <summary>
+        /// Execute the <see cref="OpenMappingConfigurationDialog" /> Command
+        /// </summary>
+        private void OpenMappingConfigurationDialogExecute()
+        {
+            this.navigationService.ShowDialog<MappingConfigurationServiceDialog>();
+
+            this.dstController.ClearMappingCollections();
+            this.dstController.LoadMapping();
+
+            this.UpdateProperties();
         }
     }
 }

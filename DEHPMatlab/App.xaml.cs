@@ -114,6 +114,7 @@ namespace DEHPMatlab
             containerBuilder.RegisterType<DstNetChangePreviewViewModel>().As<IDstNetChangePreviewViewModel>().SingleInstance();
             containerBuilder.RegisterType<HubNetChangePreviewViewModel>().As<IHubNetChangePreviewViewModel>().SingleInstance();
             containerBuilder.RegisterType<DifferenceViewModel>().As<IDifferenceViewModel>().SingleInstance();
+            containerBuilder.RegisterType<MappingConfigurationServiceDialogViewModel>().As<IMappingConfigurationServiceDialogViewModel>();
         }
 
         /// <summary>

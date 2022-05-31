@@ -358,7 +358,7 @@ namespace DEHPMatlab.Services.MatlabParser
             foreach (var inputText in inputsText)
             {
                 this.logger.Info($"{inputText} removed from script");
-                originalScript = originalScript.Replace($"{inputText};", "\n");
+                originalScript = originalScript.Replace($"{inputText}", "\n");
             }
 
             return originalScript;

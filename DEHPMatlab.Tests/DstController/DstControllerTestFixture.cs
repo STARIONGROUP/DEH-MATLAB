@@ -41,6 +41,7 @@ namespace DEHPMatlab.Tests.DstController
     using CDP4Dal.Operations;
 
     using DEHPCommon.Enumerators;
+    using DEHPCommon.Events;
     using DEHPCommon.HubController.Interfaces;
     using DEHPCommon.MappingEngine;
     using DEHPCommon.Services.ExchangeHistory;
@@ -535,6 +536,8 @@ namespace DEHPMatlab.Tests.DstController
             this.dstController.MatlabAllWorkspaceRowViewModels.Add(variableRowViewModels.Last());
 
             Assert.DoesNotThrow(() => this.dstController.LoadMapping());
+
+            Assert.DoesNotThrow(() => CDPMessageBus.Current.SendMessage(new HubSessionControlEvent()));
         }
 
         [Test]

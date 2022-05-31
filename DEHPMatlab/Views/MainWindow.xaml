@@ -65,9 +65,10 @@
                             <Grid>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"></RowDefinition>
-                                    <RowDefinition></RowDefinition>
+                                    <RowDefinition Height="Auto"></RowDefinition>
+                                    <RowDefinition />
                                 </Grid.RowDefinitions>
-                                <Grid Margin="10">
+                                <Grid Margin="10 0">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition></ColumnDefinition>
                                         <ColumnDefinition Width="Auto"></ColumnDefinition>
@@ -75,10 +76,19 @@
                                     </Grid.ColumnDefinitions>
 
                                     <Path Stretch="Fill" Fill="DarkGray" Data="M 0,110 110,110 110,90 120,120 110,150 110,130 0,130 Z" HorizontalAlignment="Left" Margin="-10,5,10,5" MaxHeight="30" RenderTransformOrigin=".5,.5"/>
-                                    <Button ToolTip="Change Transfer Direction" Grid.Column="1" Height="40" HorizontalAlignment="Center" Content="Change Transfer Direction" Command="{Binding ChangeMappingDirection}"/>
+                                    <Button ToolTip="Change Transfer Direction" Grid.Column="1" Width="160" FontSize="12" Height="30" HorizontalAlignment="Center" Content="Change Transfer Direction" Command="{Binding ChangeMappingDirection}"/>
                                     <Path Grid.Column="2" Stretch="Fill" Fill="DarkGray" Data="M 0,110 110,110 110,90 120,120 110,150 110,130 0,130 Z" HorizontalAlignment="Left" Margin="10,5,-10,5" MaxHeight="30" RenderTransformOrigin=".5,.5"/>
                                 </Grid>
-                                <dx:DXTabControl Name="HubEngineeringModelPreview" Grid.Row="1" 
+                                <Grid Grid.Row="1" Margin="10 0 10 5">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition></ColumnDefinition>
+                                        <ColumnDefinition Width="Auto"></ColumnDefinition>
+                                        <ColumnDefinition></ColumnDefinition>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock TextWrapping="Wrap" Background="Transparent" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0 0 5 0" Text="{Binding CurrentMappingConfigurationName}"/>
+                                    <Button Grid.Column="1" Content="Mapping Configuration" Width="160" Height="30" ToolTip="Enables to modify the mapping configuration" Command="{Binding OpenMappingConfigurationDialog}"/>
+                                </Grid>
+                                    <dx:DXTabControl Name="HubEngineeringModelPreview" Grid.Row="2" 
                                                  SelectedIndex="{Binding CurrentMappingDirection}">
                                     <dx:DXTabItem Header="Hub Engineering Model">
                                         <objectBrowser:ObjectBrowser DataContext="{Binding HubNetChangePreviewViewModel}" />
