@@ -24,20 +24,31 @@
 
 namespace DEHPMatlab.Tests.ViewModel
 {
+    using System;
+    using System.Reactive.Concurrency;
+
+    using CDP4Common.EngineeringModelData;
+    using CDP4Common.SiteDirectoryData;
+
     using DEHPCommon.Enumerators;
+    using DEHPCommon.HubController.Interfaces;
     using DEHPCommon.Services.NavigationService;
     using DEHPCommon.UserInterfaces.Behaviors;
     using DEHPCommon.UserInterfaces.ViewModels.Interfaces;
     using DEHPCommon.UserInterfaces.Views.ExchangeHistory;
 
     using DEHPMatlab.DstController;
+    using DEHPMatlab.Services.MappingConfiguration;
     using DEHPMatlab.ViewModel;
     using DEHPMatlab.ViewModel.Interfaces;
     using DEHPMatlab.ViewModel.NetChangePreview.Interfaces;
+    using DEHPMatlab.Views.Dialogs;
 
     using Moq;
 
     using NUnit.Framework;
+
+    using ReactiveUI;
 
     [TestFixture]
     public class MainWindowViewModelTestFixture
@@ -53,10 +64,16 @@ namespace DEHPMatlab.Tests.ViewModel
         private Mock<IDstNetChangePreviewViewModel> dstNetChange;
         private Mock<IHubNetChangePreviewViewModel> hubNetChange;
         private Mock<IDifferenceViewModel> differenceView;
+        private Mock<IHubController> hubController;
+        private Mock<IMappingConfigurationService> mappingConfiguration;
+        private ExternalIdentifierMap map;
+        private Iteration iteration;
 
         [SetUp]
         public void Setup()
         {
+            RxApp.MainThreadScheduler = Scheduler.CurrentThread;
+
             this.hubDataSourceViewModel = new Mock<IHubDataSourceViewModel>();
             this.statusBarControlViewModel = new Mock<IStatusBarControlViewModel>();
             this.dstDataSourceViewModel = new Mock<IDstDataSourceViewModel>();
@@ -67,10 +84,47 @@ namespace DEHPMatlab.Tests.ViewModel
             this.dstNetChange = new Mock<IDstNetChangePreviewViewModel>();
             this.hubNetChange = new Mock<IHubNetChangePreviewViewModel>();
             this.differenceView = new Mock<IDifferenceViewModel>();
+            this.hubController = new Mock<IHubController>();
+            this.mappingConfiguration = new Mock<IMappingConfigurationService>();
+            this.map = new ExternalIdentifierMap(Guid.NewGuid(), null, null);
+            this.mappingConfiguration.Setup(x => x.ExternalIdentifierMap).Returns(this.map);
+            this.dstController.Setup(x => x.ClearMappingCollections());
+            this.dstController.Setup(x => x.LoadMapping());
+            this.navigationService.Setup(x => x.ShowDialog<MappingConfigurationServiceDialog>()).Returns(true);
+
+            var person = new Person(Guid.NewGuid(), null, null) { GivenName = "test", DefaultDomain = new DomainOfExpertise() };
+
+            var participant = new Participant(Guid.NewGuid(), null, null)
+            {
+                Person = person
+            };
+
+            var engineeringModelSetup = new EngineeringModelSetup(Guid.NewGuid(), null, null)
+            {
+                Participant = { participant },
+                Name = "est"
+            };
+
+            this.iteration = new Iteration(Guid.NewGuid(), null, null)
+            {
+                IterationSetup = new IterationSetup(Guid.NewGuid(), null, null)
+                {
+                    IterationNumber = 23,
+                    Container = engineeringModelSetup
+                },
+                Container = new EngineeringModel(Guid.NewGuid(), null, null)
+                {
+                    EngineeringModelSetup = engineeringModelSetup
+                }
+            }; 
+            
+            this.iteration.ExternalIdentifierMap.Add(this.map);
+            this.hubController.Setup(x => x.OpenIteration).Returns(this.iteration);
 
             this.viewModel = new MainWindowViewModel(this.hubDataSourceViewModel.Object,
                 this.statusBarControlViewModel.Object, this.dstDataSourceViewModel.Object, this.dstController.Object, this.transferControl.Object,
-                this.navigationService.Object, this.mappingViewModel.Object, this.dstNetChange.Object, this.hubNetChange.Object, this.differenceView.Object);
+                this.navigationService.Object, this.mappingViewModel.Object, this.dstNetChange.Object, this.hubNetChange.Object, this.differenceView.Object,
+                this.hubController.Object, this.mappingConfiguration.Object);
         }
 
         [Test]
@@ -87,6 +141,8 @@ namespace DEHPMatlab.Tests.ViewModel
             Assert.IsNotNull(this.viewModel.DifferenceViewModel);
             Assert.AreEqual((int)MappingDirection.FromDstToHub, this.viewModel.CurrentMappingDirection);
             Assert.IsNotNull(this.viewModel.TransferControlViewModel);
+            Assert.IsNotNull(this.viewModel.OpenMappingConfigurationDialog);
+            Assert.IsEmpty(this.viewModel.CurrentMappingConfigurationName);
         }
 
         [Test]
@@ -107,6 +163,22 @@ namespace DEHPMatlab.Tests.ViewModel
             Assert.IsTrue(this.viewModel.OpenExchangeHistory.CanExecute(null));
             Assert.DoesNotThrow(() => this.viewModel.OpenExchangeHistory.Execute(null));
             this.navigationService.Verify(x => x.ShowDialog<ExchangeHistory>(), Times.Once);
+        }
+
+        [Test]
+        public void VerifyOpenMappingServiceDialogCommand()
+        {
+            Assert.IsTrue(this.viewModel.OpenMappingConfigurationDialog.CanExecute(null));
+            Assert.DoesNotThrow(() => this.viewModel.OpenMappingConfigurationDialog.Execute(null));
+            Assert.IsEmpty(this.viewModel.CurrentMappingConfigurationName);
+            
+            this.map.Name = "AName";
+            Assert.DoesNotThrow(() => this.viewModel.OpenMappingConfigurationDialog.Execute(null));
+            Assert.IsNotEmpty(this.viewModel.CurrentMappingConfigurationName);
+
+            this.navigationService.Verify(x => x.ShowDialog<MappingConfigurationServiceDialog>(),Times.Exactly(2));
+            this.dstController.Verify(x => x.ClearMappingCollections(),Times.Exactly(2));
+            this.dstController.Verify(x => x.LoadMapping(),Times.Exactly(2));
         }
     }
 }

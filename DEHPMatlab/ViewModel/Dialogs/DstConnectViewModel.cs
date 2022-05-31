@@ -24,21 +24,16 @@
 
 namespace DEHPMatlab.ViewModel.Dialogs
 {
-    using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Reactive;
     using System.Reactive.Linq;
     using System.Threading.Tasks;
 
-    using CDP4Common.EngineeringModelData;
-
-    using DEHPCommon.HubController.Interfaces;
     using DEHPCommon.UserInterfaces.Behaviors;
     using DEHPCommon.UserInterfaces.ViewModels.Interfaces;
 
     using DEHPMatlab.DstController;
-    using DEHPMatlab.Services.MappingConfiguration;
     using DEHPMatlab.ViewModel.Dialogs.Interfaces;
     using DEHPMatlab.Views.Dialogs;
 
@@ -60,29 +55,9 @@ namespace DEHPMatlab.ViewModel.Dialogs
         private readonly IDstController dstController;
 
         /// <summary>
-        /// The <see cref="IHubController" />
-        /// </summary>
-        private readonly IHubController hubController;
-
-        /// <summary>
-        /// The <see cref="IMappingConfigurationService" />
-        /// </summary>
-        private readonly IMappingConfigurationService mappingConfiguration;
-
-        /// <summary>
-        /// Backing field for <see cref="CreateNewMappingConfigurationChecked" />
-        /// </summary>
-        private bool createNewMappingConfigurationChecked;
-
-        /// <summary>
         /// Backing Field for <see cref="IsBusy" />
         /// </summary>
         private bool isBusy;
-
-        /// <summary>
-        /// Backing field for <see cref="SelectedExternalIdentifierMap" />
-        /// </summary>
-        private ExternalIdentifierMap selectedExternalIdentifierMap;
 
         /// <summary>
         /// Backing field for <see cref="SelectedMatlabVersion" />
@@ -95,26 +70,17 @@ namespace DEHPMatlab.ViewModel.Dialogs
         private string errorMessageText;
 
         /// <summary>
-        /// Backing field for <see cref="ExternalIdentifierMapNewName" />
-        /// </summary>
-        private string externalIdentifierMapNewName;
-
-        /// <summary>
         /// Initialize a new instance of <see cref="DstConnectViewModel" />
         /// </summary>
         /// <param name="dstController">The <see cref="IDstController" /></param>
-        /// <param name="mappingConfiguration">The <see cref="IMappingConfigurationService" /></param>
-        /// <param name="hubController">The <see cref="IHubController" /></param>
-        public DstConnectViewModel(IDstController dstController, IMappingConfigurationService mappingConfiguration, IHubController hubController)
+        public DstConnectViewModel(IDstController dstController)
         {
             this.dstController = dstController;
-            this.mappingConfiguration = mappingConfiguration;
-            this.hubController = hubController;
 
             this.MatlabVersionDictionary = new Dictionary<string, string>();
             this.PopulateDictionary();
 
-            this.InitializesCommandsAndObservables();
+            this.InitializesCommands();
         }
 
         /// <summary>
@@ -126,15 +92,6 @@ namespace DEHPMatlab.ViewModel.Dialogs
         /// The <see cref="ReactiveCommand" /> for initialize the connection to Matlab
         /// </summary>
         public ReactiveCommand<Unit> ConnectCommand { get; private set; }
-
-        /// <summary>
-        /// Gets or sets whether a new Mapping Configuration should be created
-        /// </summary>
-        public bool CreateNewMappingConfigurationChecked
-        {
-            get => this.createNewMappingConfigurationChecked;
-            set => this.RaiseAndSetIfChanged(ref this.createNewMappingConfigurationChecked, value);
-        }
 
         /// <summary>
         /// Gets or sets whether this view model is busy
@@ -155,15 +112,6 @@ namespace DEHPMatlab.ViewModel.Dialogs
         }
 
         /// <summary>
-        /// Gets or sets the name of the new Mapping Configuration
-        /// </summary>
-        public string ExternalIdentifierMapNewName
-        {
-            get => this.externalIdentifierMapNewName;
-            set => this.RaiseAndSetIfChanged(ref this.externalIdentifierMapNewName, value);
-        }
-
-        /// <summary>
         /// Gets or sets the currently selected version of Matlab
         /// </summary>
         public KeyValuePair<string, string> SelectedMatlabVersion
@@ -173,23 +121,9 @@ namespace DEHPMatlab.ViewModel.Dialogs
         }
 
         /// <summary>
-        /// Gets or sets the <see cref="ExternalIdentifierMap" /> selected
-        /// </summary>
-        public ExternalIdentifierMap SelectedExternalIdentifierMap
-        {
-            get => this.selectedExternalIdentifierMap;
-            set => this.RaiseAndSetIfChanged(ref this.selectedExternalIdentifierMap, value);
-        }
-
-        /// <summary>
         /// The <see cref="Dictionary{TKey,TValue}" /> containing all Matlab Version
         /// </summary>
         public Dictionary<string, string> MatlabVersionDictionary { get; private set; }
-
-        /// <summary>
-        /// A collection of all available <see cref="ExternalIdentifierMap" />
-        /// </summary>
-        public ReactiveList<ExternalIdentifierMap> AvailableExternalIdentifierMap { get; private set; }
 
         /// <summary>
         /// Try to connect to a new instance of Matlab
@@ -198,8 +132,6 @@ namespace DEHPMatlab.ViewModel.Dialogs
         private async Task ConnectCommandExecute()
         {
             this.IsBusy = true;
-
-            this.ProcessExternalIdentifierMap();
 
             await this.dstController.Connect(this.SelectedMatlabVersion.Key);
 
@@ -244,46 +176,9 @@ namespace DEHPMatlab.ViewModel.Dialogs
         /// <summary>
         /// Initialize all <see cref="ReactiveCommand{T}" /> and <see cref="Observable" /> of this view model
         /// </summary>
-        private void InitializesCommandsAndObservables()
+        private void InitializesCommands()
         {
-            this.AvailableExternalIdentifierMap = new ReactiveList<ExternalIdentifierMap>(
-                this.hubController.AvailableExternalIdentifierMap(DstController.ThisToolName)
-                    .OrderBy(x => x.Name));
-
-            this.WhenAnyValue(x => x.SelectedExternalIdentifierMap)
-                .Subscribe(_ =>
-                {
-                    if (this.SelectedExternalIdentifierMap == null)
-                    {
-                        return;
-                    }
-
-                    this.CreateNewMappingConfigurationChecked = false;
-                    this.ExternalIdentifierMapNewName = string.Empty;
-                });
-
-            this.WhenAnyValue(x => x.ExternalIdentifierMapNewName)
-                .Subscribe(_ =>
-                {
-                    if (string.IsNullOrWhiteSpace(this.ExternalIdentifierMapNewName))
-                    {
-                        return;
-                    }
-
-                    this.CreateNewMappingConfigurationChecked = true;
-                    this.SelectedExternalIdentifierMap = null;
-                });
-
-            this.WhenAnyValue(x => x.CreateNewMappingConfigurationChecked)
-                .Subscribe(_ => this.UpdateExternalIdentifierSelectors());
-
-            var canConnect = this.WhenAnyValue(
-                vm => vm.SelectedExternalIdentifierMap,
-                vm => vm.ExternalIdentifierMapNewName,
-                (selectedMap, newName) => selectedMap is not null || !string.IsNullOrWhiteSpace(newName));
-
-            this.ConnectCommand = ReactiveCommand.CreateAsyncTask(canConnect,
-                async _ => await this.ConnectCommandExecute(),
+            this.ConnectCommand = ReactiveCommand.CreateAsyncTask(async _ => await this.ConnectCommandExecute(),
                 RxApp.MainThreadScheduler);
         }
 
@@ -297,30 +192,6 @@ namespace DEHPMatlab.ViewModel.Dialogs
             this.MatlabVersionDictionary["Matlab.Autoserver"] = "Latest Installed Version";
             this.MatlabVersionDictionary = this.MatlabVersionDictionary.Reverse().ToDictionary(x => x.Key, x => x.Value);
             this.SelectedMatlabVersion = this.MatlabVersionDictionary.SingleOrDefault(p => p.Key == "Matlab.Autoserver");
-        }
-
-        /// <summary>
-        /// Creates a new <see cref="ExternalIdentifierMap" />
-        /// </summary>
-        private void ProcessExternalIdentifierMap()
-        {
-            this.mappingConfiguration.ExternalIdentifierMap = this.SelectedExternalIdentifierMap?.Clone(true) ??
-                                                              this.mappingConfiguration.CreateExternalIdentifierMap(this.ExternalIdentifierMapNewName);
-        }
-
-        /// <summary>
-        /// Updates the respective field depending on the user selection
-        /// </summary>
-        private void UpdateExternalIdentifierSelectors()
-        {
-            if (this.CreateNewMappingConfigurationChecked)
-            {
-                this.SelectedExternalIdentifierMap = null;
-            }
-            else
-            {
-                this.ExternalIdentifierMapNewName = string.Empty;
-            }
         }
     }
 }

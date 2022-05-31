@@ -359,7 +359,11 @@ namespace DEHPMatlab.DstController
         /// <returns>The number of mapped things loaded</returns>
         public int LoadMapping()
         {
-            return this.LoadMappingFromHubToDst() + this.LoadMappingFromDstToHub();
+            var mappedElements = this.LoadMappingFromHubToDst() + this.LoadMappingFromDstToHub();
+
+            this.statusBar.Append($"{mappedElements} Element(s) has been loaded");
+
+            return mappedElements;
         }
 
         /// <summary>
@@ -931,9 +935,22 @@ namespace DEHPMatlab.DstController
 
             this.HubMapResult.ItemsRemoved.Subscribe(this.DisposeDisposable);
 
+            this.WhenAny(x => x.hubController.OpenIteration,
+                    iteration => iteration.Value == null)
+                .Subscribe(_ => this.UnloadMappingConfiguration());
+
             CDPMessageBus.Current.Listen<HubSessionControlEvent>()
                 .ObserveOn(RxApp.MainThreadScheduler)
                 .Subscribe(_ => this.LoadMapping());
+        }
+
+        /// <summary>
+        /// Unload the current mapping configuration
+        /// </summary>
+        private void UnloadMappingConfiguration()
+        {
+            this.ClearMappingCollections();
+            this.mappingConfigurationService.ExternalIdentifierMap = new ExternalIdentifierMap();
         }
 
         /// <summary>
@@ -1205,6 +1222,8 @@ namespace DEHPMatlab.DstController
 
                 this.matlabConnector.PutVariable(parentRowViewModel);
             }
+
+            this.LoadMapping();
 
             this.IsBusy = false;
         }

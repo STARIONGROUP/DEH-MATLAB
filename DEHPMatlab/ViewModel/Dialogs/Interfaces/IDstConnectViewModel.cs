@@ -27,8 +27,6 @@ namespace DEHPMatlab.ViewModel.Dialogs.Interfaces
     using System.Collections.Generic;
     using System.Reactive;
 
-    using CDP4Common.EngineeringModelData;
-
     using DEHPCommon.UserInterfaces.Behaviors;
 
     using ReactiveUI;
@@ -39,19 +37,9 @@ namespace DEHPMatlab.ViewModel.Dialogs.Interfaces
     public interface IDstConnectViewModel
     {
         /// <summary>
-        /// Gets or sets whether a new Mapping Configuration should be created
-        /// </summary>
-        bool CreateNewMappingConfigurationChecked { get; set; }
-
-        /// <summary>
         /// Gets or sets whether this view model is busy or not
         /// </summary>
         bool IsBusy { get; set; }
-
-        /// <summary>
-        /// Gets or sets the name of the new Mapping Configuration
-        /// </summary>
-        string ExternalIdentifierMapNewName { get; set; }
 
         /// <summary>
         /// Display this message if we cannot connect to the selected MatlabVersion
@@ -64,19 +52,9 @@ namespace DEHPMatlab.ViewModel.Dialogs.Interfaces
         KeyValuePair<string, string> SelectedMatlabVersion { get; set; }
 
         /// <summary>
-        /// Gets or sets the <see cref="ExternalIdentifierMap" /> selected
-        /// </summary>
-        ExternalIdentifierMap SelectedExternalIdentifierMap { get; set; }
-
-        /// <summary>
         /// The <see cref="Dictionary{TKey,TValue}" /> containing all Matlab Version
         /// </summary>
         Dictionary<string, string> MatlabVersionDictionary { get; }
-
-        /// <summary>
-        /// A collection of all available <see cref="ExternalIdentifierMap" />
-        /// </summary>
-        ReactiveList<ExternalIdentifierMap> AvailableExternalIdentifierMap { get; }
 
         /// <summary>
         /// The <see cref="ReactiveCommand" /> for initialize the connection to Matlab
