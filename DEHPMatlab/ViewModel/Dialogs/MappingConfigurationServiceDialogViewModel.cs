@@ -44,7 +44,6 @@ namespace DEHPMatlab.ViewModel.Dialogs
 
     /// <summary>
     /// This view model lets the user setup the <see cref="MappingConfigurationService" /> configuration.
-    /// This view model is mandatory because WinForm blocks the Keyboard event to WPF User Control
     /// </summary>
     public class MappingConfigurationServiceDialogViewModel : ReactiveObject, IMappingConfigurationServiceDialogViewModel, ICloseWindowViewModel
     {
