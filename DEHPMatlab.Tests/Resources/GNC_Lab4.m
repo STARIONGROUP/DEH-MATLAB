@@ -1,6 +1,5 @@
 
 %% TASK 1
-
 % Constants 
 RE = - 6370;mu = 398600;h_A = 6000;h_B = 15000;
 
@@ -201,6 +200,12 @@ plot(t,a(3,:))
 xlabel('Time [s]')
 ylabel('a_z [m/s^2]')
 
+
+booleanTrue = true;
+booleanFalse = false;
+astring = "hello"
+aOtherstring = 'hello'
+emptyString = ''
 
 invalidUnaryPrefix = --TA;
 
