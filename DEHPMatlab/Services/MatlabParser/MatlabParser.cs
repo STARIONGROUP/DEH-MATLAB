@@ -111,6 +111,58 @@ namespace DEHPMatlab.Services.MatlabParser
         }
 
         /// <summary>
+        /// Detects if the <see cref="SyntaxNode"/> corresponds to a boolean node
+        /// </summary>
+        /// <param name="node">The <see cref="SyntaxNode"/> to inspects</param>
+        /// <returns>Asserts if the node correspond to a boolean node</returns>
+        private bool IsBooleanNode(SyntaxNode node)
+        {
+            return node.Text.Equals(bool.TrueString, StringComparison.InvariantCultureIgnoreCase) 
+                   || node.Text.Equals(bool.FalseString, StringComparison.InvariantCultureIgnoreCase);
+        }
+
+        /// <summary>
+        /// Detects if a <see cref="TokenKind.AssignmentExpression" /> <see cref="SyntaxNode" /> corresponds to a boolean assignment
+        /// </summary>
+        /// <param name="node">The <see cref="SyntaxNode" /> to inspects</param>
+        /// <returns>Asserts if the node corresponds to a valid boolean assignment</returns>
+        private bool CheckIfNodeIsBooleanAssignment(SyntaxNode node)
+        {
+            var children = node.GetChildNodesAndTokens();
+
+            var identifierNameExpressionNode = children.Where(x => x.IsNode
+                                                                        && x.AsNode()!.Kind == TokenKind.IdentifierNameExpression).ToList();
+
+            return identifierNameExpressionNode.Count == 2 && this.IsBooleanNode(identifierNameExpressionNode.Last().AsNode());
+        }
+
+        /// <summary>
+        /// Detects if a <see cref="TokenKind.AssignmentExpression" /> <see cref="SyntaxNode" /> corresponds to a string assignment
+        /// </summary>
+        /// <param name="node">The <see cref="SyntaxNode" /> to inspects</param>
+        /// <param name="tokenKind">The <see cref="TokenKind"/> retrieve from the string assignement</param>
+        /// <returns>Asserts if the node corresponds to a valid string assignment</returns>
+        private bool CheckIfNodeIsStringAssignment(SyntaxNode node, out TokenKind tokenKind)
+        {
+            var children = node.GetChildNodesAndTokens();
+
+            var identifierNameExpressionNodeCount = children.Count(x => x.IsNode
+                                                                        && x.AsNode()!.Kind == TokenKind.IdentifierNameExpression);
+
+            var stringAssignementExpressionNodeCount = children.Count(x => x.IsNode 
+                && x.AsNode()!.Kind is TokenKind.DoubleQuotedStringLiteralExpression or TokenKind.StringLiteralExpression);
+
+            if (identifierNameExpressionNodeCount == 1 && stringAssignementExpressionNodeCount == 1)
+            {
+                tokenKind = children.Last().AsNode()!.Kind;
+                return true;
+            }
+            
+            tokenKind = TokenKind.StringLiteralExpression;
+            return false;
+        }
+
+        /// <summary>
         /// Detects if a <see cref="TokenKind.AssignmentExpression" /> <see cref="SyntaxNode" /> corresponds to a valid array
         /// assignment
         /// </summary>
@@ -224,6 +276,15 @@ namespace DEHPMatlab.Services.MatlabParser
                         inputKind == TokenKind.UnaryPostfixOperationExpression);
 
                     break;
+                case TokenKind.IdentifierNameExpression:
+                    value = bool.Parse(children.Last(x => x.IsNode && x.AsNode()!.Kind == inputKind).AsNode()!.Text);
+                    break;
+                case TokenKind.DoubleQuotedStringLiteralExpression:
+                case TokenKind.StringLiteralExpression:
+                    value = children.First(x => x.IsNode && x.AsNode()!.Kind == inputKind)
+                        .AsNode()!.GetChildNodesAndTokens().First(x => x.IsToken)!.AsToken().Value!.ToString();
+                   
+                    break;
                 default:
                     throw new InvalidExpressionException($"The node {syntaxNode.Text} cannot be converted !");
             }
@@ -280,6 +341,12 @@ namespace DEHPMatlab.Services.MatlabParser
                         break;
                     case { Kind: TokenKind.AssignmentExpression } when this.CheckIfNodeIsArrayAssignment(childAsNode):
                         inputsSyntaxNodes.Add((childAsNode, TokenKind.ArrayLiteralExpression));
+                        break;
+                    case { Kind: TokenKind.AssignmentExpression } when this.CheckIfNodeIsBooleanAssignment(childAsNode):
+                        inputsSyntaxNodes.Add((childAsNode, TokenKind.IdentifierNameExpression));
+                        break;
+                    case { Kind: TokenKind.AssignmentExpression } when this.CheckIfNodeIsStringAssignment(childAsNode, out var tokenKind):
+                        inputsSyntaxNodes.Add((childAsNode, tokenKind));
                         break;
                     case { Kind: TokenKind.AssignmentExpression }:
                     {

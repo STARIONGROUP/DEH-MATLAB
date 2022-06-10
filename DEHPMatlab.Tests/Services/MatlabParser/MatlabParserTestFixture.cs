@@ -54,7 +54,7 @@ namespace DEHPMatlab.Tests.Services.MatlabParser
             var matlabWorkspaceViewModels = this.parser.ParseMatlabScript(Path.Combine(TestContext.CurrentContext.TestDirectory,
                 "Resources", "GNC_Lab4.m"), out modifiedScriptFilePath, out var duplicatedNodes );
 
-            Assert.AreEqual(20, matlabWorkspaceViewModels.Count);
+            Assert.AreEqual(25, matlabWorkspaceViewModels.Count);
             Assert.IsTrue((double)matlabWorkspaceViewModels.First().ActualValue < 0);
             Assert.AreEqual(-6370, matlabWorkspaceViewModels.First().ActualValue);
             Assert.IsTrue(File.Exists(modifiedScriptFilePath));
