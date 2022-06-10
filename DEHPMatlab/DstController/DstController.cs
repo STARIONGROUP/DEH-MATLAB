@@ -1200,6 +1200,11 @@ namespace DEHPMatlab.DstController
                 sender.ActualValue = valueAsDouble;
             }
 
+            if (sender.ActualValue is not bool && bool.TryParse(sender.ActualValue.ToString(), out var valueAsBool))
+            {
+                sender.ActualValue = valueAsBool;
+            }
+
             if (string.IsNullOrEmpty(sender.ParentName))
             {
                 this.matlabConnector.PutVariable(sender);
